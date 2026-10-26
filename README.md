@@ -11,6 +11,9 @@ The original project streamed MPU6050 acceleration over Wi-Fi to a second ESP32 
 intensity; its code is preserved in [`legacy/`](legacy/). Tennis Buddy builds out several of its "future
 enhancements": a mobile app, stroke classification, impact force sensing and richer analytics.
 
+**Try it:** [TestFlight public beta](https://testflight.apple.com/join/137F7kvd) (iPhone + Apple Watch; runs in
+Simulator mode without the racket).
+
 ## Repository layout
 
 | Folder | Contents |
