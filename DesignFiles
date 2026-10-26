@@ -52,5 +52,6 @@ A comprehensive list of components needed to build the Smart Tennis Racket.
 
 ---
 
-## Optional
-- **3D-printed Enclosure** (If applicable): Custom design for holding the ESP32 and other components inside/around the tennis racket.
+## Circuit Diagram : 
+
+![image](https://github.com/user-attachments/assets/33419769-9524-431a-9cc0-07e09bf930fe)
