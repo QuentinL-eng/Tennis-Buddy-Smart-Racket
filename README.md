@@ -5,11 +5,11 @@ In recent times, there has been a monumental increase in the role of new technol
 Our aim was to make data analysis more accessible for tennis players, helping them pinpoint improvements and optimize their gameplay. Using accelerometers, we measured shot acceleration in three dimensions, with different shot intensities displayed via LED indicators. In the long run, the device is planned to incorporate parameters such as impact, type of swing, and timing, making it a versatile tool for coaching assistance and professional player strategy analysis.
 
 # Hardware Components Used
-MPU6050 (Accelerometer and Gyroscope)
-ESP32 (Client and Server Nodes)
-LED RGB Strip 
-5V Battery (Power Supply)
-Supporting Electronics (Wires, Connectors, Resistors, etc.)
+#MPU6050 (Accelerometer and Gyroscope)
+#ESP32 (Client and Server Nodes)
+#LED RGB Strip 
+#5V Battery (Power Supply)
+#Supporting Electronics (Wires, Connectors, Resistors, etc.)
 
 # Libraries Used
 Wire.h - I2C Communication
