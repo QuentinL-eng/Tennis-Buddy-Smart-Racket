@@ -29,7 +29,8 @@ Simulator mode without the racket).
 ## Hardware
 
 Seeed XIAO ESP32C3 · MPU6050 (±2000 °/s gyro) · Adafruit H3LIS331DL (±200 g) · INMP441 mic · 1S LiPo, all in a
-3D-printed insert that replaces the handle's foam core. Pin map and BLE protocol: [docs/PLAN.md](docs/PLAN.md).
+3D-printed insert that replaces the handle's foam core. The textured 3D racket in the apps is our own model
+(`hardware/models/tennis-racket-yonex.blend`, exported to `apple/Shared/Resources/TennisRacket.glb`). Pin map and BLE protocol: [docs/PLAN.md](docs/PLAN.md).
 
 ## License
 
