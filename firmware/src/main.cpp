@@ -153,10 +153,14 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     Serial.println("BLE: connected");
     // 15-30 ms interval: the fastest iOS accepts; several packets go out per interval.
     s->updateConnParams(desc->conn_handle, 12, 24, 0, 400);
+    // Keep advertising so a second device (Mac + iPhone) can join; otherwise whoever reconnects first
+    // after a reboot locks everyone else out.
+    if (s->getConnectedCount() < 3) NimBLEDevice::startAdvertising();
   }
   void onDisconnect(NimBLEServer *) override {
     Serial.println("BLE: disconnected, advertising again");
-    xQueueReset(packetQueue);
+    NimBLEDevice::startAdvertising();
+    if (NimBLEDevice::getServer()->getConnectedCount() == 0) xQueueReset(packetQueue);
   }
 };
 
@@ -284,7 +288,7 @@ void loop() {
         "BLE %s, dropped %u, i2c err %lu | bat %u mV\n",
         (unsigned long)rate, s.ax / 2048.0f, s.ay / 2048.0f, s.az / 2048.0f, s.gx / 16.4f, s.gy / 16.4f,
         s.gz / 16.4f, (s.hx >> 4) * h3Scale, (s.hy >> 4) * h3Scale, (s.hz >> 4) * h3Scale,
-        server->getConnectedCount() ? "connected" : "advertising", droppedPackets, (unsigned long)i2cErrors,
+        server->getConnectedCount() ? (server->getConnectedCount() > 1 ? "connected x2+" : "connected") : "advertising", droppedPackets, (unsigned long)i2cErrors,
         st.battery_mv);
   }
 }

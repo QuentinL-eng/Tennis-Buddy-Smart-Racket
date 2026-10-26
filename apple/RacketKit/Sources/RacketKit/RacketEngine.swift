@@ -95,6 +95,9 @@ public final class RacketEngine: @unchecked Sendable {
     }
 
     private func reset() {
+        lastLivePublish = 0
+        rateCounter = 0
+        rateWindowStart = 0
         filter = MahonyFilter()
         ring.removeAll(keepingCapacity: true)
         lastTime = nil
@@ -109,6 +112,13 @@ public final class RacketEngine: @unchecked Sendable {
             stillSamples.append(raw)
             if stillSamples.count > 5000 { stillSamples.removeFirst(1000) }
             let s = cal.apply(raw)
+            // Timestamps jumped backwards: the racket rebooted (e.g. replugged). Restart timing, or the
+            // live view and shot detection would wait for the old clock to catch up.
+            if let lt = lastTime, s.time < lt - 0.05 {
+                let yaw = filter.yawOffset
+                reset()
+                filter.yawOffset = yaw
+            }
             let dt = Float(lastTime.map { min(max(s.time - $0, 0.0002), 0.02) } ?? 0.001)
             lastTime = s.time
             filter.update(gyro: s.gyro, accel: s.accel, dt: dt)

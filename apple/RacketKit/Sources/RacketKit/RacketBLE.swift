@@ -128,6 +128,9 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         lastSeq = nil
+        // The racket may have rebooted (its clock restarts at 0): start timestamps fresh.
+        lastMicros = 0
+        wraps = 0
         peripheral.discoverServices([service])
     }
 
