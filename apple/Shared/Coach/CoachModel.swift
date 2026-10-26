@@ -83,8 +83,10 @@ enum CoachPrompts {
         Session data:
         \(d.json)
 
-        Write a session report in under 120 words: one sentence on the overall session, the strongest stroke \
-        with its numbers, the weakest area with its numbers, then exactly 2 specific tips as bullet points.
+        Write a session report in under 120 words, no greeting. Start with one sentence on the overall session. \
+        Then name the strongest stroke with two of its numbers and the weakest area with two of its numbers. \
+        End with exactly 2 bullet-point tips. Each tip must cite a number from the data and give one concrete \
+        technique cue (for example contact point, footwork, swing path or racket face). No generic advice.
         """
     }
 

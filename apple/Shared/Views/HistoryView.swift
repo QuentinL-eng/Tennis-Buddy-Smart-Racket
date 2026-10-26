@@ -6,13 +6,12 @@ import SwiftUI
 struct HistoryView: View {
     @Query(sort: \SessionRecord.startDate, order: .reverse) private var sessions: [SessionRecord]
     @Environment(\.modelContext) private var context
-    @State private var selection: SessionRecord?
 
     var body: some View {
-        NavigationSplitView {
-            List(selection: $selection) {
+        NavigationStack {
+            List {
                 ForEach(sessions) { s in
-                    NavigationLink(value: s) { SessionRow(session: s) }
+                    NavigationLink { SessionDetailView(session: s) } label: { SessionRow(session: s) }
                 }
                 .onDelete { idx in idx.map { sessions[$0] }.forEach(context.delete) }
             }
@@ -22,12 +21,6 @@ struct HistoryView: View {
                     ContentUnavailableView("No sessions yet", systemImage: "clock",
                                            description: Text("Start a session on the Live tab."))
                 }
-            }
-        } detail: {
-            if let selection {
-                SessionDetailView(session: selection)
-            } else {
-                ContentUnavailableView("Pick a session", systemImage: "sidebar.left")
             }
         }
     }

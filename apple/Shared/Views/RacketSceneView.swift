@@ -21,15 +21,15 @@ final class RacketScene {
         accentMat.diffuse.contents = PlatformColor(red: 0.84, green: 0.95, blue: 0.25, alpha: 1)
         accentMat.lightingModel = .physicallyBased
         let gripMat = SCNMaterial()
-        gripMat.diffuse.contents = PlatformColor(white: 0.95, alpha: 1)
+        gripMat.diffuse.contents = PlatformColor(white: 0.22, alpha: 1)
         let stringMat = SCNMaterial()
         stringMat.diffuse.contents = PlatformColor(white: 0.92, alpha: 0.9)
 
         // Handle (butt at x = 0), grip wrap and butt cap.
-        let handle = SCNNode(geometry: SCNBox(width: 0.19, height: 0.028, length: 0.032, chamferRadius: 0.006))
+        let handle = SCNNode(geometry: SCNBox(width: 0.19, height: 0.03, length: 0.034, chamferRadius: 0.008))
         handle.geometry?.materials = [gripMat]
         handle.position = SCNVector3(0.095, 0, 0)
-        let cap = SCNNode(geometry: SCNBox(width: 0.012, height: 0.034, length: 0.038, chamferRadius: 0.004))
+        let cap = SCNNode(geometry: SCNBox(width: 0.01, height: 0.036, length: 0.04, chamferRadius: 0.004))
         cap.geometry?.materials = [accentMat]
         cap.position = SCNVector3(0.006, 0, 0)
 
@@ -84,7 +84,7 @@ final class RacketScene {
         let camera = SCNNode()
         camera.camera = SCNCamera()
         camera.camera?.fieldOfView = 40
-        camera.position = SCNVector3(0, 0.15, 1.25)
+        camera.position = SCNVector3(0, 0.12, 0.95)
         camera.look(at: SCNVector3(0, 0, 0))
         scene.rootNode.addChildNode(camera)
 
