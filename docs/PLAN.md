@@ -3,6 +3,9 @@
 **Time:** 12:18 to 6:00 (about 5.5 hours). **Team:** CS (apps), EE (wiring + firmware), ME (hardware + calibration + data).
 **Requirement:** fork an open-source project ([AahanPrajapati/Smart-Tennis-Racket](https://github.com/AahanPrajapati/Smart-Tennis-Racket), MIT) and add a **trick** and a **treat**.
 
+> **Status (1:20):** firmware, RacketKit, iPhone/Mac/Watch apps, Gemma coach (verified on Mac), iCloud sync, app icon
+> and Watch drills are built and pushed. Waiting on hardware bring-up. After that, work through [TODO.md](TODO.md).
+
 - **Trick:** the racket itself. Sensors in the handle detect every shot and measure swing speed, ball speed, spin, face angle, swing path and where the ball hit the strings.
 - **Treat:** the analytics. iPhone + Mac apps with identical features, an Apple Watch companion, and an on-device **Gemma 4 E2B** coach that explains your session in plain language (open-weights prize category).
 
