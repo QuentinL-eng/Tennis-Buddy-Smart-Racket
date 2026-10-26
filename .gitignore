@@ -1,0 +1,17 @@
+.DS_Store
+# PlatformIO
+firmware/.pio/
+firmware/.vscode/
+# Xcode
+apple/**/*.xcodeproj/xcuserdata/
+apple/**/*.xcworkspace/xcuserdata/
+apple/build/
+DerivedData/
+*.xcuserstate
+# Python
+__pycache__/
+.venv/
+# Model weights (download with tools/fetch_gemma.sh)
+models/
+*.safetensors
+*.gguf
