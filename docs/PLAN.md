@@ -71,7 +71,7 @@ Service `7E5B0001-6B1D-4D8E-9C1A-7E5B7E5B0001`
 | Characteristic | UUID suffix | Props | Payload |
 |---|---|---|---|
 | IMU stream | `...0002` | notify | Header + 8 samples (below) |
-| Status | `...0003` | read, notify (every 2 s) | `u16 battery_mV, u8 fw_major, u8 fw_minor, u8 sensor_flags, u8 rate_div, u16 dropped` |
+| Status | `...0003` | read, notify (every 2 s) | `u16 battery_mV, u8 fw_major, u8 fw_minor, u8 flags, u8 h3lis_range, u16 dropped` |
 | Control | `...0004` | write | `0x01` start stream, `0x02` stop, `0x10 n` H3LIS range (0=100 g, 1=200 g, 3=400 g) |
 
 IMU packet (little-endian, 152 bytes): `u16 seq, u32 t0_us, u8 count(=8), u8 flags`, then 8 samples of
