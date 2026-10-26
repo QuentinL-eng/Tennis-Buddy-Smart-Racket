@@ -38,6 +38,13 @@ public struct ImpactFeatures: Codable, Sendable, Equatable {
     public var jolt: Float
     /// Size of the swing-axis rotation jump, rad/s (impact strength proxy).
     public var impulse: Float
+
+    public init(rollRatio: Float, ringNorm: Float, jolt: Float, impulse: Float) {
+        self.rollRatio = rollRatio
+        self.ringNorm = ringNorm
+        self.jolt = jolt
+        self.impulse = impulse
+    }
 }
 
 /// Everything we know about one shot. Shared by the apps, the Watch and the Gemma coach.

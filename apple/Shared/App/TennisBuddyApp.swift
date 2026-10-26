@@ -14,6 +14,25 @@ struct TennisBuddyApp: App {
     @State private var watchBridge = WatchBridge()
     #endif
 
+    init() {
+        // `--coach-selftest`: load Gemma, coach a sample session, print the result, quit. Used to verify the model.
+        if CommandLine.arguments.contains("--coach-selftest") {
+            Task { @MainActor in
+                let coach = CoachModel()
+                let start = Date()
+                await coach.loadGemma()
+                print("Gemma state: \(coach.state) after \(Int(Date().timeIntervalSince(start)))s")
+                let session = SessionRecord()
+                session.endDate = session.startDate.addingTimeInterval(1500)
+                session.shotRecords = CoachSelfTest.sampleShots().map { ShotRecord(metrics: $0) }
+                let t = Date()
+                print(await coach.summarize(session))
+                print("Generated in \(String(format: "%.1f", Date().timeIntervalSince(t)))s with \(coach.engineName)")
+                exit(0)
+            }
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()

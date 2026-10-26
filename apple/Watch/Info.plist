@@ -20,8 +20,16 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Tennis Buddy reads your heart rate and calories during a tennis session.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Tennis Buddy saves your tennis sessions as workouts in Apple Health.</string>
 	<key>WKApplication</key>
 	<true/>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+	</array>
 	<key>WKCompanionAppBundleIdentifier</key>
 	<string>com.kellamadams.tennisbuddy</string>
 </dict>

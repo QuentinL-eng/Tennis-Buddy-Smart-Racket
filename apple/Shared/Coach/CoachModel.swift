@@ -24,6 +24,7 @@ struct SessionDigest: Codable {
     var sweetSpotPercent: Int
     var pointsWon: Int
     var pointsLost: Int
+    var averageHeartRate: Int
     var strokes: [Stroke]
     /// Ball speed in the first vs last third of the session (fatigue).
     var firstThirdAvgKmh: Int
@@ -37,6 +38,7 @@ struct SessionDigest: Codable {
         sweetSpotPercent = Int(all.sweetSpotPercent)
         pointsWon = session.pointsWon
         pointsLost = session.pointsLost
+        averageHeartRate = Int(session.averageHeartRate)
         strokes = ShotType.allCases.compactMap { t in
             let s = shots.filter { $0.type == t }
             guard !s.isEmpty else { return nil }

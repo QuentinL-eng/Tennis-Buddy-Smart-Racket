@@ -71,6 +71,10 @@ struct SessionDetailView: View {
                     StatTile(label: "Top ball", value: "\(Int(summary.maxBallKmh))", unit: "km/h", symbol: "flame")
                     StatTile(label: "Avg swing", value: "\(Int(summary.avgSwingKmh))", unit: "km/h", symbol: "wind")
                     StatTile(label: "Avg spin", value: "\(Int(summary.avgSpinRPM))", unit: "rpm", symbol: "arrow.clockwise")
+                    if session.averageHeartRate > 0 {
+                        StatTile(label: "Avg heart rate", value: "\(Int(session.averageHeartRate))", unit: "bpm", symbol: "heart")
+                        StatTile(label: "Calories", value: "\(Int(session.activeCalories))", unit: "kcal", symbol: "flame")
+                    }
                     if session.pointsWon + session.pointsLost > 0 {
                         StatTile(label: "Points", value: "\(session.pointsWon)–\(session.pointsLost)", symbol: "trophy")
                     }

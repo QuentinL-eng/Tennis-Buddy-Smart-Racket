@@ -35,6 +35,7 @@ final class AppModel {
 
     // MARK: Session
     var activeSession: SessionRecord?
+    private var lastEndedSession: SessionRecord?
     var sessionShots: [ShotMetrics] = []
     var isSessionActive: Bool { activeSession != nil }
 
@@ -150,6 +151,7 @@ final class AppModel {
             modelContext?.delete(session)
         }
         try? modelContext?.save()
+        lastEndedSession = session
         activeSession = nil
         onSessionChangeForWatch?(false)
     }
@@ -157,6 +159,14 @@ final class AppModel {
     func logPoint(won: Bool) {
         guard let session = activeSession else { return }
         if won { session.pointsWon += 1 } else { session.pointsLost += 1 }
+    }
+
+    /// Heart rate and calories from the Watch workout, which may arrive just after the session ends.
+    func recordHealth(averageHeartRate: Double, calories: Double) {
+        guard let session = activeSession ?? lastEndedSession, averageHeartRate > 0 else { return }
+        session.averageHeartRate = averageHeartRate
+        session.activeCalories = calories
+        try? modelContext?.save()
     }
 
     private func handle(_ shot: ShotMetrics) {

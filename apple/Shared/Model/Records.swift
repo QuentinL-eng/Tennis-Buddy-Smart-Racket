@@ -13,6 +13,8 @@ final class SessionRecord {
     var coachSummary: String = ""
     var pointsWon: Int = 0
     var pointsLost: Int = 0
+    var averageHeartRate: Double = 0
+    var activeCalories: Double = 0
     @Relationship(deleteRule: .cascade, inverse: \ShotRecord.session) var shotRecords: [ShotRecord]? = []
 
     init(startDate: Date = Date()) {

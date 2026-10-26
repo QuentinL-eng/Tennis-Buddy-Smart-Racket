@@ -40,12 +40,15 @@ final class WatchBridge: NSObject, WCSessionDelegate {
                              replyHandler: @escaping ([String: Any]) -> Void) {
         let cmd = message["cmd"] as? String
         let won = message["won"] as? Bool
+        let avgHR = message["avgHR"] as? Double
+        let kcal = message["kcal"] as? Double
         Task { @MainActor in
             guard let model = self.model else { return replyHandler([:]) }
             switch cmd {
             case "start": model.startSession()
             case "stop": model.stopSession()
             case "point": if let won { model.logPoint(won: won) }
+            case "health": model.recordHealth(averageHeartRate: avgHR ?? 0, calories: kcal ?? 0)
             default: break
             }
             replyHandler(["sessionActive": model.isSessionActive])

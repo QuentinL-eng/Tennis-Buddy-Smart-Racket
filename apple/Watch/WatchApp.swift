@@ -27,6 +27,7 @@ final class WatchModel: NSObject, WCSessionDelegate {
     var pointsWon = 0
     var pointsLost = 0
     var phoneReachable = false
+    let workout = WorkoutManager()
 
     override init() {
         super.init()
@@ -37,10 +38,23 @@ final class WatchModel: NSObject, WCSessionDelegate {
     }
 
     func toggleSession() {
+        if sessionActive { sendHealth() }
         send(["cmd": sessionActive ? "stop" : "start"])
-        sessionActive.toggle()
-        if sessionActive { pointsWon = 0; pointsLost = 0; lastShot = nil; summary = nil }
+        setSessionActive(!sessionActive)
         WKInterfaceDevice.current().play(sessionActive ? .start : .stop)
+    }
+
+    /// Keeps the Tennis workout (heart rate, calories, Apple Health) in step with the racket session.
+    func setSessionActive(_ active: Bool) {
+        guard active != sessionActive || active != workout.isRunning else { return }
+        if active && !sessionActive { pointsWon = 0; pointsLost = 0; lastShot = nil; summary = nil }
+        if !active && sessionActive && workout.isRunning { sendHealth() }
+        sessionActive = active
+        Task { active ? await workout.start() : await workout.stop() }
+    }
+
+    private func sendHealth() {
+        send(["cmd": "health", "avgHR": workout.averageHeartRate, "kcal": workout.activeCalories])
     }
 
     func logPoint(won: Bool) {
@@ -53,7 +67,7 @@ final class WatchModel: NSObject, WCSessionDelegate {
         guard WCSession.default.activationState == .activated, WCSession.default.isReachable else { return }
         WCSession.default.sendMessage(message, replyHandler: { reply in
             if let active = reply["sessionActive"] as? Bool {
-                Task { @MainActor in self.sessionActive = active }
+                Task { @MainActor in self.setSessionActive(active) }
             }
         })
     }
@@ -66,7 +80,7 @@ final class WatchModel: NSObject, WCSessionDelegate {
             // Crisp tap for a sweet-spot hit, a "retry" buzz for a mishit.
             WKInterfaceDevice.current().play(shot.isSweetSpot ? .success : .retry)
         } else if message["type"] as? String == "session", let active = message["active"] as? Bool {
-            sessionActive = active
+            setSessionActive(active)
         }
     }
 
@@ -77,7 +91,7 @@ final class WatchModel: NSObject, WCSessionDelegate {
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext ctx: [String: Any]) {
         let active = ctx["sessionActive"] as? Bool
-        Task { @MainActor in if let active { self.sessionActive = active } }
+        Task { @MainActor in if let active { self.setSessionActive(active) } }
     }
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState,
@@ -124,6 +138,10 @@ struct LastShotPage: View {
                     Text("\(s.count) shots · \(Int(s.sweetSpotPercent))% sweet spot")
                         .font(.caption2).foregroundStyle(.secondary)
                 }
+                if model.workout.heartRate > 0 {
+                    Label("\(Int(model.workout.heartRate)) bpm", systemImage: "heart.fill")
+                        .font(.caption2).foregroundStyle(.red)
+                }
             } else {
                 Image(systemName: "figure.tennis").font(.largeTitle).foregroundStyle(Color.accentColor)
                 Text(model.sessionActive ? "Waiting for your first shot" : "Start a session to see shots here")
@@ -169,6 +187,13 @@ struct SessionPage: View {
             }
             .tint(model.sessionActive ? .red : .accentColor)
             .foregroundStyle(model.sessionActive ? .white : .black)
+            if model.workout.isRunning {
+                HStack {
+                    Label("\(Int(model.workout.heartRate))", systemImage: "heart.fill").foregroundStyle(.red)
+                    Label("\(Int(model.workout.activeCalories)) kcal", systemImage: "flame.fill").foregroundStyle(.orange)
+                }
+                .font(.caption)
+            }
             Text(model.phoneReachable ? "iPhone connected" : "Open Tennis Buddy on your iPhone")
                 .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
         }
