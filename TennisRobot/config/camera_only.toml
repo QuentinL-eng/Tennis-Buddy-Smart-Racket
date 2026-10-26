@@ -1,0 +1,49 @@
+# Camera-only bring-up: real UVC camera, simulated arm.
+#
+#   python -m tennisrobot run --config config/camera_only.toml --arm
+#
+# "arm = mock" means strikes are simulated and no command is sent to a robot,
+# while the camera, detector, estimator and planner run on real frames.  Use
+# this to tune HSV thresholds and check tracking before connecting the C8.
+
+[camera]
+kind = "uvc"
+# Current bring-up camera (generic 30 fps UVC).  Replace with your camera's
+# stable /dev/v4l/by-id/... path if the hardware changes.
+device = "/dev/v4l/by-id/usb-CN02KX4NLG0004ABK00_USB_Camera_CN02KX4NLG0004ABK00-video-index0"
+width = 1280
+height = 720
+fps = 30.0                      # measured maximum for this camera
+horizontal_fov_deg = 55.0
+distortion = [0.0, 0.0, 0.0, 0.0]
+look_at = [2.0, -1.0, 1.7, 0.0, 2.2, 1.05]  # PLACEHOLDER: calibrate
+exposure = -1.0
+gain = -1.0
+fourcc = "MJPG"
+buffersize = 2                  # 1 buffer halves this driver's rate to ~15 fps
+latency_s = 0.0
+
+[vision]
+hsv_lower = [25, 70, 70]
+hsv_upper = [50, 255, 255]
+min_area_px = 40.0
+min_radius_px = 3.0
+max_radius_px = 80.0
+min_circularity = 0.55
+max_candidates = 3
+min_confidence = 0.25
+max_pixel_speed_px_s = 12000.0
+
+[arm]
+kind = "mock"
+max_tcp_speed_m_s = 2.8
+max_accel_m_s2 = 12.0
+
+[safety]
+max_misses_before_fault = 10   # simulated strikes; do not stop a tracking test
+source_timeout_s = 1.0
+
+[run]
+record_dir = "runs"
+cooldown_s = 1.0
+fit_every_n_frames = 2          # 30 fps bring-up camera: fit about every 67 ms

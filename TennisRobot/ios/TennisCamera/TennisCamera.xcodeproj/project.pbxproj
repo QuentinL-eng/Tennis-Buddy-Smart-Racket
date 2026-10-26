@@ -1,0 +1,454 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0206F179548AB95E6893A790 /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8DBF6610E3EFB9E3C035C9 /* CameraModel.swift */; };
+		177D000EFBBD5F718E4AB2CB /* CaptureStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D5C6B5967BB6FDA632CC679 /* CaptureStats.swift */; };
+		20FBA3E55582E422CAF01A72 /* ObservationPacketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABF1BC4293EC7868DCA1A57 /* ObservationPacketTests.swift */; };
+		33B8E807A663B6A2449ED4AA /* ObservationPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4994D0A178A348901E7DFC /* ObservationPacket.swift */; };
+		3BFDD861615EB7A8A243B4F9 /* ObservationServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F47F0ECD61F0688D764350A /* ObservationServer.swift */; };
+		567368F19B6A5B541284EB31 /* CameraController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E631BEADB18F35151EBF3C /* CameraController.swift */; };
+		6A1A11553087BF832CFA286E /* BallDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6484C2A3A2BC8D4B85E932 /* BallDetector.swift */; };
+		7DA06ACA55D1F9FDF4AEC415 /* TennisCameraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B1CEB528AB67D572D4D995 /* TennisCameraApp.swift */; };
+		8A65C741A2EF80AAC9B7F814 /* FlightModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124A334C2FA1E0E873CBCE12 /* FlightModel.swift */; };
+		BE24EAAA99F95CD7FBA07654 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F1384D79BBB443F74154DC2 /* ContentView.swift */; };
+		BFA0C167905AC2F4C4563407 /* FlightTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A7A3008DDE93F7085DD184 /* FlightTracker.swift */; };
+		CB2F6E20E00CC06CF7785333 /* CapturePipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0AB569471F1CECD2A18174 /* CapturePipelineTests.swift */; };
+		DEA1D78B4D390FD9B5B2F665 /* FlightTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850B800F8E2C41F2036D5FF8 /* FlightTrackerTests.swift */; };
+		EB229A9911ADFBF184EE0729 /* BallDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B3ED4973412CFA5151DD0BB /* BallDetectorTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FABC766165945ECC47CEDA8A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A3B469980C0CD8A08AA063AE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 36D4A9E84653C4023646278A;
+			remoteInfo = TennisCamera;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		124A334C2FA1E0E873CBCE12 /* FlightModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightModel.swift; sourceTree = "<group>"; };
+		27A7A3008DDE93F7085DD184 /* FlightTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightTracker.swift; sourceTree = "<group>"; };
+		3EE98A4B454F2E8BEE358096 /* TennisCameraTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TennisCameraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		4F1384D79BBB443F74154DC2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		5E0AB569471F1CECD2A18174 /* CapturePipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CapturePipelineTests.swift; sourceTree = "<group>"; };
+		64E631BEADB18F35151EBF3C /* CameraController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraController.swift; sourceTree = "<group>"; };
+		6B3ED4973412CFA5151DD0BB /* BallDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallDetectorTests.swift; sourceTree = "<group>"; };
+		6D5C6B5967BB6FDA632CC679 /* CaptureStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CaptureStats.swift; sourceTree = "<group>"; };
+		850B800F8E2C41F2036D5FF8 /* FlightTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightTrackerTests.swift; sourceTree = "<group>"; };
+		8F47F0ECD61F0688D764350A /* ObservationServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationServer.swift; sourceTree = "<group>"; };
+		96B1CEB528AB67D572D4D995 /* TennisCameraApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisCameraApp.swift; sourceTree = "<group>"; };
+		9790D5183C16083C27AB735E /* TennisCamera.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TennisCamera.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9C6484C2A3A2BC8D4B85E932 /* BallDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallDetector.swift; sourceTree = "<group>"; };
+		BA8DBF6610E3EFB9E3C035C9 /* CameraModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraModel.swift; sourceTree = "<group>"; };
+		DB4994D0A178A348901E7DFC /* ObservationPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationPacket.swift; sourceTree = "<group>"; };
+		F7DEEA50BE258F9362757CFE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		FABF1BC4293EC7868DCA1A57 /* ObservationPacketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationPacketTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1BB63AB0B706D74BECEB52C2 = {
+			isa = PBXGroup;
+			children = (
+				9EA622CC404299A8F5848AB1 /* Sources */,
+				B0960D2DA2ACC5634DC760CF /* Tests */,
+				69EF950CBFA5EB94285DE8E1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		69EF950CBFA5EB94285DE8E1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9790D5183C16083C27AB735E /* TennisCamera.app */,
+				3EE98A4B454F2E8BEE358096 /* TennisCameraTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9EA622CC404299A8F5848AB1 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				9C6484C2A3A2BC8D4B85E932 /* BallDetector.swift */,
+				64E631BEADB18F35151EBF3C /* CameraController.swift */,
+				BA8DBF6610E3EFB9E3C035C9 /* CameraModel.swift */,
+				6D5C6B5967BB6FDA632CC679 /* CaptureStats.swift */,
+				4F1384D79BBB443F74154DC2 /* ContentView.swift */,
+				124A334C2FA1E0E873CBCE12 /* FlightModel.swift */,
+				27A7A3008DDE93F7085DD184 /* FlightTracker.swift */,
+				F7DEEA50BE258F9362757CFE /* Info.plist */,
+				DB4994D0A178A348901E7DFC /* ObservationPacket.swift */,
+				8F47F0ECD61F0688D764350A /* ObservationServer.swift */,
+				96B1CEB528AB67D572D4D995 /* TennisCameraApp.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		B0960D2DA2ACC5634DC760CF /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				6B3ED4973412CFA5151DD0BB /* BallDetectorTests.swift */,
+				5E0AB569471F1CECD2A18174 /* CapturePipelineTests.swift */,
+				850B800F8E2C41F2036D5FF8 /* FlightTrackerTests.swift */,
+				FABF1BC4293EC7868DCA1A57 /* ObservationPacketTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		06F611277486ABE3E2591582 /* TennisCameraTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EC3389E0BF9F0F9F5B48AB7F /* Build configuration list for PBXNativeTarget "TennisCameraTests" */;
+			buildPhases = (
+				3746DEBF7A905291EA9BBBDE /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2A2D0FC76C68BCD87D909629 /* PBXTargetDependency */,
+			);
+			name = TennisCameraTests;
+			packageProductDependencies = (
+			);
+			productName = TennisCameraTests;
+			productReference = 3EE98A4B454F2E8BEE358096 /* TennisCameraTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		36D4A9E84653C4023646278A /* TennisCamera */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 45E0ADBEE64EFBE140B79C13 /* Build configuration list for PBXNativeTarget "TennisCamera" */;
+			buildPhases = (
+				0A1DBC4414D2E0160D9C699E /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TennisCamera;
+			packageProductDependencies = (
+			);
+			productName = TennisCamera;
+			productReference = 9790D5183C16083C27AB735E /* TennisCamera.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A3B469980C0CD8A08AA063AE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					06F611277486ABE3E2591582 = {
+						ProvisioningStyle = Automatic;
+					};
+					36D4A9E84653C4023646278A = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 84FBFB3D13C26BC41BF7BA6E /* Build configuration list for PBXProject "TennisCamera" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 1BB63AB0B706D74BECEB52C2;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 69EF950CBFA5EB94285DE8E1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				36D4A9E84653C4023646278A /* TennisCamera */,
+				06F611277486ABE3E2591582 /* TennisCameraTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0A1DBC4414D2E0160D9C699E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6A1A11553087BF832CFA286E /* BallDetector.swift in Sources */,
+				567368F19B6A5B541284EB31 /* CameraController.swift in Sources */,
+				0206F179548AB95E6893A790 /* CameraModel.swift in Sources */,
+				177D000EFBBD5F718E4AB2CB /* CaptureStats.swift in Sources */,
+				BE24EAAA99F95CD7FBA07654 /* ContentView.swift in Sources */,
+				8A65C741A2EF80AAC9B7F814 /* FlightModel.swift in Sources */,
+				BFA0C167905AC2F4C4563407 /* FlightTracker.swift in Sources */,
+				33B8E807A663B6A2449ED4AA /* ObservationPacket.swift in Sources */,
+				3BFDD861615EB7A8A243B4F9 /* ObservationServer.swift in Sources */,
+				7DA06ACA55D1F9FDF4AEC415 /* TennisCameraApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3746DEBF7A905291EA9BBBDE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EB229A9911ADFBF184EE0729 /* BallDetectorTests.swift in Sources */,
+				CB2F6E20E00CC06CF7785333 /* CapturePipelineTests.swift in Sources */,
+				DEA1D78B4D390FD9B5B2F665 /* FlightTrackerTests.swift in Sources */,
+				20FBA3E55582E422CAF01A72 /* ObservationPacketTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2A2D0FC76C68BCD87D909629 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 36D4A9E84653C4023646278A /* TennisCamera */;
+			targetProxy = FABC766165945ECC47CEDA8A /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		2F951C97C972006A30306F68 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tennisrobot.camera.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TennisCamera.app/TennisCamera";
+			};
+			name = Debug;
+		};
+		4D25FF5D2248148985C2FB94 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tennisrobot.camera;
+				PRODUCT_NAME = TennisCamera;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7E785C91C729D35BFC8FB029 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		B12F1B3649134C9FA153DCE0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.tennisrobot.camera.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/TennisCamera.app/TennisCamera";
+			};
+			name = Release;
+		};
+		BF3B506D07BCD504A664E936 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		CA0E32E9F8D24B7A31AD2FD8 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tennisrobot.camera;
+				PRODUCT_NAME = TennisCamera;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		45E0ADBEE64EFBE140B79C13 /* Build configuration list for PBXNativeTarget "TennisCamera" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4D25FF5D2248148985C2FB94 /* Debug */,
+				CA0E32E9F8D24B7A31AD2FD8 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		84FBFB3D13C26BC41BF7BA6E /* Build configuration list for PBXProject "TennisCamera" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BF3B506D07BCD504A664E936 /* Debug */,
+				7E785C91C729D35BFC8FB029 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EC3389E0BF9F0F9F5B48AB7F /* Build configuration list for PBXNativeTarget "TennisCameraTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2F951C97C972006A30306F68 /* Debug */,
+				B12F1B3649134C9FA153DCE0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A3B469980C0CD8A08AA063AE /* Project object */;
+}

@@ -1,0 +1,731 @@
+ENVT0100,LM:2026/10/26 02:45:46:511,DS:0000010513,CS:00044,MA:E8-80-88-9A-5D-FC,EI:           
+sVersion="7.4.0"
+nNumberOfObjects=32
+Object1 {
+	nObjectID=1
+	nObjectType=0
+	sObjectTypeName="Robot"
+	nParentID=0
+	sName="C8"
+	nRobotNumber=1
+	Position {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	Collision {
+		bCheck=True
+		bCheckSelf=True
+		bDuctArea=True
+		sColor="ffa80000"
+	}
+	bTransparent=False
+	nTransparency=50
+	nMnpType=5
+	BoundingBox {
+		bVisible1=False
+		rExpandExtent1=9.9999997473788E-05
+		bCheckCollision1=False
+		bVisible2=False
+		rExpandExtent2=9.9999997473788E-05
+		bCheckCollision2=False
+		bVisible3=False
+		rExpandExtent3=9.9999997473788E-05
+		bCheckCollision3=False
+		bVisible4=False
+		rExpandExtent4=9.9999997473788E-05
+		bCheckCollision4=False
+		bVisible5=False
+		rExpandExtent5=9.9999997473788E-05
+		bCheckCollision5=False
+		bVisible6=False
+		rExpandExtent6=9.9999997473788E-05
+		bCheckCollision6=False
+		bVisible7=False
+		rExpandExtent7=9.9999997473788E-05
+		bCheckCollision7=False
+	}
+	BoundingBox1 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox2 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox3 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox4 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox5 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox6 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox7 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	nRenderLocal=1
+	nRenderTool=1
+	nRenderECP=0
+	nRenderBox=0
+	nRenderPlane=0
+	nRenderPlaneOrigin=0
+	nRenderPallet=0
+	nRenderXYLimMinX=0
+	nRenderXYLimMaxX=0
+	nRenderXYLimMinY=0
+	nRenderXYLimMaxY=0
+	nRenderXYLimMinZ=0
+	nRenderXYLimMaxZ=0
+}
+Object9 {
+	nObjectID=9
+	nObjectType=4
+	sObjectTypeName="Plane"
+	sName="SPlane_1"
+	nPlaneType=0
+	Position {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	HalfSize {
+		rX=2000
+		rY=2000
+		rZ=2000
+	}
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="7f000066"
+	bVisible=True
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object10 {
+	nObjectID=10
+	nObjectType=2
+	sObjectTypeName="Box"
+	nParentID=9
+	sName="RightTable"
+	Position {
+		rX=390
+		rY=100
+		rZ=25
+	}
+	HalfSize {
+		rX=150
+		rY=220
+		rZ=25
+	}
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=False
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object11 {
+	nObjectID=11
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=10
+	sName="work1"
+	Position {
+		rX=300
+		rY=250
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object12 {
+	nObjectID=12
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=10
+	sName="work2"
+	Position {
+		rX=480
+		rY=250
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object13 {
+	nObjectID=13
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=10
+	sName="work3"
+	Position {
+		rX=390
+		rY=100
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object14 {
+	nObjectID=14
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=10
+	sName="work4"
+	Position {
+		rX=300
+		rY=-50
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object15 {
+	nObjectID=15
+	nObjectType=2
+	sObjectTypeName="Box"
+	nParentID=9
+	sName="CenterTable"
+	Position {
+		rX=0
+		rY=450
+		rZ=50
+	}
+	HalfSize {
+		rX=300
+		rY=50
+		rZ=50
+	}
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=False
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object16 {
+	nObjectID=16
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=10
+	sName="work5"
+	Position {
+		rX=480
+		rY=-50
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object17 {
+	nObjectID=17
+	nObjectType=2
+	sObjectTypeName="Box"
+	nParentID=9
+	sName="LeftTable"
+	Position {
+		rX=-390
+		rY=100
+		rZ=25
+	}
+	HalfSize {
+		rX=150
+		rY=220
+		rZ=25
+	}
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object18 {
+	nObjectID=18
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=17
+	sName="work1"
+	Position {
+		rX=-480
+		rY=250
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object19 {
+	nObjectID=19
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=17
+	sName="work2"
+	Position {
+		rX=-300
+		rY=250
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object20 {
+	nObjectID=20
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=17
+	sName="work3"
+	Position {
+		rX=-390
+		rY=100
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object21 {
+	nObjectID=21
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=17
+	sName="work4"
+	Position {
+		rX=-480
+		rY=-50
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object22 {
+	nObjectID=22
+	nObjectType=3
+	sObjectTypeName="Cylinder"
+	nParentID=17
+	sName="work5"
+	Position {
+		rX=-300
+		rY=-50
+		rZ=100
+	}
+	rRadius=20
+	rHeight=100
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object23 {
+	nObjectID=23
+	nObjectType=1
+	sObjectTypeName="Sphere"
+	nParentID=15
+	sName="work1"
+	Position {
+		rX=200
+		rY=450
+		rZ=130
+	}
+	rRadius=30
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object24 {
+	nObjectID=24
+	nObjectType=1
+	sObjectTypeName="Sphere"
+	nParentID=15
+	sName="work2"
+	Position {
+		rX=0
+		rY=450
+		rZ=130
+	}
+	rRadius=30
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=False
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object25 {
+	nObjectID=25
+	nObjectType=1
+	sObjectTypeName="Sphere"
+	nParentID=15
+	sName="work3"
+	Position {
+		rX=-200
+		rY=450
+		rZ=130
+	}
+	rRadius=30
+	Rotation {
+		rX=0
+		rY=0
+		rZ=0
+	}
+	sColor="ff1a72bd"
+	bVisible=False
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+}
+Object28 {
+	nObjectID=28
+	nObjectType=5
+	sObjectTypeName="CAD"
+	sName="CAD_1"
+	Position {
+		rX=-546.698
+		rY=-411.919
+		rZ=1058.188
+	}
+	Rotation {
+		rX=130.588
+		rY=267.353
+		rZ=135.457
+	}
+	sFilename="C:\\Users\\qslma\\Downloads\\Robot Arm Test Setup.step"
+	bCADtoPoint=False
+	nRenderingQuality=0
+	nUnit=2
+	rScale=1
+	bVisible=True
+	bShowEdge=True
+	bShowVertex=True
+	bShowLabel=False
+	bShowOrigin=False
+	Collision {
+		bCheck=True
+		nShowResult=0
+		sColor="ffa80000"
+	}
+	CollisionPoint {
+		nRadius=5
+		sColor="ffa80000"
+	}
+	bTransparent=False
+	nTransparency=50
+	BoundingBox {
+		bVisible0=False
+		rExpandExtent0=9.9999997473788E-05
+		bCheckCollision0=False
+		bVisible1=False
+		rExpandExtent1=9.9999997473788E-05
+		bCheckCollision1=False
+		bVisible2=False
+		rExpandExtent2=9.9999997473788E-05
+		bCheckCollision2=False
+		bVisible3=False
+		rExpandExtent3=9.9999997473788E-05
+		bCheckCollision3=False
+	}
+	BoundingBox0 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox1 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox2 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	BoundingBox3 {
+		sColor="ffffd800"
+		sCollisionColor="ffa80000"
+	}
+	Equipment {
+		bActive=True
+		nType=3
+		nRobotID=1
+		nToolID=-1
+		nJointID=6
+		OffsetPosition {
+			rX=24
+			rY=-520
+			rZ=871
+		}
+		OffsetRotation {
+			rX=180
+			rY=0
+			rZ=-90
+		}
+	}
+}

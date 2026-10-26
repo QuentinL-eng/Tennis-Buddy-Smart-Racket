@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tennis Buddy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Tennis Buddy is a sensor module that lives inside a tennis racket handle. It measures every shot, detects sweet-spot hits with AI on the racket, and coaches you with AI on your phone.">
+<meta property="og:title" content="Tennis Buddy">
+<meta property="og:description" content="A tennis coach that fits inside the handle.">
+<meta property="og:image" content="img/racket.jpg">
+<link rel="icon" href="img/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a night-court page. Full-bleed photo bands alternate with ruled "memo" sections,
+   divided by chalk court lines; one clay accent, used sparingly. Single dark look by design. */
+:root {
+  --ink: #0C1116;        /* court surround at night */
+  --panel: #131A21;
+  --line: #27313B;
+  --chalk: #F1EFE8;      /* painted line white */
+  --muted: #A3AEB8;
+  --clay: #D0634A;       /* clay court */
+  --clay-soft: #E8866E;
+  --display: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --wrap: 1180px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+body { margin: 0; background: var(--ink); color: var(--chalk); font: 400 18px/1.6 var(--body); -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--clay-soft); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { max-width: var(--wrap); margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.eyebrow { font: 500 13px/1.4 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--clay-soft); margin: 0; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; }
+h2 { font-size: clamp(34px, 5vw, 60px); font-weight: 800; font-stretch: 112%; line-height: 1.02; letter-spacing: -0.02em; }
+h3 { font-size: 22px; font-weight: 700; font-stretch: 105%; line-height: 1.2; }
+p { margin: 0; }
+.lede { font-size: clamp(18px, 2vw, 21px); color: var(--muted); max-width: 62ch; }
+
+/* court line divider: a baseline with a center mark */
+.courtline { position: relative; height: 2px; background: var(--chalk); opacity: 0.85; }
+.courtline::after { content: ""; position: absolute; left: 50%; top: -10px; width: 2px; height: 12px; background: var(--chalk); }
+
+/* ---- Nav ---- */
+.nav { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10; background: rgba(12, 17, 22, 0.86); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.nav .wrap { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; font: 800 18px/1 var(--display); font-stretch: 115%; letter-spacing: 0.02em; text-transform: uppercase; white-space: nowrap; }
+.brand img { width: 28px; height: 28px; border-radius: 7px; }
+.nav ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; font-size: 15px; color: var(--muted); }
+.nav ul a { text-decoration: none; }
+.nav ul a:hover { color: var(--chalk); }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; font: 600 15px/1 var(--body); text-decoration: none; white-space: nowrap; border: 1.5px solid var(--chalk); transition: background 0.2s, color 0.2s; }
+.btn.solid { background: var(--chalk); color: var(--ink); }
+.btn.solid:hover { background: var(--clay-soft); border-color: var(--clay-soft); }
+.btn.ghost:hover { background: rgba(241, 239, 232, 0.1); }
+@media (max-width: 820px) { .nav ul { display: none; } }
+
+/* ---- Hero ---- */
+.hero { position: relative; overflow: hidden; background: #05080C; }
+.hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 62% 40%; }
+.hero::before { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(5, 8, 12, 0.96) 0%, rgba(5, 8, 12, 0.82) 42%, rgba(5, 8, 12, 0.1) 75%); z-index: 1; }
+.hero .wrap { position: relative; z-index: 2; padding-block: clamp(80px, 12vw, 150px) clamp(56px, 8vw, 96px); display: grid; gap: 28px; }
+.hero h1 { font-size: clamp(46px, 8.4vw, 112px); font-weight: 900; font-stretch: 118%; line-height: 0.94; letter-spacing: -0.03em; max-width: 9.5em; }
+.hero h1 span { color: var(--clay-soft); }
+.hero .lede { color: #C8D0D7; max-width: 46ch; }
+.cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 36px; border-top: 2px solid rgba(241, 239, 232, 0.85); max-width: 900px; }
+.facts div { padding: 16px 18px 0 0; }
+.facts b { display: block; font: 800 clamp(28px, 3.6vw, 44px)/1 var(--display); font-stretch: 112%; font-variant-numeric: tabular-nums; }
+.facts span { font-size: 14px; color: var(--muted); }
+@media (max-width: 640px) {
+  .hero::before { background: linear-gradient(180deg, rgba(5, 8, 12, 0.55) 0%, rgba(5, 8, 12, 0.9) 55%, rgba(5, 8, 12, 0.98) 100%); }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 20px; }
+}
+
+/* ---- Sections ---- */
+section { padding-block: clamp(72px, 10vw, 128px); }
+.head { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 32px; margin-bottom: 56px; }
+.head > div { display: grid; gap: 20px; min-width: 0; }
+@media (max-width: 820px) { .head { grid-template-columns: 1fr; gap: 14px; margin-bottom: 40px; } }
+
+/* Opportunity */
+.split { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 56px; align-items: center; }
+.split img { border-radius: 6px; aspect-ratio: 4 / 3; object-fit: cover; width: 100%; }
+.points { display: grid; gap: 28px; }
+.points div { display: grid; gap: 6px; padding-left: 20px; border-left: 2px solid var(--line); min-width: 0; }
+.points p { color: var(--muted); }
+@media (max-width: 820px) { .split { grid-template-columns: 1fr; gap: 36px; } }
+
+/* Band photo */
+.band { position: relative; min-height: 420px; display: flex; align-items: flex-end; overflow: hidden; }
+.band > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.band::before { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(12, 17, 22, 0.94) 0%, rgba(12, 17, 22, 0.25) 55%, rgba(12, 17, 22, 0) 100%); z-index: 1; }
+.band .wrap { position: relative; z-index: 2; padding-block: 48px; width: 100%; }
+.band blockquote { margin: 0; font: 700 clamp(26px, 3.6vw, 44px)/1.12 var(--display); font-stretch: 108%; max-width: 22ch; text-wrap: balance; }
+
+/* Capabilities table */
+.caps { width: 100%; border-collapse: collapse; }
+.caps th, .caps td { text-align: left; padding: 18px 16px 18px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.caps th { font: 500 12px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--chalk); }
+.caps td:first-child { font-weight: 600; width: 30%; }
+.caps td:nth-child(2) { color: var(--muted); }
+.caps td:last-child { width: 1%; white-space: nowrap; padding-right: 0; }
+.chip { display: inline-block; font: 500 12px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; padding: 7px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.chip.ok { color: #9FD8A8; }
+.chip.wip { color: #E9C46A; }
+.table-scroll { overflow-x: auto; }
+@media (max-width: 640px) {
+  .caps thead { display: none; }
+  .caps tr { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .caps td { border: 0; padding: 0; width: auto !important; }
+  .caps td:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+  .caps td:last-child { grid-column: 2; grid-row: 1; }
+}
+
+/* How it works */
+.stack { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--chalk); }
+.stack > div { padding: 28px 28px 8px 0; display: grid; gap: 14px; align-content: start; min-width: 0; }
+.stack > div + div { padding-left: 28px; border-left: 1px solid var(--line); }
+.stack .num { font: 500 13px/1 var(--mono); color: var(--clay-soft); letter-spacing: 0.1em; }
+.stack p { color: var(--muted); }
+.spec { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; font: 400 14px/1.45 var(--mono); color: var(--chalk); }
+.spec li { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px dashed var(--line); padding-bottom: 8px; }
+.spec li span:last-child { color: var(--muted); text-align: right; }
+@media (max-width: 900px) {
+  .stack { grid-template-columns: 1fr; }
+  .stack > div + div { padding-left: 0; border-left: 0; border-top: 1px solid var(--line); }
+}
+
+.feature { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; margin-top: 88px; }
+.feature img { border-radius: 6px; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+.feature .copy { display: grid; gap: 18px; min-width: 0; }
+.feature .copy p { color: var(--muted); }
+.feature.flip .copy { order: -1; }
+@media (max-width: 820px) { .feature { grid-template-columns: 1fr; gap: 28px; margin-top: 64px; } .feature.flip .copy { order: 0; } }
+
+/* sweet-spot diagram */
+.sweet { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; align-items: center; margin-top: 88px; padding: clamp(28px, 4vw, 48px); background: var(--panel); border-radius: 10px; }
+.sweet svg { width: 100%; max-width: 360px; height: auto; justify-self: center; }
+.legend { display: grid; gap: 10px; font: 400 14px/1.4 var(--mono); }
+.legend div { display: flex; gap: 12px; align-items: center; }
+.legend i { width: 14px; height: 14px; border-radius: 50%; flex: none; }
+@media (max-width: 820px) { .sweet { grid-template-columns: 1fr; gap: 32px; } }
+
+/* Advantages */
+.adv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--chalk); }
+.adv > div { padding: 32px 32px 32px 0; display: grid; gap: 10px; border-bottom: 1px solid var(--line); min-width: 0; }
+.adv > div:nth-child(even) { padding-left: 32px; border-left: 1px solid var(--line); }
+.adv p { color: var(--muted); }
+@media (max-width: 820px) { .adv { grid-template-columns: 1fr; } .adv > div:nth-child(even) { padding-left: 0; border-left: 0; } }
+
+/* Roadmap */
+.road { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; position: relative; }
+.road > div { display: grid; gap: 14px; align-content: start; padding-top: 28px; border-top: 2px solid var(--line); position: relative; min-width: 0; }
+.road > div.now { border-top-color: var(--clay); }
+.road > div::before { content: ""; position: absolute; top: -8px; left: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--ink); border: 2px solid var(--muted); }
+.road > div.now::before { background: var(--clay); border-color: var(--clay); }
+.road .when { font: 500 13px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.road .now .when { color: var(--clay-soft); }
+.road ul { margin: 0; padding-left: 18px; color: var(--muted); display: grid; gap: 8px; }
+@media (max-width: 820px) { .road { grid-template-columns: 1fr; gap: 40px; } }
+
+/* Ask */
+.ask { background: var(--chalk); color: var(--ink); }
+.ask .eyebrow { color: #A6402B; }
+.ask .lede { color: #3D4650; }
+.ask-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 56px; align-items: end; }
+.ask .btn { border-color: var(--ink); }
+.ask .btn.solid { background: var(--ink); color: var(--chalk); }
+.ask .btn.solid:hover { background: #A6402B; border-color: #A6402B; }
+.ask .btn.ghost:hover { background: rgba(12, 17, 22, 0.08); }
+.contact { display: grid; gap: 16px; }
+.email { font: 500 clamp(20px, 2.4vw, 26px)/1.2 var(--mono); user-select: all; overflow-wrap: anywhere; }
+.copied { font: 400 14px/1 var(--mono); color: #3D4650; min-height: 14px; }
+@media (max-width: 820px) { .ask-grid { grid-template-columns: 1fr; gap: 36px; } }
+
+footer { padding-block: 40px calc(40px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: 14px; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 32px; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="Main">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="img/icon.png" alt="">Tennis Buddy</a>
+    <ul>
+      <li><a href="#opportunity">Opportunity</a></li>
+      <li><a href="#today">Today</a></li>
+      <li><a href="#technology">Technology</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+    </ul>
+    <a class="btn solid" href="#contact">Get in touch</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <img src="img/racket.jpg" alt="The Tennis Buddy racket, rendered floating above Earth">
+  <div class="wrap">
+    <p class="eyebrow">Working prototype · October 2026</p>
+    <h1>A tennis coach that fits inside the <span>handle.</span></h1>
+    <p class="lede">A sensor module inside your racket. It measures every shot, finds the sweet spot and coaches you, with no cloud.</p>
+    <div class="cta-row">
+      <a class="btn solid" href="#contact">Talk to the team</a>
+      <a class="btn ghost" href="#today">See what works today</a>
+    </div>
+    <div class="facts">
+      <div><b>1,000</b><span>readings per second</span></div>
+      <div><b>7</b><span>stats per shot</span></div>
+      <div><b>2</b><span>on-device AI models</span></div>
+      <div><b>&lt;$100</b><span>target cost</span></div>
+    </div>
+  </div>
+</header>
+
+<section id="opportunity">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">The opportunity</p>
+      <div>
+        <h2>Most players practice without feedback</h2>
+        <p class="lede">Coaching works, but it’s expensive. Between lessons, nobody is watching.</p>
+      </div>
+    </div>
+    <div class="split">
+      <img src="img/serve.jpg" alt="A player serving on an outdoor hard court">
+      <div class="points">
+        <div><h3>Coaching is scarce</h3><p>Most players can’t afford a coach every week.</p></div>
+        <div><h3>The racket sees the ball</h3><p>Impact, face angle and contact point, not just arm motion.</p></div>
+        <div><h3>Under $100</h3><p>About the cost of one lesson, and it works every session.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="band">
+  <img src="img/aerial_gameplay.jpg" alt="Aerial view of a player hitting on a red and grey hard court">
+  <div class="wrap"><blockquote>Every swing measured. Every session explained.</blockquote></div>
+</div>
+
+<section id="today">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">What works today</p>
+      <div>
+        <h2>A working prototype, on court today</h2>
+        <p class="lede">Hardware, firmware, three apps and two AI models. The iPhone app is in beta now.</p>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="caps">
+        <thead><tr><th>Feature</th><th>What you get</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Live 3D racket</td><td>Moves with yours in real time</td><td><span class="chip ok">Working</span></td></tr>
+          <tr><td>Shot detection</td><td>Forehand, backhand, serve, volley</td><td><span class="chip ok">Working</span></td></tr>
+          <tr><td>Speed and spin</td><td>Swing speed, ball speed, rpm</td><td><span class="chip ok">Working</span></td></tr>
+          <tr><td>Face angle and path</td><td>Open or closed, low to high</td><td><span class="chip ok">Working</span></td></tr>
+          <tr><td>Sweet-spot AI</td><td>How far off center, from the sound of the hit</td><td><span class="chip wip">Beta</span></td></tr>
+          <tr><td>AI coach</td><td>Reports and drills from your stats</td><td><span class="chip ok">Working</span></td></tr>
+          <tr><td>Apple Watch</td><td>A tap per shot, workouts, drills</td><td><span class="chip wip">Beta</span></td></tr>
+          <tr><td>iPhone and Mac</td><td>History, heat maps, trends</td><td><span class="chip ok">Working</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="technology" style="padding-top:0">
+  <div class="wrap">
+    <div class="courtline" aria-hidden="true" style="margin-bottom:clamp(72px,10vw,128px)"></div>
+    <div class="head">
+      <p class="eyebrow">Technology</p>
+      <div><h2>Sense, think, coach</h2></div>
+    </div>
+
+    <div class="stack">
+      <div>
+        <span class="num">SENSE</span>
+        <h3>Two motion sensors and a mic</h3>
+        <p>Track the swing, feel the impact, hear the strings.</p>
+        <ul class="spec">
+          <li><span>Motion</span><span>1,000 Hz</span></li>
+          <li><span>Impact range</span><span>±200 g</span></li>
+          <li><span>Audio</span><span>16 kHz</span></li>
+        </ul>
+      </div>
+      <div>
+        <span class="num">THINK</span>
+        <h3>AI on a five-dollar chip</h3>
+        <p>A tiny neural net on the racket judges every hit.</p>
+        <ul class="spec">
+          <li><span>Model size</span><span>370 parameters</span></li>
+          <li><span>Weights</span><span>&lt;0.5 KB</span></li>
+          <li><span>Network</span><span>none needed</span></li>
+        </ul>
+      </div>
+      <div>
+        <span class="num">COACH</span>
+        <h3>Gemma 4 on your phone</h3>
+        <p>Turns your numbers into advice and drills.</p>
+        <ul class="spec">
+          <li><span>Model</span><span>Gemma 4 E2B</span></li>
+          <li><span>Runs on</span><span>iPhone, Mac</span></li>
+          <li><span>Cloud calls</span><span>0</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="sweet">
+      <svg viewBox="0 0 320 380" role="img" aria-label="Racket head with the sweet spot in the center and rings showing 33, 66 and 100 percent off center">
+        <ellipse cx="160" cy="180" rx="120" ry="160" fill="#0C1116" stroke="#D0634A" stroke-width="10"/>
+        <g stroke="#27313B" stroke-width="1">
+          <line x1="60" y1="40" x2="60" y2="320"/><line x1="90" y1="26" x2="90" y2="334"/><line x1="120" y1="22" x2="120" y2="338"/><line x1="150" y1="20" x2="150" y2="340"/><line x1="180" y1="20" x2="180" y2="340"/><line x1="210" y1="22" x2="210" y2="338"/><line x1="240" y1="30" x2="240" y2="330"/><line x1="270" y1="50" x2="270" y2="310"/>
+          <line x1="50" y1="80" x2="270" y2="80"/><line x1="42" y1="120" x2="278" y2="120"/><line x1="40" y1="160" x2="280" y2="160"/><line x1="40" y1="200" x2="280" y2="200"/><line x1="42" y1="240" x2="278" y2="240"/><line x1="52" y1="280" x2="268" y2="280"/>
+        </g>
+        <circle cx="160" cy="190" r="104" fill="none" stroke="#A3AEB8" stroke-width="1.5" stroke-dasharray="4 5"/>
+        <circle cx="160" cy="190" r="69" fill="none" stroke="#A3AEB8" stroke-width="1.5" stroke-dasharray="4 5"/>
+        <circle cx="160" cy="190" r="35" fill="#9FD8A8" fill-opacity="0.85"/>
+        <circle cx="228" cy="128" r="9" fill="#F1EFE8"/>
+      </svg>
+      <div style="display:grid;gap:20px;min-width:0">
+        <p class="eyebrow">How the racket judges a hit</p>
+        <h3 style="font-size:clamp(26px,3vw,36px)">Sweet spot, or how far off</h3>
+        <p style="color:var(--muted)">Center hits pop. Off-center hits sound dull and the frame rings. The racket hears the difference.</p>
+        <div class="legend">
+          <div><i style="background:#9FD8A8"></i>Sweet spot, within 4 cm of center</div>
+          <div><i style="border:1.5px dashed #A3AEB8"></i>33 %, 66 % and 100 % off center</div>
+          <div><i style="background:#F1EFE8"></i>Example mishit, about 75 % off</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature flip">
+      <img src="img/app_closeup.jpg" alt="A player checking a shot on the Tennis Buddy iPhone app between points">
+      <div class="copy">
+        <p class="eyebrow">The apps</p>
+        <h3 style="font-size:clamp(26px,3vw,36px)">Feedback between points</h3>
+        <p>A card for every shot. After the session, the coach picks a drill and your Watch counts it down.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--panel)">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Why us</p>
+      <div><h2>Private, affordable, open</h2></div>
+    </div>
+    <div class="adv">
+      <div><h3>Private by design</h3><p>Your data stays on your racket and phone.</p></div>
+      <div><h3>Commodity parts</h3><p>Off-the-shelf components keep it under $100.</p></div>
+      <div><h3>Keep your racket</h3><p>The module slides into the handle.</p></div>
+      <div><h3>Open at the core</h3><p>Firmware, apps and AI are MIT open source.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="wrap">
+    <div class="head">
+      <p class="eyebrow">Roadmap</p>
+      <div><h2>From prototype to product</h2></div>
+    </div>
+    <div class="road">
+      <div class="now">
+        <span class="when">Now · Prototype</span>
+        <h3>Proven end to end</h3>
+        <ul>
+          <li>Sensor module in a real racket</li>
+          <li>Shot stats and sweet-spot AI</li>
+          <li>Apps in TestFlight beta</li>
+        </ul>
+      </div>
+      <div>
+        <span class="when">Next · Validation</span>
+        <h3>Accurate on real courts</h3>
+        <ul>
+          <li>Train on real court data</li>
+          <li>Validate against high-speed video</li>
+          <li>Custom board, sealed module</li>
+        </ul>
+      </div>
+      <div>
+        <span class="when">Later · Product</span>
+        <h3>A module anyone can buy</h3>
+        <ul>
+          <li>Retail module under $100</li>
+          <li>Coach and club dashboards</li>
+          <li>Pickleball, padel and more</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="ask" id="contact">
+  <div class="wrap ask-grid">
+    <div style="display:grid;gap:22px;min-width:0">
+      <p class="eyebrow">Work with us</p>
+      <h2>Let’s talk</h2>
+      <p class="lede">We’re looking for investors, coaches, clubs and hardware partners.</p>
+    </div>
+    <div class="contact">
+      <p class="email" id="email">quentin.lynch@wsu.edu</p>
+      <p class="copied" id="copied" aria-live="polite"></p>
+      <div class="cta-row">
+        <button class="btn solid" id="copy" type="button" style="cursor:pointer">Copy email</button>
+        <a class="btn ghost" href="https://testflight.apple.com/join/137F7kvd" target="_blank" rel="noopener">Try the iPhone beta</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Tennis Buddy · Pullman, Washington</span>
+    <a href="https://github.com/KellamA/Smart-Tennis-Racket" target="_blank" rel="noopener">Open source on GitHub</a>
+  </div>
+</footer>
+
+<script>
+document.getElementById("copy").addEventListener("click", function () {
+  var email = document.getElementById("email").textContent.trim();
+  var note = document.getElementById("copied");
+  function fallback() {
+    var r = document.createRange();
+    r.selectNodeContents(document.getElementById("email"));
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+    note.textContent = "Selected. Press Ctrl+C or Cmd+C to copy.";
+  }
+  try {
+    navigator.clipboard.writeText(email).then(function () { note.textContent = "Copied to clipboard"; }, fallback);
+  } catch (e) { fallback(); }
+});
+</script>
+</body>
+</html>

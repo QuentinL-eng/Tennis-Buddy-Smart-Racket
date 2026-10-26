@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tennis Buddy · Scoreboard</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Tennis Buddy lives inside your racket handle and keeps score of every shot you hit.">
+<link rel="icon" href="img/icon.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Option B, "Scoreboard": dark stadium-board green with amber digits. Big on-court photography;
+   features and roadmap are set as rows on a match scoreboard. */
+:root {
+  --board: #10241B;
+  --board-2: #183427;
+  --rule: #2C4A3B;
+  --white: #F4F1E8;
+  --muted: #A9BDB2;
+  --amber: #F2B33D;
+  --cond: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --sans: "Barlow", "Helvetica Neue", Arial, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--board); color: var(--white); font: 400 18px/1.55 var(--sans); -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; display: block; }
+a { color: inherit; }
+a:focus-visible { outline: 2px solid var(--amber); outline-offset: 3px; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--cond); margin: 0; text-transform: uppercase; text-wrap: balance; }
+p { margin: 0; }
+.tag { font: 700 15px/1 var(--cond); letter-spacing: 0.16em; text-transform: uppercase; color: var(--amber); }
+.btn { display: inline-block; padding: 12px 22px; font: 700 17px/1 var(--cond); letter-spacing: 0.08em; text-transform: uppercase; text-decoration: none; background: var(--amber); color: var(--board); border-radius: 3px; white-space: nowrap; }
+.btn.ghost { background: transparent; color: var(--white); border: 2px solid var(--white); }
+
+.hero { position: relative; overflow: hidden; }
+.hero > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
+.hero::before { content: ""; position: absolute; inset: 0; z-index: 1; background: linear-gradient(90deg, rgba(16, 36, 27, 0.95) 0%, rgba(16, 36, 27, 0.75) 45%, rgba(16, 36, 27, 0.15) 100%); }
+.hero .wrap { position: relative; z-index: 2; padding-block: 28px 80px; display: grid; gap: 64px; }
+.top { display: flex; justify-content: space-between; align-items: center; }
+.brand { display: flex; gap: 10px; align-items: center; font: 800 22px/1 var(--cond); letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; }
+.brand img { width: 30px; height: 30px; border-radius: 6px; }
+.hero-body { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 48px; align-items: end; }
+.hero h1 { font-size: clamp(64px, 10vw, 140px); font-weight: 800; line-height: 0.86; letter-spacing: 0.005em; }
+.hero h1 span { color: var(--amber); }
+.hero p { font-size: 20px; color: #DCE4DF; max-width: 34ch; margin-top: 22px; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+@media (max-width: 860px) { .hero-body { grid-template-columns: 1fr; } .hero::before { background: rgba(16, 36, 27, 0.82); } }
+
+/* scoreboard panel */
+.board { background: var(--board); border: 3px solid #36594A; border-radius: 6px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45); }
+.board .head { display: flex; justify-content: space-between; padding: 12px 18px; border-bottom: 2px solid var(--rule); font: 700 14px/1 var(--cond); letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; }
+.board .row { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 18px; border-bottom: 1px solid var(--rule); }
+.board .row:last-child { border-bottom: 0; }
+.board .k { font: 600 20px/1 var(--cond); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.board .v { font: 800 40px/1 var(--cond); color: var(--amber); font-variant-numeric: tabular-nums; }
+.board .v small { font-size: 18px; color: var(--muted); margin-left: 6px; }
+
+section { padding-block: 88px; }
+.sets { display: grid; border-top: 3px solid var(--white); }
+.set { display: grid; grid-template-columns: 120px minmax(0, 1fr) minmax(0, 1.2fr); gap: 32px; align-items: baseline; padding-block: 28px; border-bottom: 1px solid var(--rule); }
+.set .no { font: 800 64px/0.9 var(--cond); color: var(--amber); }
+.set h3 { font-size: 40px; font-weight: 800; line-height: 1; }
+.set p { color: var(--muted); }
+@media (max-width: 800px) { .set { grid-template-columns: 64px minmax(0, 1fr); gap: 8px 20px; } .set p { grid-column: 2; } .set .no { font-size: 44px; } }
+
+.band { position: relative; min-height: 460px; }
+.band img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.status { background: var(--board-2); }
+.status .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: 28px; border: 2px solid var(--rule); }
+.status .grid div { padding: 28px; display: grid; gap: 10px; min-width: 0; }
+.status .grid div + div { border-left: 2px solid var(--rule); }
+.status h3 { font-size: 32px; font-weight: 800; }
+.status .grid div:first-child h3 { color: var(--amber); }
+.status p { color: var(--muted); }
+@media (max-width: 800px) { .status .grid { grid-template-columns: 1fr; } .status .grid div + div { border-left: 0; border-top: 2px solid var(--rule); } }
+
+.contact .wrap { display: grid; gap: 22px; justify-items: start; }
+.contact h2 { font-size: clamp(56px, 8vw, 112px); font-weight: 800; line-height: 0.9; }
+.contact h2 span { color: var(--amber); }
+.mail { font: 700 clamp(24px, 3vw, 34px)/1.1 var(--cond); letter-spacing: 0.04em; user-select: all; overflow-wrap: anywhere; }
+footer { color: var(--muted); font-size: 14px; padding-block: 0 calc(32px + env(safe-area-inset-bottom, 0px)); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <img src="img/forehand.jpg" alt="A player hitting a forehand on an outdoor hard court">
+  <div class="wrap">
+    <div class="top">
+      <a class="brand" href="#"><img src="img/icon.png" alt="">Tennis Buddy</a>
+      <a class="btn ghost" href="#contact">Contact</a>
+    </div>
+    <div class="hero-body">
+      <div>
+        <p class="tag">The smart racket</p>
+        <h1>Your racket keeps <span>score.</span></h1>
+        <p>Sensors inside the handle read every shot. AI on the racket hears the sweet spot. A coach on your phone tells you what to fix.</p>
+        <div class="cta"><a class="btn" href="#contact">Get in touch</a><a class="btn ghost" href="https://testflight.apple.com/join/137F7kvd" target="_blank" rel="noopener">Try the beta</a></div>
+      </div>
+      <div class="board" role="img" aria-label="Example shot card: forehand, 64 mph swing, 71 mph ball, 1,900 rpm topspin, sweet spot">
+        <div class="head"><span>Example shot</span><span>Forehand</span></div>
+        <div class="row"><span class="k">Swing</span><span class="v">64<small>mph</small></span></div>
+        <div class="row"><span class="k">Ball</span><span class="v">71<small>mph</small></span></div>
+        <div class="row"><span class="k">Spin</span><span class="v">1,900<small>rpm</small></span></div>
+        <div class="row"><span class="k">Sweet spot</span><span class="v">Yes</span></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section><div class="wrap">
+  <p class="tag">What it does</p>
+  <div class="sets" style="margin-top:24px">
+    <div class="set"><span class="no">01</span><h3>Measure</h3><p>Swing speed, ball speed, spin, face angle and shot type on every hit.</p></div>
+    <div class="set"><span class="no">02</span><h3>Listen</h3><p>A tiny AI model on the racket hears whether you found the sweet spot.</p></div>
+    <div class="set"><span class="no">03</span><h3>Coach</h3><p>Gemma 4 on your phone turns the numbers into drills. Nothing goes to the cloud.</p></div>
+  </div>
+</div></section>
+
+<div class="band"><img src="img/overhead.jpg" alt="A player hitting an overhead with autumn trees behind the court"></div>
+
+<section class="status"><div class="wrap">
+  <p class="tag">Match status</p>
+  <div class="grid">
+    <div><h3>Now</h3><p>Working prototype. iPhone and Mac apps live; Apple Watch and sweet-spot AI in beta.</p></div>
+    <div><h3>Next</h3><p>Real court data, high-speed video validation, a sealed custom module.</p></div>
+    <div><h3>Later</h3><p>A retail module under $100, coach dashboards, pickleball and padel.</p></div>
+  </div>
+</div></section>
+
+<section class="contact" id="contact"><div class="wrap">
+  <h2>Your <span>serve.</span></h2>
+  <p style="color:var(--muted)">Investors, coaches, clubs and hardware partners.</p>
+  <p class="mail">quentin.lynch@wsu.edu</p>
+</div></section>
+<footer><div class="wrap">© 2026 Tennis Buddy · Pullman, Washington</div></footer>
+</body>
+</html>

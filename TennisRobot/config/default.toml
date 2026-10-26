@@ -1,0 +1,122 @@
+# TennisRobot default configuration: simulated camera + simulated arm.
+# Every value is SI (m, s, kg) except pose rotations, which are degrees.
+# Pose vectors are [x, y, z, roll, pitch, yaw].
+
+[ball]
+mass_kg = 0.0575
+radius_m = 0.0335
+drag_coefficient = 0.507
+air_density_kg_m3 = 1.225
+lift_slope = 0.5
+spin_rad_s = [0.0, 0.0, 0.0]   # a single camera cannot observe spin
+wind_m_s = [0.0, 0.0, 0.0]
+
+[camera]
+kind = "simulated"             # "simulated" | "uvc"
+device = "0"                   # /dev/videoN on the UNO Q; identify by name, not index
+width = 1280
+height = 720
+fps = 240.0                    # see docs/FEASIBILITY.md before using a webcam
+horizontal_fov_deg = 55.0
+distortion = [0.0, 0.0, 0.0, 0.0]  # k1, k2, p1, p2
+# pose = [x, y, z, roll, pitch, yaw]   # takes precedence over look_at when set
+look_at = [2.0, -1.0, 1.7, 0.0, 2.2, 1.05]  # [eye xyz, target xyz]
+exposure = -1.0                # -1 leaves the driver setting alone
+gain = -1.0
+fourcc = "MJPG"
+buffersize = 2
+latency_s = 0.0                 # measured exposure-to-arrival delay
+
+[vision]
+hsv_lower = [25, 70, 70]
+hsv_upper = [50, 255, 255]
+min_area_px = 40.0
+min_radius_px = 3.0
+max_radius_px = 80.0
+min_circularity = 0.55
+max_candidates = 3
+min_confidence = 0.25
+max_pixel_speed_px_s = 12000.0
+
+[racket]
+length_m = 0.686
+# The point on the racket that must meet the ball, in the racket frame
+# (origin butt cap, +Z up the shaft, +Y out of the strings).
+impact_point_m = [0.0, 0.0, 0.52]
+# Rigid flange -> butt mount.  Replace with measured values.
+mount_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+string_half_width_m = 0.145
+string_half_height_m = 0.175
+
+[arm]
+kind = "mock"                  # "mock" | "epson"
+host = "127.0.0.1"
+port = 12000
+# Epson base frame in world coordinates.  The default faces the court.
+base_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 90.0]
+max_tcp_speed_m_s = 2.8
+max_accel_m_s2 = 12.0
+command_latency_s = 0.03
+timing_jitter_s = 0.004
+position_noise_m = 0.002
+heartbeat_s = 0.25
+response_timeout_s = 1.0
+# Conservative software envelope in the arm base frame.  These are not the
+# controller's limits and do not include the full racket swept volume.
+impact_box_min = [0.45, -0.45, 0.55]
+impact_box_max = [0.78, 0.45, 1.35]
+flange_box_min = [0.30, -0.55, 0.20]
+flange_box_max = [0.82, 0.55, 1.25]
+
+[planner]
+strike_plane_point_m = [0.0, 0.58, 0.0]
+strike_plane_normal = [0.0, 1.0, 0.0]
+swing_speed_m_s = 2.4
+pre_swing_distance_m = 0.24
+post_swing_distance_m = 0.20
+min_swing_speed_m_s = 1.2
+min_lead_s = 0.28
+max_lead_s = 0.40
+decision_margin_s = 0.03
+shaft_hint_world = [0.0, 0.0, 1.0]  # upright racket
+face_horizontal = true
+
+[safety]
+require_operator_arm = true
+max_fit_rms_px = 2.0
+min_observations = 6
+strike_tolerance_m = 0.10
+min_ball_speed_m_s = 3.0
+max_ball_speed_m_s = 45.0
+max_misses_before_fault = 3
+source_timeout_s = 1.0
+
+[estimator]
+window_observations = 48
+min_observations = 6
+max_iterations = 12
+center_sigma_px = 0.7
+radius_sigma_px = 1.0
+use_radius = true
+outlier_px = 6.0
+max_step_s = 0.04          # fit grid; Hermite interpolation keeps it accurate
+intercept_step_s = 0.01
+
+[sim]
+shots = 4
+interval_s = 2.5
+warmup_s = 1.0
+launch_position_m = [0.0, 6.5, 1.15]
+launch_velocity_m_s = [0.0, -9.5, 2.9]
+lateral_jitter_m_s = 0.35
+speed_jitter_fraction = 0.04
+noise_px = 0.25
+radius_noise_px = 0.4
+outlier_rate = 0.01
+seed = 7
+
+[run]
+record_dir = "runs"
+cooldown_s = 1.0
+max_runtime_s = 0.0
+fit_every_n_frames = 12

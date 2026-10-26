@@ -1,4 +1,7 @@
 .DS_Store
+node_modules/
+.wrangler/
+.website-dist/
 # PlatformIO
 firmware/.pio/
 firmware/.vscode/

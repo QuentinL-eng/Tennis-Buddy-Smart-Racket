@@ -1,0 +1,62 @@
+# iPhone 16 TennisCamera -> Windows PC observation stream.
+#
+#   iproxy 5000 5000                      # USB-C, on the Windows PC
+#   python -m tennisrobot run --config config/iphone.toml --arm --duration 6
+#
+# Check the live stream first:
+#
+#   python tools/iphone_check.py --config config/iphone.toml --duration 10
+#
+# Without the iPhone app, the same PC pipeline can be exercised with the fake
+# iPhone server (see docs/REMOTE_IPHONE.md):
+#
+#   python tools/fake_iphone.py --config config/iphone.toml --duration 10
+#
+# The phone only sends 2D observations.  The PC keeps the 3D estimator,
+# planner, safety monitor and arm client.  The arm is mocked here; change
+# [arm] to the real Epson settings only after the safety checks and the
+# calibration have been done.
+
+[camera]
+kind = "remote"
+remote_host = "127.0.0.1"       # iproxy on the PC; use the iPhone IP for Ethernet
+remote_port = 5000
+width = 1920                    # must match the iPhone capture format
+height = 1080
+fps = 240.0
+horizontal_fov_deg = 70.0       # PLACEHOLDER: calibrate the iPhone wide camera
+distortion = [0.0, 0.0, 0.0, 0.0]
+look_at = [2.0, -1.0, 1.7, 0.0, 2.2, 1.05]  # PLACEHOLDER: measure the mount
+latency_s = 0.0                 # residual capture bias; measure before changing
+
+[vision]
+hsv_lower = [25, 70, 70]
+hsv_upper = [50, 255, 255]
+min_area_px = 40.0
+min_radius_px = 3.0
+max_radius_px = 80.0
+min_circularity = 0.55
+max_candidates = 3
+min_confidence = 0.25
+max_pixel_speed_px_s = 12000.0
+
+[arm]
+kind = "mock"
+max_tcp_speed_m_s = 2.8
+max_accel_m_s2 = 12.0
+
+[safety]
+max_misses_before_fault = 10     # mock-arm bring-up; tighten for real strikes
+source_timeout_s = 2.0           # the phone sends a status packet every ~0.5 s
+
+[run]
+record_dir = "runs"
+cooldown_s = 1.0
+fit_every_n_frames = 12          # 20 Hz fits at 240 fps; the PC fit is ~12 ms
+
+[sim]
+# Used only by tools/fake_iphone.py; the real app replaces this source.
+shots = 2
+interval_s = 1.5
+warmup_s = 0.2
+seed = 7

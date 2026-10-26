@@ -1,0 +1,122 @@
+# Hardware configuration: UNO Q camera + Epson C8 / RC700-E.
+#
+# WARNING: the current 30 fps UVC camera is a bring-up sensor only.  It cannot
+# meet the timing budget; do not enable strikes with it.  Fit a high-speed
+# camera, measure its real rate, and update camera.device before arming.
+#
+# This file is a starting point, not a calibrated system.  Replace the camera
+# pose, arm base pose and racket mount with measured values before enabling
+# strikes.  Run monitor mode first:
+#
+#   python -m tennisrobot run --config config/uno_q.toml --monitor
+#
+# Never enable --arm until the E-stop, guarding and envelope have been checked.
+
+[camera]
+kind = "uvc"
+device = "/dev/v4l/by-id/usb-CN02KX4NLG0004ABK00_USB_Camera_CN02KX4NLG0004ABK00-video-index0"  # current 30 fps bring-up camera; replace before strikes
+width = 1280
+height = 720
+fps = 240.0                     # verify the camera really delivers this
+horizontal_fov_deg = 55.0
+distortion = [0.0, 0.0, 0.0, 0.0]  # replace from tools/calibrate.py intrinsics
+look_at = [2.0, -1.0, 1.7, 0.0, 2.2, 1.05]  # PLACEHOLDER: measure the real camera pose
+exposure = -1.0                 # set after tools/camera_check.py shows the units
+gain = -1.0
+fourcc = "MJPG"                 # MJPG often unlocks high frame rates on USB
+buffersize = 2                  # 1 buffer halves this driver's rate to ~15 fps
+latency_s = 0.0                 # PLACEHOLDER: measure exposure-to-arrival delay
+
+[vision]
+hsv_lower = [25, 70, 70]
+hsv_upper = [50, 255, 255]
+min_area_px = 40.0
+min_radius_px = 3.0
+max_radius_px = 80.0
+min_circularity = 0.55
+max_candidates = 3
+min_confidence = 0.25
+max_pixel_speed_px_s = 12000.0
+
+[racket]
+length_m = 0.686
+impact_point_m = [0.0, 0.0, 0.52]
+mount_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]  # PLACEHOLDER: measure flange -> butt
+string_half_width_m = 0.145
+string_half_height_m = 0.175
+
+[arm]
+kind = "epson"
+host = "192.168.0.10"           # PLACEHOLDER: RC700-E address
+port = 12000                   # the SPEL+ OpenNet server port, not remote control
+base_pose = [0.0, 0.0, 0.0, 0.0, 0.0, 90.0]  # PLACEHOLDER: measure base in world
+max_tcp_speed_m_s = 2.8
+max_accel_m_s2 = 12.0
+command_latency_s = 0.03
+timing_jitter_s = 0.004
+position_noise_m = 0.002
+heartbeat_s = 0.25
+response_timeout_s = 1.0
+# PLACEHOLDERS: derive from the real cell and the full racket swept volume.
+impact_box_min = [0.45, -0.45, 0.55]
+impact_box_max = [0.78, 0.45, 1.35]
+flange_box_min = [0.30, -0.55, 0.20]
+flange_box_max = [0.82, 0.55, 1.25]
+
+[planner]
+strike_plane_point_m = [0.0, 0.58, 0.0]
+strike_plane_normal = [0.0, 1.0, 0.0]
+swing_speed_m_s = 2.4
+pre_swing_distance_m = 0.24
+post_swing_distance_m = 0.20
+min_swing_speed_m_s = 1.2
+min_lead_s = 0.28
+max_lead_s = 0.40
+decision_margin_s = 0.03
+shaft_hint_world = [0.0, 0.0, 1.0]
+face_horizontal = true
+
+[safety]
+require_operator_arm = true
+max_fit_rms_px = 2.0
+min_observations = 6
+strike_tolerance_m = 0.10
+min_ball_speed_m_s = 3.0
+max_ball_speed_m_s = 45.0
+max_misses_before_fault = 3
+source_timeout_s = 1.0
+
+[estimator]
+window_observations = 48
+min_observations = 6
+max_iterations = 12
+center_sigma_px = 0.7
+radius_sigma_px = 1.0
+use_radius = true
+outlier_px = 6.0
+max_step_s = 0.04
+intercept_step_s = 0.01
+
+[sim]
+# Simulator values are still used to sanity-check the timing; the UVC camera
+# ignores them.  Keep the launch geometry close to the real ball machine.
+shots = 4
+interval_s = 2.5
+warmup_s = 1.0
+launch_position_m = [0.0, 6.5, 1.15]
+launch_velocity_m_s = [0.0, -9.5, 2.9]
+lateral_jitter_m_s = 0.35
+speed_jitter_fraction = 0.04
+noise_px = 0.25
+radius_noise_px = 0.4
+outlier_rate = 0.01
+seed = 7
+
+[run]
+record_dir = "runs"
+cooldown_s = 1.0
+max_runtime_s = 0.0
+# Measured on the UNO Q: a 48-observation fit takes ~140 ms, so 240 fps with a
+# fit every 12 frames is a simulation target, not a live capability yet.  Use a
+# slower feed or optimize the fit before enabling strikes.
+fit_every_n_frames = 12

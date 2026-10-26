@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+runs/
+*.egg-info/
+build/
+dist/
+
+# Xcode / iOS
+ios/**/xcuserdata/
+ios/**/DerivedData/
+*.xcuserstate
+*.xcresult

@@ -1,0 +1,2089 @@
+
+### TLSet
+
+PDF page 781
+TLSet Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+773  
+TLSet Statement 
+ 
+Defines or displays a tool coordinate system. 
+ 
+Syntax 
+(1) TLSet  toolNum, toolDefPoint 
+(2) TLSet  toolNum 
+(3) TLSet 
+ 
+Parameters 
+toolNum 
+Integer number from 1 to 15 representing which of 15 tools to define.  (Tool 0 is the default 
+tool and cannot be modified.) 
+toolDefPoint  
+Pnumber or P(expr) or point label or point expression. 
+ 
+Return Values 
+When parameters are omitted, displays all TLSet Definition. 
+When only the tool number is specified, displays specified TLSet Definition. 
+ 
+Description 
+Defines the tool coordinate systems Tool 1, Tool 2 or Tool 3 by specifying tool coordinate system origin and 
+rotation angle in relation to the Tool 0 coordinate system (Hand coordinate system). 
+ 
+TLSet 1, XY(50,100,-20,30) 
+ 
+TLSet 2, P10 +X(20) 
+ 
+In this case, the coordinate values of P10 are referenced and 20 is added to the X value.  Arm attribute and 
+local coordinate system numbers are ignored. 
+ 
+TLSET 1, XY(100, 60, -20, 30) 
+Rotation angle (c shown in the next figure) 
+Position for Z axis 
+Position for Y axis (b shown in the next figure) 
+Position for X axis (a shown in the next figure)
+Tool coordinate system number 
+ 
+
+PDF page 782
+TLSet Statement 
+ 
+774 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+ 
+ 
+TLSet for 6-Axis robots 
+The origin of Tool 0 is the flange side of the sixth joint.  When all joints are at the 0 degree position, the Tool 
+0 coordinate system's X axis is aligned with the robot coordinate system's Z axis, the Y axis is aligned with 
+the robot coordinate system's X axis, and the Z axis is perpendicular to the flange face, and is aligned with 
+the robot coordinate system's Y axis, as shown in the figure below: 
+ 
+ 
+ 
+ 
+ 
+
+PDF page 783
+TLSet Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+775  
+Tool 0 coordinate systems are defined for ceiling and wall mounted robots as shown in the figures below. 
+ 
+TLSet for N series robots 
+When all joints are at the 0 degree position, the Tool 0 coordinate system's X axis is aligned with the robot 
+coordinate system's -X axis, the Y axis is aligned with the robot coordinate system's Y axis, and the Z axis is 
+aligned with the robot coordinate system's -Z axis, as shown in the figure below: 
+ 
+ 
+ 
+ 
+ 
+
+
+### Pass
+
+PDF page 561
+Pass Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+553  
+Pass Statement 
+ 
+Executes simultaneous four joint Point to Point motion, passing near but not through the specified points. 
+ 
+Syntax 
+Pass  point [, {On | Off | MemOn | MemOff}  bitNumber [, point ... ]] [LJM [orientationFlag]] 
+ 
+Parameters 
+point 
+Pnumber or P(expr) or point label. 
+When the point data is continued and in the ascending order or the descending order, 
+specify two point numbers binding with colon as P(1:5). 
+bitNumber 
+The I/O output bit or memory I/O bit to turn on or off. Integer number between 0 - 511 
+or output label. 
+LJM 
+Optional.  Convert the depart point, approach point, and target destination using LJM 
+function.  
+orientationFlag 
+Optional.  Specifies a parameter that selects an orientation flag for LJM function. 
+ 
+Description 
+Pass moves the robot arm near but not through the specified point series. 
+ 
+To specify a point series, use points (P0,P1, ...) with commas between points. 
+ 
+To turn output bits on or off while executing motion, insert an On or Off command delimited with commas 
+between points. The On or Off is executed before the robot reaches the point immediately preceding the On 
+or Off. 
+ 
+If Pass is immediately followed by another Pass, control passes to the following Pass without the robot 
+stopping at the preceding Pass final specified point. 
+ 
+If Pass is immediately followed by a motion command other than another Pass, the robot stops at the 
+preceding Pass final specified point, but Fine positioning will not be executed. 
+ 
+If Pass is immediately followed by a command, statement, or function other than a motion command, the 
+immediately following command, statement or function will be executed prior to the robot reaching the final 
+point of the preceding Pass. 
+ 
+If Fine positioning at the target position is desired, follow the Pass with a Go, specifying the target position 
+as shown in the following example: 
+ 
+Pass P5; Go P5; On 1; Move P10 
+ 
+The larger the acceleration / deceleration values, the nearer the arm moves toward the specified point. The 
+Pass instruction can be used such that the robot arm avoids obstacles. 
+ 
+
+PDF page 562
+Pass Statement 
+ 
+554 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+With LJM parameter, the program using LJM function can be more simple.  
+For example, the following four-line program 
+P11 = LJM(P1, Here, 1) 
+P12 = LJM(P2, P11, 1) 
+P13 = LJM(P3, P12, 1) 
+Pass P11, P12, P13 
+can be… one-line program.  
+ 
+Pass P1, P2, P3 LJM 1 
+LJM parameter is available for 6-axis (including N series) and RS series robots.  
+When using orientationFlag with the default value, it can be omitted.  
+ 
+Pass P1, P2, P3 LJM 
+ 
+See Also 
+Accel, Go, Jump, Speed 
+ 
+Pass Statement Example 
+The example shows the robot arm manipulation by Pass instruction: 
+ 
+Function main 
+  Jump P1 
+  Pass P2   'Move the arm toward P2, and perform the next instruction before reaching P2. 
+  On 2 
+  Pass P3 
+  Pass P4 
+  Off 0 
+  Pass P5 
+Fend 
+
+
+### SetNet
+
+PDF page 675
+SetNet Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+667  
+SetNet Statement 
+ 
+Sets parameters for a TCP/IP port. 
+ 
+Syntax 
+(1) SetNet  #portNumber, hostAddress[, TCP_IP_PortNum [, terminator [, SWFlow [, timeOut, [, 
+protocol [, CloseNet timeout]]]]]] 
+(2) SetNet 
+ 
+Parameters 
+portNumber 
+Specifies which TCP/IP port to set parameters for.  Valid values are 201 to 216. 
+hostAddress 
+Specifies the host IP address.  
+TCP_IP_PortNum Specifies the TCP/IP port number for this node.  
+terminator 
+Specifies the line termination characters.  Valid values are CR, LF, CRLF. 
+SWFlow 
+Specifies software control.  Valid value is NONE. 
+timeOut 
+Specifies the maximum time for transmit or receive in seconds.  If this value is “0”, 
+then there is no time out. 
+protocol 
+Specifies the protocol (TCP/UDP/UDP_SEND/UDP_RECV) of communication. 
+ 
+TCP: TCP communication 
+ 
+UDP: UDP communication 
+ 
+UDP_SEND: UDP send 
+ 
+UDP_RECV: UDP receive 
+CloseNet timeOut Specifies the time before closing the socket with CloseNet in seconds. (Integer from 0 
+to 5) 
+ 
+When 0 is set, closes the socket without waiting for a response to the shutdown request.  
+ 
+Description 
+Parameters are stored to the Compact Flash inside the Controller.  When you execute SetNet, the data is 
+written to the Compact Flash.  If a data is written to the Compact Flash frequently, it may shorten the Compact 
+Flash life.  Using SetNet only when changing the parameter is recommended. 
+ 
+See Also 
+OpenNet, WaitNet, CloseNet, SetCom 
+ 
+SetNet Statement Example 
+ 
+SetNet #201, "192.168.0.1", 2001, CRLF, NONE, 0, TCP, 5 
+
+
+### OpenNet
+
+PDF page 535
+OpenNet Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+527  
+OpenNet Statement 
+ 
+Open a TCP/IP network port. 
+ 
+Syntax 
+OpenNet #portNumber As { Client | Server } 
+ 
+Parameters 
+portNumber 
+Integer expression for TCP/IP port number to open.  Range is from 201 to 216. 
+ 
+Description 
+OpenNet opens a TCP/IP port for communication with another computer on the network. 
+One system should open as Server and the other as Client.  It does not matter which one executes first. 
+ 
+See Also 
+ChkNet, CloseNet, SetNet 
+ 
+OpenNet Statement Example 
+For this example, two controllers have their TCP/IP settings configured as follows: 
+ 
+Controller #1: 
+Port: #201 
+Host Name: 192.168.0.2 
+TCP/IP Port: 1000 
+ 
+Function tcpip 
+  OpenNet #201 As Server 
+  WaitNet #201 
+  Print #201, "Data from host 1" 
+Fend 
+ 
+Controller #2: 
+Port: #201 
+Host Name: 192.168.0.1 
+TCP/IP Port: 1000 
+ 
+Function tcpip 
+  String data$ 
+  OpenNet #201 As Client 
+  WaitNet #201 
+  Input #201, data$ 
+  Print "received '", data$, "' from host 1" 
+Fend 
+ 
+
+PDF page 536
+OpenNet Function 
+ 
+528 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+OpenNet Function 
+ 
+Acquires the task number that executes OpenNet. 
+ 
+Syntax 
+OpenNet (portNumber) 
+ 
+Parameters 
+portNumber  
+Integer expression for TCP/IP port number.  Range is from 201 to 216. 
+ 
+Description 
+Acquires the task number that executes OpenNet. 
+ 
+See Also 
+ChkNet, CloseNet, OpenNet, SetNet 
+ 
+OpenNet Function Example 
+ 
+Print OpenNet(PortNo) 
+
+
+### WaitNet
+
+PDF page 826
+WaitNet Statement 
+ 
+818 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+WaitNet Statement 
+ 
+Wait for TCP/IP port connection to be established. 
+ 
+Syntax 
+WaitNet #portNumber [, timeOut] 
+ 
+Parameters 
+portNumber 
+Integer expression for TCP/IP port number to connect.  Range is 201 to 216 
+timeOut 
+Optional.  Maximum time to wait for connection. 
+ 
+See Also 
+OpenNet, CloseNet 
+ 
+WaitNet Statement Example 
+For this example, two controllers have their TCP/IP settings configured as follows: 
+ 
+Controller #1: 
+Port: #201 
+Host Name: 192.168.0.2 
+TCP/IP Port: 1000 
+ 
+Function tcpip 
+  OpenNet #201 As Server 
+  WaitNet #201 
+  Print #201, "Data from host 1" 
+Fend 
+ 
+Controller #2: 
+Port: #201 
+Host Name: 192.168.0.1 
+TCP/IP Port: 1000 
+ 
+Function tcpip 
+  String data$ 
+  OpenNet #201 As Client 
+  WaitNet #201 
+  Input #201, data$ 
+  Print "received '", data$, "' from host 1" 
+Fend 
+ 
+ 
+
+
+### Input
+
+PDF page 395
+Input Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+387  
+Input Statement 
+ 
+Receives input data from the display device and stored in a variable(s). 
+ 
+Syntax 
+Input  varName [ , varName, varName,... ] 
+ 
+Parameters 
+varName 
+Variable name.  Multiple variables can be used with the Input command as long as 
+they are separated by commas. 
+ 
+Description 
+Input receives data from the display device and assigns the data to the variable(s) used with the Input 
+instruction. 
+ 
+When executing the Input instruction, a “?” prompt appears at the display device.  After inputting data press 
+the return key (Enter) on the keyboard. 
+ 
+Notes 
+Rules for Numeric Input 
+When inputting numeric values and non-numeric data is found in the input other than the delimiter (comma), 
+the Input instruction discards the non-numeric data and all data following that non-numeric data. 
+Rules for String Input 
+When inputting strings, numeric and alpha characters are permitted as data. 
+Other Rules for the Input Instruction 
+- When more than one variable is specified in the instruction, the numeric data input intended for each 
+variable has to be separated by a comma (",") character. 
+- Numeric variable names and string variable names are allowed.  However, the input data type must match 
+the variable type. 
+ 
+Potential Error 
+Number of variables and input data differ 
+For multiple variables, the number of input data must match the number of Input variable names.  When the 
+number of the variables specified in the instruction is different from the number of numeric data received 
+from the keyboard, an Error 2505 will occur. 
+ 
+See Also 
+Input #, Line Input, Line Input #, Print, String 
+
+PDF page 396
+Input Statement 
+ 
+388 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Input Statement Example 
+This is a simple program example using Input statement. 
+ 
+Function InputNumbers 
+    Integer A, B, C 
+ 
+    Print "Please enter 1 number" 
+    Input A 
+    Print "Please enter 2 numbers separated by a comma" 
+    Input B, C 
+    Print "A = ", A 
+    Print "B = ", B, "C = ", C 
+Fend 
+ 
+A sample session of the above program running is shown below: 
+(Use the Run menu or F5 key to start the program) 
+ 
+Please enter 1 number 
+?-10000 
+Please enter 2 numbers separated by a comma 
+?25.1, -10000 
+A = -10000 
+B = 25 C = -10000 
+ 
+
+PDF page 397
+Input # Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+389  
+Input # Statement 
+ 
+Allows string or numeric data to be received from a file, communications port, or database and stored in 
+one or more variables. 
+ 
+Syntax 
+Input   #portNumber, varName [ ,  varName,  varName,... ] 
+ 
+Parameters 
+#portNumber 
+The ID number that specifies a file, communication port, database, or device.  The 
+File number can be specified in ROpen, WOpen, and AOpen statements.  
+Communication port number can be specified in OpenCom (RS-232C) and OpenNet 
+(TCP/IP) statements. 
+The database number can be specified in OpenDB statement.  
+ 
+Device ID is: 
+  21 RC+ 
+  24 TP (TP1 only) 
+  20 TP3 
+varName 
+Variable name to receive the data. 
+ 
+Description 
+The Input # instruction receives numeric or string data from the device specified by handle, and assigns the 
+data to the variable(s). 
+Notes 
+About the Controllers to use 
+For T/VT series, an error will occur at operation when RS-232C port of the Controller is specified. 
+Rules for Numeric Input 
+When inputting numeric values and non-numeric data is found in the input other than the delimiter (comma), 
+the Input instruction discards the non-numeric data and all data following that non-numeric data. 
+Rules for String Input 
+When inputting strings, numeric and alpha characters are permitted as data. 
+Maximum data length 
+This command can handle up to 256 bytes. 
+However, the target is the database, it can handle up to 4096 bytes. 
+If the target is the communication port (TCP/IP), it can handle up to 1024 bytes. 
+Other Rules for the Input Instruction 
+- When more than one variable is specified in the instruction, the numeric data input intended for each 
+variable has to be separated by a comma (",") character or blank (“ ”). 
+- When more than one string variable or both of numeric variable and string variable is specified, the numeric 
+data has to be separated by a comma (“,”) character or blank (“ “).  
+- The input data type must match the variable type. 
+ 
+The following programs are examples to exchange the string variable and numeric variable between the 
+controllers using a communication port. 
+ 
+Sending end (Either pattern is OK.) 
+Print #PortNum, "$Status,", InData, OutData 
+Print #PortNum, "$Status", ",",InData, OutData 
+Receiving end  
+Input #PortNum, Response$, InData, OutData 
+ 
+
+
+### Print
+
+PDF page 598
+Print Statement 
+ 
+590 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Print Statement 
+ 
+Outputs data to the current display window, including the Run window, Operator window, Command 
+window, and Macro window. 
+ 
+Syntax 
+Print  expression [ ,expression... ] [ , ] 
+Print  
+ 
+Parameters 
+expression 
+Optional.  A number or string expression. 
+, (comma) 
+Optional.  If a comma is provided at the end of the statement, then a CRLF will not 
+be added. 
+ 
+Return Values 
+Variable data or the specified character string. 
+ 
+Description 
+Print displays variable data or the character string on the display device. 
+ 
+An end of line CRLF (carriage return and line feed) is automatically appended to each output unless a comma 
+is used at the end of the statement. 
+Note 
+This command can handle up to 256 bytes. 
+Make Sure Print is used with Wait or a motion within a loop 
+The Controller may freeze up if only Print is used in loop (loops with no Wait or no motion).  
+Be sure to use Print with Wait command or a motion command within a loop. 
+Bad example 
+Do 
+    Print "1234" 
+Loop 
+Good example 
+Do 
+    Print "1234" 
+    Wait 0.1 
+Loop 
+ 
+See Also 
+Print # 
+ 
+Print Statement Example 
+The following example extracts the U Axis coordinate value from a Point P100 and puts the coordinate value 
+in the variable uvar.  The value is then printed to the current display window. 
+ 
+Function test 
+  Real uvar 
+  uvar = CU(P100) 
+  Print "The U Axis Coordinate of " + Chr$(34) + "P100" + Chr$(34) + 
+" is ", uvar 
+Fend 
+
+PDF page 599
+Print # Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+591  
+Print # Statement 
+ 
+Outputs data to the specified file, communications port, database, or device. 
+ 
+Syntax 
+Print  #portNumber,  expression [ ,expression... ] [ , ] 
+ 
+Parameters 
+portNumber 
+ID number representing a file, communications port, database, or device. 
+File number can be specified in ROpen, WOpen, and AOpen statements. 
+Communications port number can be specified in OpenCom (RS232) and OpenNet 
+(TCP/IP) statements. 
+Database number can be specified in OpenDB statement. 
+ 
+Device ID integers are as follows. 
+21 RC+ 
+24 TP (TP1 only) 
+20 TP3 
+expression 
+A numeric or string expression.    
+, (comma) 
+Optional.  If a comma is provided at the end of the statement, then a CRLF will not be 
+added. 
+ 
+Description 
+Print # outputs variable data, numerical values, or character strings to the communication port or the device 
+specified by portNumber. 
+ 
+Notes 
+About the Controllers to use 
+For T/VT series, an error will occur at operation when RS-232C port of the Controller is specified. 
+Maximum data length  
+This command can handle up to 256 bytes. 
+However, if the target is a database, it can handle up to 4096 bytes.  
+If the target is the communications port (TCP/IP), it can handle up to 1024 bytes. 
+ 
+Exchange variable data with other controller 
+- When more than one string variable or both of numeric variable and string variable is specified, a comma 
+(“,”) character has to be added expressly to the string data. 
+The following programs are examples to exchange the string variable and numeric variable between the 
+Controllers using a communication port. 
+ 
+Sending end (Either pattern is OK.) 
+Print #PortNum, "$Status,", InData, OutData 
+Print #PortNum, "$Status", ",",InData, OutData 
+Receiving end  
+Input #PortNum, Response$, InData, OutData 
+ 
+File write buffering 
+File writing is buffered.  The buffered data can be written with Flush statement.  Also, when closing a file 
+with Close statement, the buffered data can be written. 
+ 
+ 
+
+PDF page 600
+Print # Statement 
+ 
+592 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Be sure to use Print # with Wait command or a motion command within a loop 
+Do not use only Print # in a loop 
+The Controller may freeze up if only Print # is used in loop (loops with no Wait or no motion).  
+ 
+Depending on the Controller status, information may not be displayed properly even if the Wait command 
+or a motion command is used.  If the output is TP1, set Wait time to 1 (seconds) or more.  In other cases, 
+set Wait time to 0.1 (seconds) or more. 
+Bad example 
+Do 
+    Print #24，"1234"  
+Loop 
+Good example 
+Do 
+    Print #24,"1234" 
+    Wait 1 
+Loop 
+ 
+See Also 
+Input#, Print, Write, WriteBin 
+ 
+Print # Statement Example 
+The following are some simple Print # examples: 
+ 
+Function printex 
+  String temp$ 
+  Print #1, "5" 'send the character "5" to serial port 1 temp$ = "hello" 
+  Print #1, temp$ 
+  Print #2, temp$ 
+  Print #1 " Next message for " + Chr$(34) + "port 1" + Chr$(34) 
+  Print #2 " Next message for " + Chr$(34) + "port 2" + Chr$(34) 
+Fend 
+
+
+### Wait
+
+PDF page 823
+Wait Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+815  
+Wait Statement 
+ 
+Causes the program to Wait for a specified amount of time or until the specified input condition (using 
+MemSw or Sw) is met. (Oport may also be used in the place of Sw to check hardware outputs.)  Also waits 
+for the values of global variables to change.  
+ 
+Syntax 
+(1) Wait  time 
+(2) Wait  inputcondition 
+(3) Wait  inputcondition, time 
+ 
+Parameters 
+time 
+Real expression between 0 and 2,147,483 which represents the amount of time to wait 
+when using the Wait instruction to wait based on time. Time is specified in seconds.  
+The smallest increment is 0.01 seconds. 
+inputcondition 
+The following syntax can be used to specify the input condition: 
+[Event]  Comparative operator ( =, <>, >=, >, <, <= )  [Integer expression] 
+The following functions and variables can be used in the Event. 
+Functions : Sw, In, InW, Oport, Out, OutW, MemSw, MemIn, MemInW, 
+Ctr, GetRobotInsideBox, GetRobotInsidePlane,  
+MCalComplete, 
+Motor, LOF, ErrorOn, SaftyOn, EstopOn, TeachOn ,  
+Cnv_QueLen, WindowsStatus, AtHome, LatchState, 
+WorkQue_Len, PauseOn, AIO_In, AIO_InW, AIO_Out, 
+AIO_OutW, Hand_On, Hand_Off, SF_GetStatus 
+Operators : Byte, Int32, Integer, Long, Short, UByte, UInt32, UShort global 
+preserve variables, global variables, module variables  
+In addition, using the following operators you can specify multiple input conditions. 
+Operator : 
+And, Or, Xor, Mask 
+ 
+Description 
+(1)  Wait with Time Interval 
+When used as a timer, the Wait instruction causes the program to pause for the amount of time specified 
+and then continues program execution.  
+ 
+(2)  Wait for Event Conditions without Time Interval 
+When used as a conditional Wait interlock, the Wait instruction causes the program to wait until specified 
+conditions are satisfied. If after TMOut time interval has elapsed and the Wait conditions have not yet 
+been satisfied, an error occurs.  The user can check multiple conditions with a single Wait instruction by 
+using the And, Mask, Or, or Xor instructions. (Please review the example section for Wait.)   
+ 
+(3)  Wait with Event Condition and Time Interval 
+Specifies Wait condition and time interval.  After either Wait condition is satisfied, or the time interval 
+has elapsed, program control transfers to the next command.  Use Tw to verify if the Wait condition was 
+satisfied or if the time interval elapsed. 
+ 
+ 
+
+PDF page 824
+Wait Statement 
+ 
+816 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Notes 
+Specifying a Timeout for Use with Wait 
+When the Wait instruction is used without a time interval, a timeout can be specified which sets a time limit 
+to wait for the specified condition. This timeout is set through using the TMOut instruction. Please refer to 
+this instruction for more information. (The default setting for TMOut is “0” which means no timeout.) 
+Waiting for variable with Wait 
+- Available variables are Integer type (Byte, Int32, Integer, Long, Short, UByte, UInt32, UShort)  
+- Array variables are not available  
+- Local variables are not available  
+- If variables value cannot satisfy the event condition for more than 0.01 seconds, the change in variables may 
+not be retrieved.  
+- Up to 64 can wait for variables in one system (including ones used in the event condition expressions such 
+as Till).  If it is over 64, an error occurs during the project build. 
+- If you specify Byref to a waiting variable on any function call, an error occurs. 
+- When a variable or a functions are included in the right side member of the event condition expression, the 
+value is calculated when setting the Trap condition.  We recommend not using variables or functions in an 
+integer expression to avoid making unintended conditions. 
+ 
+When Using PC COM port (1001 to 1008) 
+- You cannot use Lof Function for Wait instruction. 
+When the program is paused while Wait is executing 
+The Wait instruction does not stop even when the program is paused while the Wait instruction is 
+executing.  The Wait instruction ends when an event condition is satisfied or the specified time has passed.  
+If the time is set by the Wait parameter, the passed time is reset and the program waits for the specified 
+time when the program is restarted by selecting Run Window Continue. 
+ 
+ 
+See Also 
+AtHome, Cnv_QueLen, Ctr, ErrorOn, EstopOn, GetRobotInsideBox, GetRobotInsidePlane, In, InW, 
+LatchState, LOF, Mask, MCalComplete, MemIn, MemInW, MemSw, Motor, Oport, Out, OutW, 
+PauseOn, SaftyOn, Sw, TeachOn, TMOut, WindowsStatus, Tw, WorkQue_Len, SF_GetStatus 
+ 
+Wait Statement Example 
+The example shown below shows 2 tasks each with the ability to initiate motion instructions.  However, a 
+locking mechanism is used between the 2 tasks to ensure that each task gains control of the robot motion 
+instructions only after the other task is finished using them.  This allows 2 tasks to each execute motion 
+statements as required and in an orderly predictable fashion.  MemSw is used in combination with the Wait 
+instruction to wait until the memory I/O #1 is the proper value before it is safe to move again. 
+ 
+Function main 
+    Integer I 
+    MemOff 1 
+    Xqt !2, task2 
+    For i = 1 to 100 
+       Wait MemSw(1) = Off 
+       Go P(i) 
+       MemOn 1 
+    Next I 
+Fend 
+ 
+Function task2 
+    Integer i 
+    For i = 101 to 200 
+       Wait MemSw(1) = On 
+       Go P(i) 
+       MemOff 1 
+    Next i 
+
+PDF page 825
+Wait Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+817  
+Fend 
+ 
+' Waits until input 0 turns on 
+Wait Sw(0) = On 
+ 
+' Waits 60.5 secs and then continue execution 
+Wait 60.5        
+ 
+' Waits until input 0 is off and input 1 is on 
+Wait Sw(0) = Off And Sw(1) = On       
+                                      
+' Waits until memory bit 0 is on or memory bit 1 is on 
+Wait MemSw(0) = On Or MemSw(1) = On 
+ 
+' Waits one second, then turn output 1 on 
+Wait 1; On 1   
+ 
+' Waits for the lower 3 bits of input port 0 to equal 1 
+Wait In(0) Mask 7 = 1   
+ 
+' Waits until the global Integer type variable giCounter is over 10 
+Wait giCounter > 10 
+ 
+' Waits ten seconds, until the global Long type variable glCheck is 30000 
+Wait glCheck = 30000, 10 
+
+
+### Speed
+
+PDF page 725
+Speed Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+717  
+Speed Statement 
+ 
+Specifies or displays the arm speed for the point to point motion instructions Go,  
+Jump and Pulse. 
+ 
+Syntax 
+(1) Speed  percent [, departSpeed, approSpeed]  
+(2) Speed   
+ 
+Parameters 
+percent 
+Integer expression between 1 and 100 representing the arm speed as a percentage of 
+the maximum speed.  
+departSpeed 
+Integer expression between 1 and 100 representing the depart motion speed for the 
+Jump instruction.  Available only with Jump command. 
+approSpeed  
+Integer expression between 1 and 100 representing the approach motion speed for the 
+Jump instruction.  Available only with Jump command. 
+ 
+Return Values 
+Displays current Speed value when used without parameters. 
+ 
+Description 
+Speed specifies the arm speed for all point to point motion instructions.  This includes motion caused by the 
+Go, Jump and Pulse robot motion instructions.  The speed is specified as a percentage of maximum speed 
+with the range of acceptable values between 1-100. (1 represents 1% of the maximum speed and 100 
+represents 100% of maximum speed).  Speed 100 represents the maximum speed possible.  
+Depart and approach speed values apply only to the Jump instruction.  If omitted, each defaults to the percent 
+value. 
+The speed value initializes to its default value when any one of the following is performed: 
+ 
+Controller Startup 
+Motor On 
+SFree, SLock, Brake 
+Reset, Reset Error 
+Stop button or QuitAll stops tasks 
+ 
+In Low Power Mode, the effective speed setting is lower than the default value.  If a higher speed is specified 
+directly (from the command window) or in a program, the speed is set to the default value.  In High Power 
+Mode, the motion speed setting is the value specified with Speed. 
+If higher speed motion is required, set high power mode using Power High and close the safety door.  If the 
+safety door is open, the Speed settings will be changed to their default value. 
+If Speed is executed when the robot is in low power mode, the following message is displayed.  The following 
+example shows that the robot will move at the default speed (5) because it is in Low Power Mode even though 
+the speed setting value by Speed is 80. 
+ 
+> speed 80 
+> speed 
+Low Power Mode 
+    80 
+    80     80     
+> 
+
+PDF page 726
+Speed Statement 
+ 
+718 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+See Also 
+Accel, Go, Jump, Power, Pass, Pulse, SpeedS 
+ 
+Speed Statement Example 
+Speed can be used from the command window or in a program.  Shown below are simple examples of both 
+methods. 
+ 
+Function speedtst 
+    Integer slow, fast, i 
+    slow = 10 
+    fast = 100 
+    For i = 1 To 10 
+        Speed slow 
+        Go P0 
+        Go P1 
+        Speed fast 
+        Go P0 
+        Go P1 
+    Next i 
+Fend 
+ 
+From the command window the user can also set Speed values. 
+ 
+> Speed 100,100,50    'Z joint downward speed set to 50% 
+> Speed 50 
+> Speed 
+    Low Power State: Speed is limited to 5 
+       50 
+       50        50 
+> 
+ 
+
+PDF page 727
+Speed Function 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+719  
+Speed Function 
+ 
+Returns one of the three speed settings. 
+ 
+Syntax 
+Speed[(paramNumber)] 
+ 
+Parameters 
+paramNumber 
+Integer expression which evaluates to one of the values shown below. 
+When omitted, 1 will be taken as the specified number. 
+ 
+1: PTP motion speed 
+ 
+2: Jump depart speed 
+ 
+3: Jump approach speed 
+ 
+Return Values 
+Integer value from 1 to 100. 
+ 
+See Also 
+Speed 
+ 
+Speed Function Example 
+ 
+    Integer savSpeed 
+ 
+    savSpeed = Speed(1) 
+    Speed 50 
+    Go pick 
+    Speed savSpeed 
+Fend 
+
+
+### SpeedS
+
+PDF page 732
+SpeedS Statement 
+ 
+724 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+SpeedS Statement 
+ 
+Specifies or displays the arm speed for use with the continuous path motion instructions such as Move, 
+Arc, Arc3, Jump3, and Jump3CP. 
+ 
+Syntax 
+(1) SpeedS  speed [, departSpeed, approSpeed] 
+(2) SpeedS   
+ 
+Parameters 
+speed 
+Real expression representing the CP motion speed in units of mm/sec. 
+departSpeed 
+Optional.  Real expression representing the Jump3 depart speed in units of mm/sec. 
+approSpeed 
+Optional.  Real expression representing the Jump3 approach speed in units of mm/sec. 
+Valid entries range of the parameters:  
+Other than N series: 0.1 to 2000 
+N series : 0.1 to 1120 
+ 
+Return Values 
+Displays current SpeedS value when used without parameters. 
+ 
+Description 
+SpeedS specifies the tool center point speed for use with all the continuous path motion instructions.  This 
+includes motion caused by the Move and Arc instructions. 
+ 
+SpeedS is specified in mm/Sec which represents a Tool Center Point velocity for the robot arm.  The default 
+value varies from robot to robot. See the Manipulator manual for the default SpeedS values for your robot 
+model. This is the initial SpeedS value set up automatically by the controller each time main power is turned 
+on.  
+ 
+The SpeedS value initializes to its default value when any one of the following is performed: 
+ 
+Controller Startup 
+Motor On 
+SFree, SLock, Brake 
+Reset, Reset Error 
+Stop button or QuitAll stops tasks 
+ 
+In Low Power Mode, the effective SpeedS setting is lower than the default value. If a higher speed is specified 
+directly (from the command window) or in a program, the speed is set to the default value. In High Power 
+Mode, the motion SpeedS setting is the value of SpeedS. 
+ 
+If higher speed motion is required, set high power mode using Power High and close the safety door. If the 
+safety door is open, the SpeedS settings will be changed to their default value. 
+ 
+See Also 
+AccelS, Arc, Jump3, Move, Speed 
+ 
+
+PDF page 733
+SpeedS Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+725  
+SpeedS Statement Example 
+SpeedS can be used from the command window or in a program.  Shown below are simple examples of both 
+methods. 
+ 
+Function speedtst 
+    Integer slow, fast, i 
+    slow = 50 
+    fast = 500 
+    For i = 1 To 10 
+        SpeedS slow 
+        Move P0 
+        Move P1 
+        SpeedS fast 
+        Move P0 
+        Move P1 
+    Next i 
+Fend 
+ 
+From the command window the user can also set SpeedS values. 
+ 
+> speeds 1000 
+> speeds 500 
+> speed 30     'sets point to point speed 
+> go p0        'point to point move 
+> speeds 100   'sets straight line speed in mm/Sec 
+> move P1      'moves in straight line 
+ 
+ 
+
+PDF page 734
+SpeedS Function 
+ 
+726 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+SpeedS Function 
+ 
+Returns the current SpeedS setting. 
+ 
+Syntax 
+SpeedS [(paramNumber)] 
+ 
+Parameters 
+paramNumber 
+Optional.  Integer expression specifying which SpeedS value to return.   
+ 
+1: CP speed 
+ 
+2: Jump3 depart speed 
+ 
+3: Jump3 approach speed 
+ 
+Return Values 
+Real number, in mm/sec 
+ 
+See Also 
+SpeedS Statement 
+ 
+SpeedS Function Example 
+ 
+Real savSpeeds 
+ 
+savSpeeds = SpeedS 
+ 
+Print "Jump3 depart speed = ", SpeedS(2) 
+ 
+
+
+### Go
+
+PDF page 321
+Go Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+313  
+Go Statement 
+ 
+Moves the arm using point to point motion from the current position to the specified point or X, Y, Z, U, V, 
+W position.  The Go instruction can move any combination of 1-6 joints at the same time. 
+ 
+Syntax 
+Go destination [CP] [LJM [orientationFlag]] [searchExpr] [!...!] [SYNC] 
+ 
+Parameters 
+destination  
+The target destination of the motion using a point expression. 
+CP 
+Optional.  Specifies continuous path motion. 
+LJM 
+Optional.  Convert the target destination using LJM function.  
+orientationFlag 
+Optional.  Specifies a parameter that selects an orientation flag for LJM function. 
+searchExpr 
+Optional.  A Till or Find expression. 
+Till | Find 
+Till Sw(expr) = {On | Off} 
+Find Sw(expr) = {On | Off} 
+!...! 
+Optional.  Parallel Processing statements can be added to execute I/O and other 
+commands during motion. 
+SYNC 
+Reserves a motion command.  The robot will not move until SyncRobots is executed. 
+ 
+Description 
+Go simultaneously moves all joints of the robot arm using point to point motion.  The destination for the Go 
+instruction can be defined in a variety of ways: 
+ 
+- Using a specific point to move to.  For example: Go P1. 
+ 
+- Using an explicit coordinate position to move to.  For example: Go XY(50, 400, 0, 0). 
+ 
+- Using a point with a coordinate offset.  For example: Go P1 +X(50). 
+ 
+- Using a point but with a different coordinate value.  For example: Go P1 :X(50). 
+ 
+The path is not predictable because each joint interpolates between the current point and the target point.  Be 
+careful of the interference with peripherals.  
+ 
+The Speed instruction determines the arm speed for motion initiated by the Go instruction.  The Accel 
+instruction defines the acceleration. 
+ 
+With CP parameter, the arm can accelerate for the next motion command while the arm starts decelerating 
+to a stop.  In this case, the arm is not positioned at the target point. 
+ 
+With LJM parameter, the arm moves to the point into where the target point is converted using LJM function, 
+with the current point as reference point. 
+ 
+Go LJM (P1, Here, 1) can be Go P1 LJM 1. 
+At this point, the original point data P1 does not change.  
+LJM parameter is available for the 6-axis (including N series) and RS series robots. 
+When using orientationFlag with the default value, it can be omitted.  
+ 
+Go P1 LJM 
+ 
+Notes 
+Difference between Go and Move 
+The Move instruction and the Go instruction each cause the robot arm to move. However, the primary 
+difference between the 2 instructions is that the Go instruction causes point to point motion whereas the Move 
+instruction causes the arm to move in a straight line.  The Go instruction is used when the user is primarily 
+concerned with the orientation of the arm when it arrives on point.  The Move instruction is used when it is 
+important to control the path of the robot arm while it is moving. 
+
+PDF page 322
+Go Statement 
+ 
+314 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Difference between Go and Jump 
+The Jump instruction and the Go instruction each cause the robot arm to move in a point to point type fashion. 
+However, the JUMP instruction has 1 additional feature. Jump causes the robot end effector to first move up 
+to the LimZ value, then in a horizontal direction until it is above the target point, and then finally down to 
+the target point. This allows Jump to be used to guarantee object avoidance and more importantly to improve 
+cycle times for pick and place motions. 
+Proper Speed and Acceleration Instructions with Go 
+The Speed and Accel instructions are used to specify the speed and acceleration of the manipulator during 
+motion caused by the Go instruction. Pay close attention to the fact that the Speed and Accel instructions 
+apply to point to point type motion (like that for the Go instruction) while linear and circular interpolation 
+motion uses the SpeedS and AccelS instructions. 
+Using Go with the Optional Till Modifier 
+The optional Till modifier allows the user to specify a condition to cause the robot to decelerate to a stop at 
+an intermediate position prior to completing the motion caused by the Go instruction. If the Till condition is 
+not satisfied, the robot travels to the target position. The Go with Till modifier can be used in 2 ways as 
+described below: 
+(1)  Go with Till Modifier 
+ 
+Checks if the current Till condition becomes satisfied. If satisfied, this command completes by 
+decelerating and stopping the robot at an intermediate position prior to completing the motion 
+caused by the Go instruction. 
+(2)  Go with Till Modifier, Sw(Input bit number) Modifier, and Input Condition 
+ 
+This version of the Go with Till modifier allows the user to specify the Till condition on the same 
+line with the Go instruction rather than using the current definition previously defined for Till. The 
+condition specified is simply a check against one of the inputs. This is accomplished through using 
+the Sw instruction. The user can check if the input is On or Off and cause the arm to stop based on 
+the condition specified. This feature works almost like an interrupt where the motion is interrupted 
+(stopped) once the Input condition is met. If the input condition is never met during the robot motion 
+then the arm successfully arrives on the point specified by destination. 
+Using Go with the Optional Find Modifier 
+The optional Find modifier allows the user to specify a condition to cause the robot to record a position 
+during the motion caused by the Go instruction.  The Go with Find modifier can be used in 2 ways as 
+described below: 
+(1)  Go with Find Modifier: 
+ 
+Checks if the current Find condition becomes satisfied. If satisfied, the current position is stored in 
+the special point FindPos. 
+(2) Go with Find Modifier, Sw(Input bit number) Modifier, and Input Condition: 
+ 
+This version of the Go with Find modifier allows the user to specify the Find condition on the same 
+line with the Go instruction rather than using the current definition previously defined for Find.  
+The condition specified is simply a check against one of the inputs.  This is accomplished through 
+using the Sw instruction.  The user can check if the input is On or Off and cause the current position 
+to be stored in the special point FindPos. 
+Go Instruction Always Decelerates to a Stop 
+The Go instruction always causes the arm to decelerate to a stop prior to reaching the final destination of the 
+move. 
+ 
+Potential Error 
+Attempt to Move Outside of Robots Work Envelope 
+When using explicit coordinates with the Go instruction, you must make sure that the coordinates defined 
+are within the robots valid work envelope.  Any attempt to move the robot outside of the valid work envelope 
+will result in an error. 
+ 
+See Also 
+!...! Parallel Processing, Accel, Find, Jump, Move, Pass, P#= (Point Assignment), Pulse, Speed, 
+Sw, Till 
+ 
+
+PDF page 323
+Go Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+315  
+Go Example 
+The example shown below shows a simple point to point move between points P0 and P10.  Later in the 
+program the arm moves in a straight line toward point P2 until input #2 turns on.  If input #2 turns On during 
+the Go, then the arm decelerates to a stop prior to arriving on point P2 and the next program instruction is 
+executed. 
+ 
+Function sample 
+ 
+  Integer i 
+ 
+  Home 
+  Go P0 
+  Go P1 
+  For i = 1 to 10 
+    Go P(i) 
+  Next i 
+  Go P2 Till Sw(2) = On 
+  If Sw(2) = On Then 
+    Print "Input #2 came on during the move and" 
+    Print "the robot stopped prior to arriving on" 
+    Print "point P2." 
+  Else 
+    Print "The move to P2 completed successfully." 
+    Print "Input #2 never came on during the move." 
+  EndIf 
+Fend 
+ 
+Some syntax examples from the command window are shown below: 
+ 
+>Go Here +X(50)        ' Move only in the X direction 50 mm from current position 
+>Go P1                 ' Simple example to move to point P1 
+>Go P1 :U(30)          ' Move to P1 but use +30 as the position for the U joint to move to 
+>Go P1 /L              ' Move to P1 but make sure the arm ends up in lefty position 
+>Go XY(50, 450, 0, 30) ' Move to position X=50, Y=450, Z=0, U=30 
+ 
+<Another Coding Example> 
+Till Sw(1) = Off And Sw(2) = On ' Specifies Till conditions for inputs 1 & 2 
+Go P1 Till             ' Stop if current Till condition defined on previous line is met 
+Go P2 Till Sw(2) = On  ' Stop if Input Bit 2 is On 
+Go P3 Till             ' Stop if current Till condition defined on previous line is met 
+
+
+### Move
+
+PDF page 510
+Move Statement 
+ 
+502 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Move Statement 
+ 
+Moves the arm from the current position to the specified point using linear interpolation (i.e. moving in a 
+straight line) at a constant tool center point velocity). 
+ 
+Syntax 
+Move destination [ROT]  [ECP]  [CP] [searchExpr] [!...!] [SYNC] 
+ 
+Parameters 
+destination  
+The target destination of the motion using a point expression. 
+ROT 
+Optional.  Decides the speed/acceleration/deceleration in favor of tool rotation. 
+ECP 
+Optional.  External control point motion.  This parameter is valid when the ECP 
+option is enabled. 
+CP 
+Optional.  Specifies continuous path motion. 
+searchExpr 
+Optional.  A Till or Find expression. 
+Till | Find 
+Till Sw(expr) = {On | Off} 
+Find Sw(expr) = {On | Off} 
+!...! 
+Optional.  Parallel Processing statements can be added to execute I/O and other 
+commands during motion. 
+SYNC 
+Reserves a motion command.  The robot will not move until SyncRobots is 
+executed.  
+ 
+Description 
+Move moves the arm from the current position to destination in a straight line.  Move coordinates all axes to 
+start and stop at the same time.  The coordinates of destination must be taught previously before executing 
+the Move instruction.  Acceleration and deceleration for the Move is controlled by the AccelS instruction.  
+Speed for the move is controlled by the SpeedS instruction.  If the SpeedS speed value exceeds the allowable 
+speed for any joint, power to all four joint motors will be turned off, and the robot will stop. 
+ 
+Move uses the SpeedS speed value and AccelS acceleration and deceleration values.  Refer to Using Move 
+with CP below on the relation between the speed/acceleration and the acceleration/deceleration.  If, however, 
+the ROT modifier parameter is used, Move uses the SpeedR speed value and AccelR acceleration and 
+deceleration values.  In this case SpeedS speed value and AccelS acceleration and deceleration value  have 
+no effect.  
+ 
+Usually, when the move distance is “0” and only the tool orientation is changed, an error will occur. However, 
+by using the ROT parameter and giving priority to the acceleration and the deceleration of the tool rotation, 
+it is possible to move without an error.  When there is not an orientational change with the ROT modifier 
+parameter and movement distance is not “0”, an error will occur. 
+ 
+Also, when the tool rotation is large as compared to move distance, and when the rotation speed exceeds the 
+specified speed of the manipulator, an error will occur. In this case, please reduce the speed or append the 
+ROT modifier parameter to give priority to the rotational speed / acceleration / deceleration.  
+ 
+When ECP is used, the trajectory of the external control point coresponding to the ECP number specified by 
+ECP instruction moves straight with respect to the tool coordinate system.  In this case, the trajectory of tool 
+center point does not follow a straight line.  
+
+PDF page 511
+Move Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+503  
+ECP
+Work
+TCP
+ 
+ 
+The optional Till qualifier allows the user to specify a condition to cause the robot to decelerate to a stop 
+prior to completing the Move.  The condition specified is simply a check against one of the inputs.  This is 
+accomplished through using the Sw instruction.  The user can check if the input is On or Off and cause the 
+arm to stop based on the condition specified.  This feature works almost like an interrupt where the Move is 
+interrupted (stopped) once the Input condition is met.  If the input condition is never met during the Move 
+then the arm successfully arrives on the point specified by destination.  For more information about the Till 
+qualifier see the Till command. 
+ 
+Notes 
+Move Cannot 
+Move cannot execute range verification of the trajectory prior to starting the move itself.  Therefore, even 
+for target positions that are within an allowable range, it is possible for the system to find a prohibited position 
+along the way to a target point.  In this case, the arm may abruptly stop which may cause shock and a servo 
+out condition of the arm.  To prevent this, be sure to perform range verifications at low speed prior to using 
+Move at high speeds.  In summary, even though the target position is within the range of the arm, there are 
+some Moves which will not work because the arm cannot physically make it to some of the intermediate 
+positions required during the Move. 
+Using Move with CP 
+The CP parameter causes the arm to move to destination without decelerating or stopping at the point defined 
+by destination.  This is done to allow the user to string a series of motion instructions together to cause the 
+arm to move along a continuous path while maintaining a specific speed throughout all the motion.  The 
+Move instruction without CP always causes the arm to decelerate to a stop prior to reaching the point 
+destination. 
+Proper Speed and Acceleration Instructions with Move 
+The SpeedS and AccelS instructions are used to specify the speed and acceleration of the manipulator during 
+Move motion. Pay close attention to the fact that SpeedS and AccelS apply to linear and circular interpolated 
+motion while point to point motion uses the Speed and Accel instructions. 
+ 
+Potential Errors 
+Attempt to Change Only Tool Orientation 
+Changing only tool orientation during the move is impossible.  If this is attempted, an error will occur.  In 
+this case, use the ROT parameter.  
+Joint Overspeed Errors 
+When the motion requested results in the speed of one of the axes to exceed its maximum allowable speed 
+an overspeed error occurs.  In the case of a motor overspeed error, the robot arm is brought to a stop and 
+servo power is turned off. 
+
+PDF page 512
+Move Statement 
+ 
+504 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Attempt to Pass the Original Point (RS series) 
+It is impossible to operate the arm of RS series to pass near an original point.  If attempted this, an overspeed 
+error will occur.  For the operation near an original point, take the following actions. 
+- Lower the speed of SpeedS 
+- Find a different path to prevent an original point  
+- Use PTP motion such as Go command instead of Move command. 
+ 
+See Also 
+AccelS, Arc, CP, Go, Jump, Jump3, Jump3CP, SpeedS, Sw, Till 
+ 
+Move Statement Example 
+The example shown below shows a simple point to point move between points P0 and P1 and then moves 
+back to P0 in a straight line.  Later in the program the arm moves in a straight line toward point P2 until input 
+#2 turns on.  If input #2 turns On during the Move, then the arm decelerates to a stop prior to arriving on 
+point P2 and the next program instruction is executed. 
+ 
+Function movetest 
+  Home 
+  Go P0 
+  Go P1 
+  Move P0 
+  Move P2 Till Sw(2) = On 
+  If Sw(2) = On Then 
+    Print "Input #2 came on during the move and" 
+    Print "the robot stopped prior to arriving on" 
+    Print "point P2." 
+  Else 
+    Print "The move to P2 completed successfully." 
+    Print "Input #2 never came on during the move." 
+  EndIf 
+Fend 
+ 
+This example uses Move with CP.  The diagram below shows arc motion which originated at the point P100 
+and then moves in a straight line through P101, at which time the arm begins to form an arc.  The arc is then 
+continued through P102 and on to P103.  Next the arm moves in a straight line to P104 where it finally 
+decelerates to a stop.  Note that the arm doesn't decelerate between each point until its final destination of 
+P104.  The following function would generate such a motion. 
+P102 
+ 
+ 
+P100 
+P103 
+P104 
+P101 
+ 
+Function CornerArc 
+   Go P100 
+   Move P101 CP       'Do not stop at P101 
+   Arc P102, P103 CP  'Do not stop at P103 
+   Move P104          'Decelerate to stop at P104 
+Fend 
+
+
+### JTran
+
+PDF page 433
+JTran Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+425  
+JTran Statement 
+ 
+Perform a relative move of one joint. 
+ 
+Syntax 
+JTran jointNumber, distance 
+ 
+Parameters 
+jointNumber 
+Integer expression representing which joint to move. 
+ 
+The additional S axis is 8 and T axis is 9. 
+distance 
+Real expression representing the distance to move in degrees for rotational joints or 
+millimeters for linear joints. 
+ 
+Description 
+Use JTran to move one joint a specified distance from the current position. 
+ 
+See Also 
+Go, Jump, Move, Ptran 
+ 
+JTran Statement Example 
+ 
+JTran 1, 20 
+ 
+
+
+### JtoP
+
+
+### PtoJ
+
+
+### Here
+
+PDF page 365
+Here Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+357  
+Here Statement 
+ 
+Teach a robot point at the current position. 
+ 
+Syntax 
+Here point 
+ 
+Parameters 
+point 
+Pnumber or P(expr) or point label. 
+ 
+Notes 
+The Here statement and Parallel Processing 
+You cannot use both of the Here statement and parallel processing in one motion command like this: 
+Go Here :Z(0) ! D10; MemOn 1 !  
+Be sure to change the program like this: 
+P999 = Here 
+Go P999 Here :Z(0) ! D10; MemOn 1 ! 
+ 
+The Here statement and Multitask 
+If the Here statement is executed in a multitask function executed by Xqt while the robot is moved by Move, 
+Go, etc., in the main task, the task will be stopped due to an error. 
+Current robot position can be retrieved by CurPos. 
+ 
+Example 
+Function Xqt_PrintHere 
+Do 
+Print CurPOS 
+Wait 0.1 
+Loop 
+Fend 
+Function main 
+Xqt 10, Xqt_PrintHere 
+Go P0 
+Fend 
+ 
+ 
+See Also 
+Here Function, CurPos 
+ 
+Here Statement Example 
+ 
+Here P1     
+Here pick   
+ 
+
+PDF page 366
+Here Function 
+ 
+358 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Here Function 
+ 
+Returns current robot position as a point. 
+ 
+Syntax 
+Here 
+ 
+Return Values 
+A point representing the current robot position. 
+ 
+Description 
+Use Here to retrieve the current position of the current manipulator. 
+ 
+See Also 
+Here Statement 
+ 
+Here Function Example 
+ 
+P1 = Here 
+ 
+
+
+### Tool
+
+PDF page 793
+Tool Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+785  
+Tool Statement 
+ 
+Selects or displays the current tool. 
+ 
+Syntax 
+(1) Tool   toolNumber 
+(2) Tool  
+ 
+Parameters 
+toolNumber 
+Optional.  Integer expression from 0 to 15 representing which of 16 tool definitions to use 
+with subsequent motion instructions. 
+ 
+Return Values 
+Displays current Tool when used without parameters. 
+ 
+Description 
+Tool selects the tool specified by the tool number (toolNum).  When the tool number is “0”, no tool is selected 
+and all motions are done with respect to the center of the end effector joint.  However, when Tool entry 1, 2, 
+or 3 is selected motion is done with respect to the end of the tool as defined with the tool definition. 
+ 
+Note 
+Power Off and Its Effect on the Tool Selection 
+Turning main power off does not change the tool coordinate system selection.  
+ 
+Lifetime of Compact Flash 
+Robot parameter data is stored in compact flash in controller.  Therefore, writing to command flash occurs 
+when executing this command.  Frequent writing to compact flash affect to lifetime of compact flash.  We 
+recommend to use this command minimally. 
+ 
+ 
+See Also 
+TGo, TLSet, Tmove 
+ 
+Tool Statement Example 
+The example shown below shows a good test which can be done from the command window to help 
+understand the difference between moving when a tool is defined and when no tool is defined. 
+ 
+>tlset 1, 100, 0, 0, 0   'Define tool coordinate system for Tool 1 (plus 100 mm in 
+                         'x direction from hand coordinate system) 
+>tool 1                  'Selects Tool 1 as defined by TLSet 
+>tgo p1                  'Positions the Tool 1 tip position at P1 
+>tool 0                  'Tells robot to use no tool for future motion 
+>go p1                   'Positions the center of the U-Joint at P1 
+ 
+ 
+
+PDF page 794
+Tool Function 
+ 
+786 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Tool Function 
+ 
+Returns the current tool number. 
+ 
+Syntax 
+Tool 
+ 
+Return Values 
+Integer containing the current tool number. 
+ 
+See Also 
+Tool Statement 
+ 
+Tool Function Example 
+ 
+Integer savTool 
+ 
+savTool = Tool 
+Tool 2 
+Go P1 
+Tool savTool 
+ 
+ 
+
+
+### Motor
+
+PDF page 508
+Motor Statement 
+ 
+500 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Motor Statement 
+ 
+Turns motor power for all axes on or off for the current robot. 
+ 
+Syntax 
+Motor ON | OFF 
+ 
+Parameters 
+ON | OFF 
+The keyword ON is used to turn the Motor Power on.  The keyword OFF is used to turn Motor 
+Power Off. 
+ 
+Description 
+The Motor On command is used to turn Motor Power On and release the brakes for all axes.  Motor Off is 
+used to turn Motor Power Off and set the brakes. 
+ 
+In order to move the robot, motor power must be turned on. 
+ 
+After an emergency stop, or after an error has occurred that requires resetting with the Reset command, 
+execute Reset, and then execute Motor On. 
+ 
+Motor On sets the robot control parameter as below: 
+ 
+Speed, SpeedR, SpeedS 
+Default values 
+Accel, AccelR, AccelS 
+Default values 
+QPDecelR, QPDecelS 
+Default values 
+LimZ 
+0 
+CP 
+Off 
+SoftCP 
+Off 
+Fine 
+Default values 
+Power Low 
+Low 
+PTPBoost 
+Default values 
+TCLim, TCSpeed 
+Default values 
+PgLSpeed 
+Default values 
+PerformMode 
+Standard mode 
+ 
+See Also 
+Brake, Power, Reset, SFree, SLock 
+ 
+Motor Statement Example 
+The following examples are done from the command window: 
+ 
+> Motor On 
+ 
+> Motor Off 
+
+PDF page 509
+Motor Function 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+501  
+Motor Function 
+ 
+Returns status of motor power for the specified robot. 
+ 
+Syntax 
+Motor [(robotNumber)] 
+ 
+Parameters 
+robotNumber 
+Specify the robot number to check the status by an integer value. 
+ 
+ If omitted, currently selected robot will be used. 
+ 
+Return Values 
+0 = Motors off, 1 = Motors on. 
+ 
+See Also 
+Motor 
+ 
+Motor Function Example 
+ 
+If Motor = Off Then 
+    Motor On 
+EndIf 
+ 
+
+
+### Power
+
+PDF page 594
+Power Statement 
+ 
+586 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Power Statement 
+ 
+Switches Power Mode to high or low and displays the current status. 
+ 
+Syntax 
+(1) Power { High | Low } [, Forced] 
+(2) Power  
+ 
+Parameters 
+High | Low The setting can be High or Low. The default is Low. 
+Forced 
+Optional.  This parameter is usually omitted. 
+ 
+Return Values 
+Displays the current Power status when parameter is omitted. 
+ 
+Description 
+Switches Power Mode to High or Low. It also displays the current mode status. 
+ 
+Low - When Power is set to Low, Low Power Mode is On.  This means that the robot will run slow (below 
+250 mm/sec) and the servo stiffness is set light so as to remove servo power if the robot bumps into 
+an object.  
+ 
+High - When Power is set to High, Low Power Mode is Off.  This means that the robot can run at full speed 
+with the full servo stiffness.  
+ 
+The following operations will switch to low power mode.  In this case, speed and acceleration settings will 
+be limited to the default value.  The default value is described in the each manipulator specification table.  
+See also the EPSON RC+ Users Guide: 2. Sefety. 
+ 
+Conditions to cause Power Low: 
+Controller Startup 
+Motor On 
+SFree, SLock, Brake 
+Reset, Reset Error 
+Stop button or QuitAll stops tasks 
+ 
+Settings limited to the default value  
+Speed 
+Accel 
+SpeedS 
+AccelS 
+ 
+ 
+
+PDF page 595
+Power Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+587  
+Notes 
+Low Power Mode (Power Low) and Its Effect on Max Speed: 
+In low power mode, motor power is limited, and effective motion speed setting is lower than the default 
+value.  If, when in Low Power mode, a higher speed is specified from the Command window (directly) or in 
+a program, the speed is set to the default value.  If a higher speed motion is required, set Power High. 
+If you switched to low power mode while the manipulator operating in high power mode, overspeed error or 
+low power torque error may occur.  
+High Power Mode (Power High) and Its Effect on Max Speed: 
+In high power mode, higher speeds than the default value can be set.  
+Forced Flag 
+The power mode can be changed during robot operation (including the pause state). 
+If the mode is switched to high power mode while the robot is moving in low power mode, the subsequent 
+motion will be changed to high speed with the specified speed. 
+If the mode is switched to low power mode while the robot is moving in high power mode, the overspeed 
+error or low power torque error may occur. 
+Stop the robot and specify the Forced flag to switch to low power mode. 
+ 
+See Also 
+Accel, AccelS, Speed, SpeedS 
+ 
+Power Statement Example 
+The following examples are executed from the command window: 
+ 
+> Speed 50        'Specifies high speed in Low Power mode 
+ 
+> Accel 100, 100  'Specifies high accel 
+ 
+> Jump P1         'Moves in low speed and low accel 
+ 
+> Speed           'Displays current speed values 
+Low Power Mode 
+   50            
+   50     50 
+ 
+> Accel           'Displays current accel values 
+Low Power Mode 
+   100    100   
+   100    100 
+   100    100 
+ 
+> Power High      'Sets high power mode 
+ 
+> Jump P2         'Moves robot at high speed 
+ 
+
+PDF page 596
+Power Function 
+ 
+588 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Power Function 
+ 
+Returns status of power. 
+ 
+Syntax 
+Power [(robotNumber)] 
+ 
+Parameters 
+robotNumber 
+Specify the robot number to check the status by an integer value. 
+ 
+ If omitted, currently selected robot will be used. 
+ 
+Return Values 
+0 = Power Low, 1 = Power High. 
+ 
+See Also 
+Power Statement 
+ 
+Power Function Example 
+ 
+If Power = 0 Then 
+    Print "Low Power Mode" 
+EndIf 
+ 
+
+
+### CloseNet
+
+PDF page 168
+CloseNet Statement 
+ 
+160 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+CloseNet Statement 
+ 
+Closes the TCP/IP port previously opened with OpenNet. 
+ 
+Syntax 
+CloseNet  #portNumber | All 
+ 
+Parameters 
+portNumber 
+TCP/IP port number to close ( 201 to 216)  
+If All is specified, the task will close all the open TCP/IP ports. 
+ 
+See Also 
+ChkNet, OpenNet 
+ 
+CloseNet Statement Example 
+ 
+CloseNet #201 
+ 
+
+
+### CurPos
+
+PDF page 230
+CurPos Function 
+ 
+222 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+CurPos Function 
+ 
+Returns the current target position of the specified robot. 
+ 
+Syntax 
+CurPos 
+ 
+Return Values 
+A robot point representing the current target position of the specified robot. 
+ 
+See Also 
+InPos, FindPos, RealPos 
+ 
+CurPos Function Example 
+ 
+Function main 
+ 
+   Xqt showPosition 
+   Do 
+      Jump P0 
+      Jump P1 
+   Loop 
+Fend 
+ 
+Function showPosition 
+ 
+   Do 
+      P99 = CurPos 
+      Print CX(P99), CY(P99) 
+   Loop 
+Fend 
+
+
+### Ctr
+
+PDF page 222
+Ctr Function 
+ 
+214 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+Ctr Function 
+ 
+Returns the counter value of the specified Hardware Input counter. 
+ 
+Syntax 
+Ctr(bitNumber) 
+ 
+Parameters 
+bitNumber 
+Number of the Hardware Input bit set as a counter.  Only 16 counters can be active at 
+the same time. 
+ 
+Return Values 
+The current count of the specified Hardware Input Counter. (Integer expression from 0-65535) 
+ 
+Description 
+Ctr works with the CTReset statement to allow Hardware inputs to be used as counters. 
+ 
+Each time a hardware input specified as a counter is switched from the Off to On state that input causes the 
+counter to increment by 1. 
+ 
+The Ctr function can be used at any time to get the current counter value for any counter input. Any of the 
+Hardware Inputs can be used as counters.  However, only 16 counters can be active at the same time.  
+ 
+ 
+Counter Pulse Input Timing Chart 
+ 
+ 
+4 msec or longer 
+4 msec or longer 
+High (ON) 
+Low (OFF) 
+ 
+ 
+ 
+See Also 
+CTReset 
+ 
+Ctr Function Example 
+The following example shows a sample of code which could be used to get a hardware input counter value. 
+ 
+CTReset 3 'Reset counter for input 3 to 0 
+On 0      'Turn an output switch on 
+Wait Ctr(3) >= 5 
+Off 0     'When 5 input cycles are counted for Input 3 turn switch off (output 0 off) 
+
+
+### J1
+
+
+### Joint
+
+PDF page 425
+Joint Statement 
+ 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+417  
+Joint Statement 
+ 
+Displays the current position for the robot in joint coordinates. 
+ 
+Syntax 
+Joint 
+ 
+See Also 
+Pulse, Where 
+ 
+Joint Statement Example 
+ 
+>joint 
+JOINT:  1: -6.905 deg 2:  23.437 deg 3:  -1.999 mm  4: -16.529 deg 
+> 
+ 
+ 
+ 
+
+
+### JA
+
+PDF page 424
+JA Function 
+ 
+416 
+EPSON RC+ 7.0 (Ver.7.5) SPEL+ Language Reference Rev.8 
+JA Function 
+ 
+Returns a robot point specified in joint angles. 
+ 
+Syntax 
+JA ( j1, j2, j3, j4 [, j5, j6 ] [, j7 ] [, j8, j9 ] ) 
+ 
+Parameters 
+j1 – j9 
+Real expressions representing joint angles. 
+For linear joints, specifies in units of mm. 
+j5 and j6 are for the 6-axis robot (including N series) and Joint type 6-axis robot. 
+j7 is for the Joint type 7-axis robot.  
+j8 and j9 are for the additional ST axis.  
+Note 
+If the angle exceeding the motion range is specified, an out of range error occurs. 
+ 
+Return Values 
+A robot point whose location is determined by the specified joint angles. 
+ 
+Description 
+Use JA to specify a robot point using joint angles. 
+ 
+When the points returned from JA function specify a singularity of the robot, the joint angles of the robot do 
+not always agree with the joint angles supplied to the JA function as arguments during the execution of a 
+motion command for the points.  To operate the robot using the joint angles specified for the JA function, 
+avoid a singularity of the robot. 
+ 
+For example: 
+ 
+> go ja(0,0,0,90,0,-90) 
+> where 
+WORLD:  X:    0.000 mm  Y:  655.000 mm  Z:  675.000 mm  U:    0.000 deg 
+V:  -90.000 deg W:  -90.000 deg  
+JOINT:  1:    0.000 deg 2:    0.000 deg 3:    0.000 deg 4:    0.000 deg 
+5:    0.000 deg 6:    0.000 deg  
+PULSE:  1:        0 pls 2:        0 pls 3:        0 pls 4:        0 pls 
+5:        0 pls 6:        0 pls  
+> go ja(0,0,0,90,0.001,-90) 
+> where 
+WORLD:  X:   -0.004 mm  Y:  655.000 mm  Z:  675.000 mm  U:    0.000 deg 
+V:  -90.000 deg W:  -89.999 deg  
+JOINT:  1:    0.000 deg 2:    0.000 deg 3:    0.000 deg 4:   90.000 deg 
+5:    0.001 deg 6:  -90.000 deg  
+PULSE:  1:        0 pls 2:        0 pls 3:        0 pls 4:  2621440 pls 
+5:       29 pls 6: -1638400 pls  
+ 
+See Also 
+AglToPls, XY 
+ 
+JA Function Example 
+ 
+P10 = JA(60, 30, -50, 45) 
+Go JA(135, 90, -50, 90) 
+P3 = JA(0, 0, 0, 0, 0, 0) 
+
+
+### SFreq
