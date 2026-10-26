@@ -33,7 +33,7 @@ A comprehensive list of components needed to build the Smart Tennis Racket.
 | MPU6050                | Accelerometer & Gyroscope Sensor   | 1        |
 | LED RGB Strip          | For visual shot intensity feedback | 1        |
 | Battery (5V)           | Power Source                       | 1        |
-| Capacitors           | 470µF                      | 1        |
+| Capacitors           | 1000µF                      | 1        |
 | Wires | Miscellaneous components        | As needed |
 
 ---
