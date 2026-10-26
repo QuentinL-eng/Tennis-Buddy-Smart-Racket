@@ -38,11 +38,11 @@ public struct MahonyFilter: Sendable {
     /// Orientation for display, with the recenter offset applied.
     public var displayOrientation: simd_quatf { yawOffset * q }
 
-    /// Rotates the world about the vertical so the racket's current tip direction points along world +y.
+    /// Rotates the world about the vertical so the racket's current tip direction points along world +x (screen right).
     public mutating func recenter() {
         let tip = q.act(SIMD3(1, 0, 0))
         let yaw = atan2(tip.y, tip.x)
-        yawOffset = simd_quatf(angle: .pi / 2 - yaw, axis: SIMD3(0, 0, 1))
+        yawOffset = simd_quatf(angle: -yaw, axis: SIMD3(0, 0, 1))
     }
 
     static func tiltOnly(accel: SIMD3<Float>) -> simd_quatf {

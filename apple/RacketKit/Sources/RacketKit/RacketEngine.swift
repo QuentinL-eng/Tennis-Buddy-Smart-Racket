@@ -17,6 +17,13 @@ public struct LiveState: Sendable {
     public var gyroDps: Float
     public var highG: Float
     public var samplesPerSecond: Double
+
+    public init(orientation: simd_quatf, gyroDps: Float, highG: Float, samplesPerSecond: Double) {
+        self.orientation = orientation
+        self.gyroDps = gyroDps
+        self.highG = highG
+        self.samplesPerSecond = samplesPerSecond
+    }
 }
 
 /// Processes the sample stream: calibration → orientation → shot detection → analysis.
