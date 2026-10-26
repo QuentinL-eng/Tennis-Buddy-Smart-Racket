@@ -97,6 +97,7 @@ struct RacketView: View {
             HStack {
                 TextField(label, value: Binding(get: { Int((value.wrappedValue * scale).rounded()) },
                                                 set: { value.wrappedValue = Float($0) / scale }), format: .number)
+                    .labelsHidden()
                     .multilineTextAlignment(.trailing)
                     #if os(iOS)
                     .keyboardType(.numberPad)
