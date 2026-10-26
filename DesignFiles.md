@@ -121,4 +121,4 @@ A comprehensive list of components needed to build the Smart Tennis Racket.
 
 ## Photos & Videos of the Project
 
-![Description](![image](https://github.com/user-attachments/assets/733b7f64-188d-49b1-b0d4-37f2bbe2e856))
+(![image](https://github.com/user-attachments/assets/733b7f64-188d-49b1-b0d4-37f2bbe2e856))
