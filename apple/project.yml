@@ -62,7 +62,7 @@ targets:
       properties:
         CFBundleDisplayName: Tennis Buddy
         UILaunchScreen: {}
-        UIBackgroundModes: [bluetooth-central]
+        UIBackgroundModes: [bluetooth-central, remote-notification]
         NSBluetoothAlwaysUsageDescription: Tennis Buddy connects to your racket's sensor over Bluetooth.
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
@@ -72,6 +72,9 @@ targets:
       path: iOS/TennisBuddy.entitlements
       properties:
         com.apple.developer.kernel.increased-memory-limit: true
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.kellamadams.tennisbuddy]
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
 
   TennisBuddy-macOS:
     type: application
@@ -110,6 +113,9 @@ targets:
         com.apple.security.device.bluetooth: true
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-write: true
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.kellamadams.tennisbuddy]
+        com.apple.developer.icloud-services: [CloudKit]
+        com.apple.developer.aps-environment: development
 
   TennisBuddyWatch:
     type: application

@@ -5,11 +5,7 @@ import SwiftUI
 struct TennisBuddyApp: App {
     @State private var model = AppModel()
     @State private var coach = CoachModel()
-    let container: ModelContainer = {
-        let schema = Schema([SessionRecord.self, ShotRecord.self])
-        let config = ModelConfiguration(schema: schema, cloudKitDatabase: .none)
-        return try! ModelContainer(for: schema, configurations: config)
-    }()
+    let container: ModelContainer = SyncedStore.makeContainer()
     #if os(iOS)
     @State private var watchBridge = WatchBridge()
     #endif

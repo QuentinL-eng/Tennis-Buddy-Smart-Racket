@@ -41,6 +41,12 @@ struct RacketView: View {
                 Text("Takes about 2 minutes: hold still, tip up, lay flat, then optional ball drops on a taped grid.")
             }
 
+            Section {
+                LabeledContent("iCloud sync", value: SyncedStore.isSyncing ? "On" : "Off")
+            } footer: {
+                Text(SyncedStore.statusText)
+            }
+
             Section("Racket & player") {
                 TextField("Racket", text: $model.profile.name)
                 Picker("Plays", selection: $model.profile.rightHanded) {

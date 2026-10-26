@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		010997E40C3E9BBAD1916A0A /* TennisBuddyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F2019504077756E640617FE /* TennisBuddyApp.swift */; };
+		0136976E6EEE868451134E30 /* SyncedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A26CA798241971A914132B /* SyncedStore.swift */; };
 		0424191C89E90C4E2DFDBEBE /* LiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7FE1568EBF1F305C6ADF3C4 /* LiveView.swift */; };
 		044D7A721F0CE85DB86A97DA /* RacketSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE7A86CCDEFE9D1F8502AC1 /* RacketSceneView.swift */; };
 		0DE09550D0558D6F3CA7D726 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 040B52703505123B6D01217A /* HuggingFace */; };
@@ -34,6 +35,7 @@
 		886B779B6E84BAB7928FFEBD /* RacketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F73C9942056B6F82D381273 /* RacketView.swift */; };
 		8A8334EF9373C6FAA01207D2 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 0482573DB53D29323A067E37 /* HuggingFace */; };
 		910335C8DB49994BECCF88FC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 396D35018B2F6B1101D869F2 /* Assets.xcassets */; };
+		9333B8A680C26C215AC8C20D /* SyncedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A26CA798241971A914132B /* SyncedStore.swift */; };
 		9442D992C56B69144EB0C2C7 /* RacketKit in Frameworks */ = {isa = PBXBuildFile; productRef = 3C7E414C80B1AC138671F159 /* RacketKit */; };
 		9941A2CD7E5BE18F509CC16A /* TennisBuddyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F2019504077756E640617FE /* TennisBuddyApp.swift */; };
 		9E3E0CB9FABB9341D796F791 /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = EEB729964217876C5B0C31FE /* MLXHuggingFace */; };
@@ -87,6 +89,7 @@
 		2F2019504077756E640617FE /* TennisBuddyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisBuddyApp.swift; sourceTree = "<group>"; };
 		396D35018B2F6B1101D869F2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3F2C05509855869C61804935 /* Records.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Records.swift; sourceTree = "<group>"; };
+		48A26CA798241971A914132B /* SyncedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncedStore.swift; sourceTree = "<group>"; };
 		5A34DFC69F764025C289A856 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryView.swift; sourceTree = "<group>"; };
 		5CE7A86CCDEFE9D1F8502AC1 /* RacketSceneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacketSceneView.swift; sourceTree = "<group>"; };
 		78F9C7A1045426C92A087323 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -236,6 +239,7 @@
 			children = (
 				93FF9841989C788B5B2C46D4 /* AppModel.swift */,
 				3F2C05509855869C61804935 /* Records.swift */,
+				48A26CA798241971A914132B /* SyncedStore.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -419,6 +423,7 @@
 				044D7A721F0CE85DB86A97DA /* RacketSceneView.swift in Sources */,
 				1D917C4ECF632F4D057F0CBA /* RacketView.swift in Sources */,
 				20C7D56510BA2336399B0466 /* Records.swift in Sources */,
+				0136976E6EEE868451134E30 /* SyncedStore.swift in Sources */,
 				9941A2CD7E5BE18F509CC16A /* TennisBuddyApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -439,6 +444,7 @@
 				65D4F29ECD63B318321BBF4F /* RacketSceneView.swift in Sources */,
 				886B779B6E84BAB7928FFEBD /* RacketView.swift in Sources */,
 				D06127062F0CC45A1C3F14B3 /* Records.swift in Sources */,
+				9333B8A680C26C215AC8C20D /* SyncedStore.swift in Sources */,
 				010997E40C3E9BBAD1916A0A /* TennisBuddyApp.swift in Sources */,
 				F4B8561C42C11C591B8CE156 /* WatchBridge.swift in Sources */,
 			);
