@@ -11,6 +11,8 @@ public struct Calibration: Codable, Sendable, Equatable {
     public var gyroBias: SIMD3<Float>
     public var h3lisBias: SIMD3<Float>
     public var isCalibrated: Bool
+    /// Corrects MPU6050 clones whose accelerometer doesn't read exactly 1 g at rest (measured during calibration).
+    public var accelScale: Float = 1
 
     /// Default from the CAD: both boards lie flat along the handle, MPU6050 Y axis along the handle.
     public static let `default` = Calibration(
@@ -25,7 +27,7 @@ public struct Calibration: Codable, Sendable, Equatable {
 
     public func apply(_ s: IMUSample) -> IMUSample {
         IMUSample(time: s.time,
-                  accel: mpuToRacket * s.accel,
+                  accel: mpuToRacket * s.accel * accelScale,
                   gyro: mpuToRacket * (s.gyro - gyroBias),
                   highG: h3lisToRacket * (s.highG - h3lisBias))
     }
@@ -50,10 +52,13 @@ public struct Calibration: Codable, Sendable, Equatable {
         let h3 = snapToAxes(rotation(up1: tipUp.highG, up2: faceUp.highG))
         // H3LIS zero-g offset: average reading minus the gravity it should see (+1 g on racket z when face up).
         let expectedFaceUp = h3.transpose * SIMD3<Float>(0, 0, 1)
-        return Calibration(mpuToRacket: mpu, h3lisToRacket: h3,
-                           gyroBias: (tipUp.gyro + faceUp.gyro) / 2,
-                           h3lisBias: faceUp.highG - expectedFaceUp,
-                           isCalibrated: true)
+        let restMagnitude = (simd_length(tipUp.accel) + simd_length(faceUp.accel)) / 2
+        var cal = Calibration(mpuToRacket: mpu, h3lisToRacket: h3,
+                              gyroBias: (tipUp.gyro + faceUp.gyro) / 2,
+                              h3lisBias: faceUp.highG - expectedFaceUp,
+                              isCalibrated: true)
+        cal.accelScale = restMagnitude > 0.3 ? 1 / restMagnitude : 1
+        return cal
     }
 
     /// Accelerometers read +1 g pointing up, so tip-up gives racket x and face-up gives racket z.

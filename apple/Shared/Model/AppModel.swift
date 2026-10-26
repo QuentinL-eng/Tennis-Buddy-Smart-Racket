@@ -70,7 +70,15 @@ final class AppModel {
             self.isConnected = state == .connected
         }
         ble.onStatus = { [weak self] status in self?.racketStatus = status }
-        ble.onVerdict = { [weak self] v in self?.lastVerdict = v; self?.lastVerdictDate = Date() }
+        ble.onVerdict = { [weak self] v in
+            guard let self else { return }
+            self.lastVerdict = v
+            self.lastVerdictDate = Date()
+            // Motion sensors offline: the mic verdict is the only record of the hit, so log it as a shot.
+            if self.motionSensorsMissing {
+                self.handle(.fromMic(sweet: v.isSweet, offCenterPercent: v.offCenterPercent))
+            }
+        }
         return ble
     }()
     private var replay: ReplaySource?
@@ -136,6 +144,12 @@ final class AppModel {
     }
 
     func recenter() { engine.recenter() }
+
+    /// The real racket is connected but neither motion sensor answered at boot (mic-only mode).
+    var motionSensorsMissing: Bool {
+        guard sourceKind == .racket, let s = racketStatus else { return false }
+        return !s.mpuOK && !s.h3lisOK
+    }
 
     // MARK: - Sessions
 

@@ -118,6 +118,20 @@ struct ShotCardView: View {
                     .background(tint.opacity(0.18), in: .capsule)
                     .foregroundStyle(tint)
             }
+            if !shot.hasMotion {
+                HStack(alignment: .center, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(shot.isSweetSpot ? "Sweet spot" : "Off center")
+                            .font(.system(size: 34, weight: .bold, design: .rounded))
+                        Text(shot.isSweetSpot ? "Clean contact" : "About \(units.lengthText(shot.impactDistanceCm)) from the sweet spot")
+                            .font(.subheadline)
+                        Label("Heard by the racket's mic · motion sensors offline", systemImage: "waveform.badge.mic")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                    StringBedView(shots: [shot], highlight: shot).frame(width: 90)
+                }
+            } else {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 0) {
@@ -138,6 +152,7 @@ struct ShotCardView: View {
                 }
                 Spacer(minLength: 0)
                 StringBedView(shots: [shot], highlight: shot).frame(width: 90)
+            }
             }
             if shot.gyroSaturated {
                 Label("Gyro maxed out: speed is a lower bound", systemImage: "exclamationmark.triangle")

@@ -1,7 +1,7 @@
 import Foundation
 
 public enum ShotType: String, Codable, Sendable, CaseIterable, Identifiable {
-    case forehand, backhand, serve, volley, calibration
+    case forehand, backhand, serve, volley, hit, calibration
     public var id: String { rawValue }
     public var label: String {
         switch self {
@@ -9,6 +9,7 @@ public enum ShotType: String, Codable, Sendable, CaseIterable, Identifiable {
         case .backhand: "Backhand"
         case .serve: "Serve"
         case .volley: "Volley"
+        case .hit: "Hit"
         case .calibration: "Calibration"
         }
     }
@@ -18,6 +19,7 @@ public enum ShotType: String, Codable, Sendable, CaseIterable, Identifiable {
         case .backhand: "arrow.turn.up.right"
         case .serve: "arrow.up.circle"
         case .volley: "hand.raised"
+        case .hit: "tennisball"
         case .calibration: "scope"
         }
     }
@@ -66,6 +68,22 @@ public struct ShotMetrics: Codable, Sendable, Identifiable, Equatable {
     public var peakG: Double
     public var gyroSaturated: Bool
     public var features: ImpactFeatures
+    /// True when only the racket's mic heard this hit (motion sensors offline): sweet spot and distance are
+    /// known, but speeds, spin and angles are not. Optional so older saved shots still decode.
+    public var micOnly: Bool?
+    public var hasMotion: Bool { micOnly != true }
+
+    /// A hit known only from the racket's on-device sound model.
+    public static func fromMic(sweet: Bool, offCenterPercent: Int, date: Date = Date()) -> ShotMetrics {
+        // 100% off = at the frame, ~12 cm from the sweet spot. Direction is unknown, so it's drawn toward the tip.
+        let distance = sweet ? 1.0 : max(Double(offCenterPercent) / 100 * 12, sweetSpotRadiusCm + 0.5)
+        var shot = ShotMetrics(date: date, type: .hit, swingSpeedKmh: 0, ballSpeedKmh: 0, spinRPM: 0, spin: .flat,
+                               faceAngleDeg: 0, swingPathDeg: 0, impactXcm: 0, impactYcm: distance, peakG: 0,
+                               gyroSaturated: false,
+                               features: ImpactFeatures(rollRatio: 0, ringNorm: 0, jolt: 0, impulse: 0))
+        shot.micOnly = true
+        return shot
+    }
 
     public var impactDistanceCm: Double { (impactXcm * impactXcm + impactYcm * impactYcm).squareRoot() }
     public var isSweetSpot: Bool { impactDistanceCm <= ShotMetrics.sweetSpotRadiusCm }
@@ -108,16 +126,20 @@ public struct ShotSummary: Codable, Sendable, Equatable {
 
     public init(_ shots: [ShotMetrics]) {
         let n = Double(max(shots.count, 1))
+        // Speeds, spin and angles only exist for shots the motion sensors saw.
+        let moving = shots.filter(\.hasMotion)
+        let nm = Double(max(moving.count, 1))
         func avg(_ f: (ShotMetrics) -> Double) -> Double { shots.reduce(0) { $0 + f($1) } / n }
+        func avgMoving(_ f: (ShotMetrics) -> Double) -> Double { moving.reduce(0) { $0 + f($1) } / nm }
         count = shots.count
         sweetSpotPercent = shots.isEmpty ? 0 : Double(shots.filter(\.isSweetSpot).count) / n * 100
-        avgSwingKmh = avg(\.swingSpeedKmh)
+        avgSwingKmh = avgMoving(\.swingSpeedKmh)
         maxSwingKmh = shots.map(\.swingSpeedKmh).max() ?? 0
-        avgBallKmh = avg(\.ballSpeedKmh)
+        avgBallKmh = avgMoving(\.ballSpeedKmh)
         maxBallKmh = shots.map(\.ballSpeedKmh).max() ?? 0
-        avgSpinRPM = avg(\.spinRPM)
-        avgFaceAngle = avg(\.faceAngleDeg)
-        avgPathAngle = avg(\.swingPathDeg)
+        avgSpinRPM = avgMoving(\.spinRPM)
+        avgFaceAngle = avgMoving(\.faceAngleDeg)
+        avgPathAngle = avgMoving(\.swingPathDeg)
         avgImpactX = avg(\.impactXcm)
         avgImpactY = avg(\.impactYcm)
         let mx = avgImpactX, my = avgImpactY
