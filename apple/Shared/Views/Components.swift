@@ -103,6 +103,8 @@ struct ShotCardView: View {
     var shot: ShotMetrics
     var flashID: UUID
     @State private var glow = 0.0
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
+    private var units: UnitSystem { UnitSystem(metric: useMetric) }
 
     var body: some View {
         let tint: Color = shot.isSweetSpot ? .green : .red
@@ -119,13 +121,13 @@ struct ShotCardView: View {
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 10) {
                     VStack(alignment: .leading, spacing: 0) {
-                        Text("\(Int(shot.ballSpeedKmh.rounded()))")
+                        Text(units.speedValue(shot.ballSpeedKmh))
                             .font(.system(size: 48, weight: .bold, design: .rounded)).monospacedDigit()
-                        Text("km/h ball speed (est.)").font(.caption).foregroundStyle(.secondary)
+                        Text("\(units.speedUnit) ball speed (est.)").font(.caption).foregroundStyle(.secondary)
                     }
                     Grid(alignment: .leading, horizontalSpacing: 14, verticalSpacing: 6) {
                         GridRow {
-                            metric("Swing", "\(Int(shot.swingSpeedKmh.rounded())) km/h")
+                            metric("Swing", units.speedText(shot.swingSpeedKmh))
                             metric("Spin", "\(Int(shot.spinRPM.rounded())) rpm \(shot.spin.label.lowercased())")
                         }
                         GridRow {

@@ -47,6 +47,8 @@ struct SessionRow: View {
 
 struct SessionDetailView: View {
     @Bindable var session: SessionRecord
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
+    private var units: UnitSystem { UnitSystem(metric: useMetric) }
     @Environment(CoachModel.self) private var coach
     @State private var strokeFilter: ShotType?
     @State private var heatMap = true
@@ -60,9 +62,9 @@ struct SessionDetailView: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 10)], spacing: 10) {
                     StatTile(label: "Shots", value: "\(summary.count)", symbol: "tennisball")
                     StatTile(label: "Sweet spot", value: "\(Int(summary.sweetSpotPercent))", unit: "%", symbol: "scope")
-                    StatTile(label: "Avg ball", value: "\(Int(summary.avgBallKmh))", unit: "km/h", symbol: "speedometer")
-                    StatTile(label: "Top ball", value: "\(Int(summary.maxBallKmh))", unit: "km/h", symbol: "flame")
-                    StatTile(label: "Avg swing", value: "\(Int(summary.avgSwingKmh))", unit: "km/h", symbol: "wind")
+                    StatTile(label: "Avg ball", value: units.speedValue(summary.avgBallKmh), unit: units.speedUnit, symbol: "speedometer")
+                    StatTile(label: "Top ball", value: units.speedValue(summary.maxBallKmh), unit: units.speedUnit, symbol: "flame")
+                    StatTile(label: "Avg swing", value: units.speedValue(summary.avgSwingKmh), unit: units.speedUnit, symbol: "wind")
                     StatTile(label: "Avg spin", value: "\(Int(summary.avgSpinRPM))", unit: "rpm", symbol: "arrow.clockwise")
                     if session.averageHeartRate > 0 {
                         StatTile(label: "Avg heart rate", value: "\(Int(session.averageHeartRate))", unit: "bpm", symbol: "heart")
@@ -96,10 +98,7 @@ struct SessionDetailView: View {
                         StringBedView(shots: shots, heatMap: heatMap).frame(maxHeight: 360)
                         Toggle("Heat map", isOn: $heatMap)
                         if summary.count > 1 {
-                            Text(String(format: "Average contact %.1f cm %@ and %.1f cm %@ the sweet spot · spread %.1f cm",
-                                        abs(summary.avgImpactY), summary.avgImpactY >= 0 ? "toward the tip" : "toward the throat",
-                                        abs(summary.avgImpactX), summary.avgImpactX >= 0 ? "right of" : "left of",
-                                        summary.impactSpreadCm))
+                            Text("Average contact \(units.lengthText(abs(summary.avgImpactY))) \(summary.avgImpactY >= 0 ? "toward the tip" : "toward the throat") and \(units.lengthText(abs(summary.avgImpactX))) \(summary.avgImpactX >= 0 ? "right of" : "left of") the sweet spot · spread \(units.lengthText(summary.impactSpreadCm))")
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
@@ -108,11 +107,12 @@ struct SessionDetailView: View {
                 if shots.count > 2 {
                     GroupBox("Speed through the session") {
                         Chart(Array(shots.enumerated()), id: \.offset) { i, s in
-                            PointMark(x: .value("Shot", i + 1), y: .value("Ball km/h", s.ballSpeedKmh))
+                            PointMark(x: .value("Shot", i + 1), y: .value("Ball speed", units.speed(s.ballSpeedKmh)))
                                 .foregroundStyle(s.isSweetSpot ? Color.green : Color.red)
-                            LineMark(x: .value("Shot", i + 1), y: .value("Ball km/h", s.ballSpeedKmh))
+                            LineMark(x: .value("Shot", i + 1), y: .value("Ball speed", units.speed(s.ballSpeedKmh)))
                                 .foregroundStyle(.secondary.opacity(0.3))
                         }
+                        .chartYAxisLabel(units.speedUnit)
                         .frame(height: 180)
                     }
                 }
@@ -127,7 +127,7 @@ struct SessionDetailView: View {
                                     Text(s.date.formatted(date: .omitted, time: .standard)).font(.caption).foregroundStyle(.secondary)
                                 }
                                 Spacer()
-                                Text("\(Int(s.ballSpeedKmh)) km/h · \(Int(s.spinRPM)) rpm").monospacedDigit().font(.subheadline)
+                                Text("\(units.speedText(s.ballSpeedKmh)) · \(Int(s.spinRPM)) rpm").monospacedDigit().font(.subheadline)
                                 Circle().fill(s.isSweetSpot ? .green : .red).frame(width: 8, height: 8)
                             }
                             .contentShape(.rect)
@@ -147,6 +147,8 @@ struct SessionDetailView: View {
 struct ShotDetailView: View {
     var shot: ShotMetrics
     var average: ShotSummary
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
+    private var units: UnitSystem { UnitSystem(metric: useMetric) }
 
     var body: some View {
         ScrollView {
@@ -154,8 +156,8 @@ struct ShotDetailView: View {
                 ShotCardView(shot: shot, flashID: shot.id)
                 GroupBox("Compared with this session's average") {
                     Grid(alignment: .leading, verticalSpacing: 8) {
-                        row("Ball speed", shot.ballSpeedKmh, average.avgBallKmh, "km/h")
-                        row("Swing speed", shot.swingSpeedKmh, average.avgSwingKmh, "km/h")
+                        row("Ball speed", units.speed(shot.ballSpeedKmh), units.speed(average.avgBallKmh), units.speedUnit)
+                        row("Swing speed", units.speed(shot.swingSpeedKmh), units.speed(average.avgSwingKmh), units.speedUnit)
                         row("Spin", shot.spinRPM, average.avgSpinRPM, "rpm")
                         row("Swing path", shot.swingPathDeg, average.avgPathAngle, "°")
                         row("Face angle", shot.faceAngleDeg, average.avgFaceAngle, "°")
@@ -163,8 +165,7 @@ struct ShotDetailView: View {
                 }
                 GroupBox("Contact") {
                     StringBedView(shots: [shot], highlight: shot).frame(height: 260)
-                    Text(String(format: "%.1f cm from the sweet spot · peak %.0f g at the handle",
-                                shot.impactDistanceCm, shot.peakG))
+                    Text("\(units.lengthText(shot.impactDistanceCm)) from the sweet spot · peak \(Int(shot.peakG)) g at the handle")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }

@@ -4,6 +4,8 @@ import SwiftUI
 struct LiveView: View {
     @Environment(AppModel.self) private var model
     @State private var presenter = false
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
+    private var units: UnitSystem { UnitSystem(metric: useMetric) }
 
     var body: some View {
         GeometryReader { geo in
@@ -85,8 +87,8 @@ struct LiveView: View {
                 HStack(spacing: 10) {
                     StatTile(label: "Shots", value: "\(summary.count)")
                     StatTile(label: "Sweet spot", value: "\(Int(summary.sweetSpotPercent))", unit: "%")
-                    StatTile(label: "Avg ball", value: "\(Int(summary.avgBallKmh))", unit: "km/h")
-                    StatTile(label: "Best", value: "\(Int(summary.maxBallKmh))", unit: "km/h")
+                    StatTile(label: "Avg ball", value: units.speedValue(summary.avgBallKmh), unit: units.speedUnit)
+                    StatTile(label: "Best", value: units.speedValue(summary.maxBallKmh), unit: units.speedUnit)
                 }
                 if let start = model.activeSession?.startDate {
                     TimelineView(.periodic(from: .now, by: 1)) { ctx in
@@ -126,7 +128,7 @@ struct LiveView: View {
                         Image(systemName: s.type.symbol).frame(width: 22)
                         Text(s.type.label)
                         Spacer()
-                        Text("\(Int(s.ballSpeedKmh)) km/h").monospacedDigit()
+                        Text(units.speedText(s.ballSpeedKmh)).monospacedDigit()
                         Circle().fill(s.isSweetSpot ? .green : .red).frame(width: 8, height: 8)
                     }
                     .font(.subheadline)

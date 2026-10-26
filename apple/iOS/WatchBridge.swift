@@ -22,7 +22,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
         guard WCSession.default.activationState == .activated, WCSession.default.isReachable,
               let data = try? JSONEncoder().encode(shot) else { return }
         let summary = model.map { ShotSummary($0.sessionShots) }
-        var msg: [String: Any] = ["type": "shot", "shot": data]
+        var msg: [String: Any] = ["type": "shot", "shot": data, "metric": UnitSystem.current.metric]
         if let summary, let s = try? JSONEncoder().encode(summary) { msg["summary"] = s }
         WCSession.default.sendMessage(msg, replyHandler: nil)
     }

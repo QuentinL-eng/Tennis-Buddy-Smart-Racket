@@ -84,6 +84,9 @@ final class RacketScene {
         let camera = SCNNode()
         camera.camera = SCNCamera()
         camera.camera?.fieldOfView = 40
+        // Default zNear is 1 m; the racket comes within that of the camera and got clipped.
+        camera.camera?.zNear = 0.01
+        camera.camera?.zFar = 20
         camera.position = SCNVector3(0, 0.12, 0.95)
         camera.look(at: SCNVector3(0, 0, 0))
         scene.rootNode.addChildNode(camera)
@@ -125,6 +128,7 @@ struct RacketSceneView: View {
 
     var body: some View {
         SceneView(scene: racketScene.scene, options: [.rendersContinuously])
+            .clipShape(.rect(cornerRadius: 20))
             .onChange(of: model.live.orientation) { _, q in racketScene.update(q) }
             .onChange(of: model.shotFlashID) { _, _ in
                 if let shot = model.lastShot { racketScene.showImpact(shot) }

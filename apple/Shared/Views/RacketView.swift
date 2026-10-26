@@ -4,6 +4,7 @@ import SwiftUI
 struct RacketView: View {
     @Environment(AppModel.self) private var model
     @State private var showCalibration = false
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
 
     var body: some View {
         @Bindable var model = model
@@ -42,9 +43,12 @@ struct RacketView: View {
             }
 
             Section {
+                Toggle("Use metric units", isOn: $useMetric)
                 LabeledContent("iCloud sync", value: SyncedStore.isSyncing ? "On" : "Off")
+            } header: {
+                Text("Settings")
             } footer: {
-                Text(SyncedStore.statusText)
+                Text("\(useMetric ? "km/h and cm" : "mph and inches"). iCloud sync: \(SyncedStore.statusText).")
             }
 
             Section("Racket & player") {
@@ -53,10 +57,17 @@ struct RacketView: View {
                     Text("Right-handed").tag(true)
                     Text("Left-handed").tag(false)
                 }
-                measurement("Weight", value: $model.profile.massKg, scale: 1000, unit: "g")
-                measurement("Balance point", value: $model.profile.balancePointM, scale: 1000, unit: "mm")
-                measurement("String center", value: $model.profile.stringCenterM, scale: 1000, unit: "mm")
-                measurement("Swing radius", value: $model.profile.effectiveRadiusM, scale: 100, unit: "cm")
+                if useMetric {
+                    measurement("Weight", value: $model.profile.massKg, scale: 1000, unit: "g")
+                    measurement("Balance point", value: $model.profile.balancePointM, scale: 1000, unit: "mm")
+                    measurement("String center", value: $model.profile.stringCenterM, scale: 1000, unit: "mm")
+                    measurement("Swing radius", value: $model.profile.effectiveRadiusM, scale: 100, unit: "cm")
+                } else {
+                    measurement("Weight", value: $model.profile.massKg, scale: 35.274, unit: "oz", decimals: 1)
+                    measurement("Balance point", value: $model.profile.balancePointM, scale: 39.3701, unit: "in", decimals: 2)
+                    measurement("String center", value: $model.profile.stringCenterM, scale: 39.3701, unit: "in", decimals: 2)
+                    measurement("Swing radius", value: $model.profile.effectiveRadiusM, scale: 39.3701, unit: "in", decimals: 1)
+                }
             }
 
             Section {
@@ -92,15 +103,18 @@ struct RacketView: View {
         }
     }
 
-    private func measurement(_ label: String, value: Binding<Float>, scale: Float, unit: String) -> some View {
+    /// Number field showing `value × scale` in the chosen unit.
+    private func measurement(_ label: String, value: Binding<Float>, scale: Double, unit: String,
+                             decimals: Int = 0) -> some View {
         LabeledContent(label) {
             HStack {
-                TextField(label, value: Binding(get: { Int((value.wrappedValue * scale).rounded()) },
-                                                set: { value.wrappedValue = Float($0) / scale }), format: .number)
+                TextField(label, value: Binding(get: { Double(value.wrappedValue) * scale },
+                                                set: { value.wrappedValue = Float($0 / scale) }),
+                          format: .number.precision(.fractionLength(0...decimals)))
                     .labelsHidden()
                     .multilineTextAlignment(.trailing)
                     #if os(iOS)
-                    .keyboardType(.numberPad)
+                    .keyboardType(.decimalPad)
                     #endif
                     .frame(maxWidth: 90)
                 Text(unit).foregroundStyle(.secondary)

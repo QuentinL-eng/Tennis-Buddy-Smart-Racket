@@ -1,3 +1,4 @@
+import RacketKit
 import SwiftData
 import SwiftUI
 
@@ -46,6 +47,10 @@ struct TennisBuddyApp: App {
         #if os(macOS)
         .defaultSize(width: 1200, height: 800)
         #endif
+
+        #if os(macOS)
+        Settings { AppSettingsView().frame(width: 420) }
+        #endif
     }
 }
 
@@ -63,3 +68,22 @@ struct RootView: View {
         .tabViewStyle(.sidebarAdaptable)
     }
 }
+
+#if os(macOS)
+/// Mac Settings window (⌘,). The same toggle lives in the Racket tab on iPhone.
+struct AppSettingsView: View {
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
+
+    var body: some View {
+        Form {
+            Picker("Units", selection: $useMetric) {
+                Text("Imperial (mph, in)").tag(false)
+                Text("Metric (km/h, cm)").tag(true)
+            }
+            .pickerStyle(.radioGroup)
+            LabeledContent("iCloud sync", value: SyncedStore.statusText)
+        }
+        .formStyle(.grouped)
+    }
+}
+#endif

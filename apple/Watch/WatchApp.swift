@@ -27,6 +27,7 @@ final class WatchModel: NSObject, WCSessionDelegate {
     var pointsWon = 0
     var pointsLost = 0
     var phoneReachable = false
+    var units = UnitSystem(metric: false)
     let workout = WorkoutManager()
 
     override init() {
@@ -76,6 +77,7 @@ final class WatchModel: NSObject, WCSessionDelegate {
         if message["type"] as? String == "shot", let data = message["shot"] as? Data,
            let shot = try? JSONDecoder().decode(ShotMetrics.self, from: data) {
             lastShot = shot
+            if let metric = message["metric"] as? Bool { units = UnitSystem(metric: metric) }
             if let s = message["summary"] as? Data { summary = try? JSONDecoder().decode(ShotSummary.self, from: s) }
             // Crisp tap for a sweet-spot hit, a "retry" buzz for a mishit.
             WKInterfaceDevice.current().play(shot.isSweetSpot ? .success : .retry)
@@ -131,9 +133,9 @@ struct LastShotPage: View {
                     Spacer()
                     Circle().fill(shot.isSweetSpot ? .green : .red).frame(width: 10, height: 10)
                 }
-                Text("\(Int(shot.ballSpeedKmh))")
+                Text(model.units.speedValue(shot.ballSpeedKmh))
                     .font(.system(size: 46, weight: .bold, design: .rounded)).monospacedDigit()
-                Text("km/h · \(Int(shot.spinRPM)) rpm").font(.caption).foregroundStyle(.secondary)
+                Text("\(model.units.speedUnit) · \(Int(shot.spinRPM)) rpm").font(.caption).foregroundStyle(.secondary)
                 if let s = model.summary {
                     Text("\(s.count) shots · \(Int(s.sweetSpotPercent))% sweet spot")
                         .font(.caption2).foregroundStyle(.secondary)

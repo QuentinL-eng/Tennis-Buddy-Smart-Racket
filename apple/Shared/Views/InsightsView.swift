@@ -39,6 +39,8 @@ struct CoachCard: View {
 
 struct InsightsView: View {
     @Query(sort: \SessionRecord.startDate) private var sessions: [SessionRecord]
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
+    private var units: UnitSystem { UnitSystem(metric: useMetric) }
     @Environment(CoachModel.self) private var coach
     @Environment(AppModel.self) private var model
     @State private var question = ""
@@ -68,14 +70,14 @@ struct InsightsView: View {
         GroupBox("Trends") {
             VStack(alignment: .leading, spacing: 16) {
                 Chart(realSessions) { s in
-                    LineMark(x: .value("Date", s.startDate), y: .value("Avg ball km/h", s.summary.avgBallKmh))
+                    LineMark(x: .value("Date", s.startDate), y: .value("Avg ball speed", units.speed(s.summary.avgBallKmh)))
                         .symbol(.circle)
                         .foregroundStyle(by: .value("Metric", "Ball speed"))
-                    LineMark(x: .value("Date", s.startDate), y: .value("Avg swing km/h", s.summary.avgSwingKmh))
+                    LineMark(x: .value("Date", s.startDate), y: .value("Avg swing speed", units.speed(s.summary.avgSwingKmh)))
                         .symbol(.square)
                         .foregroundStyle(by: .value("Metric", "Swing speed"))
                 }
-                .chartYAxisLabel("km/h")
+                .chartYAxisLabel(units.speedUnit)
                 .frame(height: 180)
                 Chart(realSessions) { s in
                     BarMark(x: .value("Date", s.startDate, unit: .day), y: .value("Sweet spot %", s.summary.sweetSpotPercent))

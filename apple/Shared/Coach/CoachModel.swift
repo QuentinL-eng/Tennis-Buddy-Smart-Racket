@@ -8,17 +8,19 @@ struct SessionDigest: Codable {
         var type: String
         var count: Int
         var sweetSpotPercent: Int
-        var avgBallKmh: Int
-        var maxBallKmh: Int
-        var avgSwingKmh: Int
+        var avgBallSpeed: Int
+        var maxBallSpeed: Int
+        var avgSwingSpeed: Int
         var avgSpinRPM: Int
         var avgPathDeg: Int
         var avgFaceDeg: Int
-        var avgContactTowardTipCm: Double
-        var avgContactRightCm: Double
-        var contactSpreadCm: Double
+        var avgContactTowardTip: Double
+        var avgContactRight: Double
+        var contactSpread: Double
     }
 
+    var speedUnit: String
+    var lengthUnit: String
     var durationMinutes: Int
     var totalShots: Int
     var sweetSpotPercent: Int
@@ -27,10 +29,14 @@ struct SessionDigest: Codable {
     var averageHeartRate: Int
     var strokes: [Stroke]
     /// Ball speed in the first vs last third of the session (fatigue).
-    var firstThirdAvgKmh: Int
-    var lastThirdAvgKmh: Int
+    var firstThirdAvgSpeed: Int
+    var lastThirdAvgSpeed: Int
 
-    init(session: SessionRecord) {
+    init(session: SessionRecord, units: UnitSystem = .current) {
+        speedUnit = units.speedUnit
+        lengthUnit = units.lengthUnit
+        func spd(_ kmh: Double) -> Int { Int(units.speed(kmh).rounded()) }
+        func len(_ cm: Double) -> Double { (units.length(cm) * 10).rounded() / 10 }
         let shots = session.shots.filter { $0.type != .calibration }
         let all = ShotSummary(shots)
         durationMinutes = Int(session.duration / 60)
@@ -44,15 +50,15 @@ struct SessionDigest: Codable {
             guard !s.isEmpty else { return nil }
             let m = ShotSummary(s)
             return Stroke(type: t.label, count: m.count, sweetSpotPercent: Int(m.sweetSpotPercent),
-                          avgBallKmh: Int(m.avgBallKmh), maxBallKmh: Int(m.maxBallKmh), avgSwingKmh: Int(m.avgSwingKmh),
+                          avgBallSpeed: spd(m.avgBallKmh), maxBallSpeed: spd(m.maxBallKmh), avgSwingSpeed: spd(m.avgSwingKmh),
                           avgSpinRPM: Int(m.avgSpinRPM), avgPathDeg: Int(m.avgPathAngle), avgFaceDeg: Int(m.avgFaceAngle),
-                          avgContactTowardTipCm: (m.avgImpactY * 10).rounded() / 10,
-                          avgContactRightCm: (m.avgImpactX * 10).rounded() / 10,
-                          contactSpreadCm: (m.impactSpreadCm * 10).rounded() / 10)
+                          avgContactTowardTip: len(m.avgImpactY),
+                          avgContactRight: len(m.avgImpactX),
+                          contactSpread: len(m.impactSpreadCm))
         }
         let third = max(shots.count / 3, 1)
-        firstThirdAvgKmh = Int(ShotSummary(Array(shots.prefix(third))).avgBallKmh)
-        lastThirdAvgKmh = Int(ShotSummary(Array(shots.suffix(third))).avgBallKmh)
+        firstThirdAvgSpeed = spd(ShotSummary(Array(shots.prefix(third))).avgBallKmh)
+        lastThirdAvgSpeed = spd(ShotSummary(Array(shots.suffix(third))).avgBallKmh)
     }
 
     var json: String {
@@ -73,8 +79,9 @@ protocol CoachEngine {
 enum CoachPrompts {
     static let system = """
     You are Tennis Buddy, an upbeat, expert tennis coach. You are given measurements from a sensor in the \
-    player's racket. Only use numbers that appear in the data; never invent stats. Speeds are km/h, spin is rpm, \
-    contact positions are cm from the sweet spot (positive toward the tip / to the right). Keep answers short, \
+    player's racket. Only use numbers that appear in the data; never invent stats. Speeds use the data's speedUnit, \
+    spin is rpm, contact positions use lengthUnit from the sweet spot (positive toward the tip / to the right). \
+    Always write the units next to numbers. Keep answers short, \
     concrete and encouraging.
     """
 
@@ -117,23 +124,24 @@ struct TemplateCoach: CoachEngine {
         let worst = d.strokes.min { $0.sweetSpotPercent < $1.sweetSpotPercent }
         var out = "\(d.totalShots) shots in \(max(d.durationMinutes, 1)) min with \(d.sweetSpotPercent)% in the sweet spot. "
         if let b = best {
-            out += "Your \(b.type.lowercased()) led the way: \(b.sweetSpotPercent)% sweet spot, averaging \(b.avgBallKmh) km/h (top \(b.maxBallKmh)). "
+            out += "Your \(b.type.lowercased()) led the way: \(b.sweetSpotPercent)% sweet spot, averaging \(b.avgBallSpeed) \(d.speedUnit) (top \(b.maxBallSpeed)). "
         }
         if let w = worst, w.type != best?.type {
-            let dir = w.avgContactTowardTipCm >= 0 ? "toward the tip" : "toward the throat"
-            out += "Your \(w.type.lowercased()) needs work: \(w.sweetSpotPercent)% sweet spot, contact drifting \(String(format: "%.1f", abs(w.avgContactTowardTipCm))) cm \(dir). "
+            let dir = w.avgContactTowardTip >= 0 ? "toward the tip" : "toward the throat"
+            out += "Your \(w.type.lowercased()) needs work: \(w.sweetSpotPercent)% sweet spot, contact drifting \(String(format: "%.1f", abs(w.avgContactTowardTip))) \(d.lengthUnit) \(dir). "
         }
         out += "\n\n• "
-        if d.lastThirdAvgKmh < d.firstThirdAvgKmh - 5 {
-            out += "Ball speed dropped from \(d.firstThirdAvgKmh) to \(d.lastThirdAvgKmh) km/h late in the session; take short breaks to keep your legs fresh."
+        if d.lastThirdAvgSpeed < d.firstThirdAvgSpeed - 3 {
+            out += "Ball speed dropped from \(d.firstThirdAvgSpeed) to \(d.lastThirdAvgSpeed) \(d.speedUnit) late in the session; take short breaks to keep your legs fresh."
         } else {
-            out += "You kept your pace all session (\(d.firstThirdAvgKmh) → \(d.lastThirdAvgKmh) km/h). Nice consistency."
+            out += "You kept your pace all session (\(d.firstThirdAvgSpeed) → \(d.lastThirdAvgSpeed) \(d.speedUnit)). Nice consistency."
         }
         if let w = worst {
             out += "\n• On your \(w.type.lowercased()), "
-            out += w.avgContactTowardTipCm > 1 ? "let the ball come a little deeper so you meet it in the center of the strings."
-                : w.avgContactTowardTipCm < -1 ? "step in and reach a little further so contact moves up toward the center."
-                : "keep your eyes on contact a beat longer to tighten your \(w.contactSpreadCm) cm spread."
+            let near = d.lengthUnit == "cm" ? 1.0 : 0.4
+            out += w.avgContactTowardTip > near ? "let the ball come a little deeper so you meet it in the center of the strings."
+                : w.avgContactTowardTip < -near ? "step in and reach a little further so contact moves up toward the center."
+                : "keep your eyes on contact a beat longer to tighten your \(w.contactSpread) \(d.lengthUnit) spread."
         }
         return out
     }
@@ -141,7 +149,7 @@ struct TemplateCoach: CoachEngine {
     func answer(_ question: String, digest d: SessionDigest) async throws -> String {
         let q = question.lowercased()
         if let s = d.strokes.first(where: { q.contains($0.type.lowercased()) }) {
-            return "\(s.type): \(s.count) shots, \(s.sweetSpotPercent)% sweet spot, \(s.avgBallKmh) km/h average (top \(s.maxBallKmh)), \(s.avgSpinRPM) rpm, swing path \(s.avgPathDeg)°."
+            return "\(s.type): \(s.count) shots, \(s.sweetSpotPercent)% sweet spot, \(s.avgBallSpeed) \(d.speedUnit) average (top \(s.maxBallSpeed)), \(s.avgSpinRPM) rpm, swing path \(s.avgPathDeg)°."
         }
         return try await summarize(d)
     }

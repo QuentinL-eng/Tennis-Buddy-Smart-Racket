@@ -6,6 +6,8 @@ import SwiftUI
 struct CalibrationView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
+    @AppStorage(UnitSystem.storageKey) private var useMetric = false
+    private var units: UnitSystem { UnitSystem(metric: useMetric) }
 
     enum Step: Int { case intro, tipUp, faceUp, grid, done }
     @State private var step: Step = .intro
@@ -98,7 +100,7 @@ struct CalibrationView: View {
     private var grid: some View {
         VStack(spacing: 14) {
             Text("Ball drops (optional)").font(.title2.bold())
-            Text("Tape a 3×3 grid on the strings (squares ~5 cm apart across, ~6 cm along). Hold the racket face-up with a relaxed grip, tap a square, then drop a ball on it from about 1.5 m. Five drops per square is plenty.")
+            Text("Tape a 3×3 grid on the strings (squares about \(units.lengthText(5)) apart across, \(units.lengthText(6)) along). Hold the racket face-up with a relaxed grip, tap a square, then drop a ball on it from about \(useMetric ? "1.5 m" : "5 ft"). Five drops per square is plenty.")
                 .font(.callout).multilineTextAlignment(.center).foregroundStyle(.secondary)
             VStack(spacing: 8) {
                 Text("Tip ↑").font(.caption).foregroundStyle(.secondary)
