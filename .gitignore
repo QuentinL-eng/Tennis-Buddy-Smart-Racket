@@ -15,3 +15,5 @@ __pycache__/
 models/
 *.safetensors
 *.gguf
+.build/
+.swiftpm/
