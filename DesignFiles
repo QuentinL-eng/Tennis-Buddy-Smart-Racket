@@ -1,1 +1,56 @@
+This folder contains all the design-related resources and documentation for the Smart Tennis Racket project. Here, you will find circuit diagrams, hardware requirements, and assembly instructions to help you replicate or improve the build.
 
+---
+
+## 📁 Folder Structure
+
+| File / Folder            | Description                                              |
+|--------------------------|----------------------------------------------------------|
+| `Circuit_Diagram.png`     | The wiring diagram showing the connection between ESP32, MPU6050, LED RGB Strip, and power supply. |
+| `Bill_of_Materials.md`    | List of all hardware and software components required for the build. |
+| `Assembly_Guide.md`       | Step-by-step guide to assembling the hardware components and wiring the system. |
+
+---
+
+## 🛠️ Tools Used
+- **Circuit Design**: EasyEDA
+- **Programming IDE**: Arduino IDE
+- **Microcontroller Platform**: ESP32
+
+---
+
+# 📋 Bill of Materials (BOM)
+
+A comprehensive list of components needed to build the Smart Tennis Racket.
+
+---
+
+## 🔹 Hardware Requirements
+
+| Component               | Description                         | Quantity |
+|-------------------------|-------------------------------------|----------|
+| ESP32                   | Microcontroller                    | 1        |
+| MPU6050                | Accelerometer & Gyroscope Sensor   | 1        |
+| LED RGB Strip          | For visual shot intensity feedback | 1        |
+| Battery (5V)           | Power Source                       | 1        |
+| Capacitors           | 470µF                      | 1        |
+| Wires | Miscellaneous components        | As needed |
+
+---
+
+## 🔹 Software Requirements
+
+| Software/Library        | Purpose                         |
+|-------------------------|---------------------------------|
+| Arduino IDE             | Programming the ESP32          |
+| Wire.h                  | I2C Communication               |
+| Adafruit_MPU6050.h      | MPU6050 Sensor Handling         |
+| Adafruit_Sensor.h       | Sensor Data Interface           |
+| WiFi.h                  | ESP32 Wi-Fi Communication       |
+| WiFiClient.h            | Wi-Fi Client Functionality      |
+| WiFiServer.h            | Wi-Fi Server Functionality      |
+
+---
+
+## Optional
+- **3D-printed Enclosure** (If applicable): Custom design for holding the ESP32 and other components inside/around the tennis racket.
