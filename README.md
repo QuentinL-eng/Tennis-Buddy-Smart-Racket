@@ -42,5 +42,35 @@ A smart tennis racket designed to analyze shot intensity, speed, and motion usin
    ```sh
    git clone https://github.com/YOUR_GITHUB_USERNAME/smart-tennis-racket.git
    cd smart-tennis-racket
+   ```
+2. **Install the required libraries** in Arduino IDE.
+3. **Flash the ESP32** with the provided firmware.
+4. **Assemble the hardware** according to the circuit diagram.
+5. **Start testing** the system and analyze data.
+
+### **Installation Guide**
+- **Setting up Arduino IDE**: Download and install Arduino IDE from [here](https://www.arduino.cc/en/software).
+- **Adding ESP32 Board Support**: Follow [this guide](https://github.com/espressif/arduino-esp32).
+- **Uploading Code**: Connect ESP32, select the correct COM port, and upload the provided scripts.
+
+### **Usage Instructions**
+- **Basic setup**: Turn on the racket and ensure Wi-Fi connectivity.
+- **Data transmission**: Observe motion data in the serial monitor or via the server.
+- **LED indications**:
+  - Green LED: Low impact shot
+  - Red LED: High impact shot
+
+### **Circuit Diagram & Wiring Instructions**
+(*Provide a wiring schematic here*)
+
+### **Contributing**
+We welcome contributions! Follow these steps:
+1. **Fork the repository**
+2. **Create a feature branch**
+3. **Commit changes and push to GitHub**
+4. **Submit a pull request**
+
+### **License**
+This project is licensed under the **MIT License**. See the `LICENSE` file for details.
 
 }
