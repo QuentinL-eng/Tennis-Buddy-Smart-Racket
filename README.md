@@ -1,10 +1,10 @@
 # Smart-Tennis-Racket
 
 ### **📜 Project Description**
-A smart tennis racket designed to analyze shot intensity, speed, and motion using an MPU6050 accelerometer and ESP32 for wireless data transmission. The project aims to assist players and coaches in refining techniques by providing real-time feedback and analytics.
+A smart tennis racket designed to analyze shot acceleration using an MPU6050 accelerometer and ESP32 for wireless data transmission. The project aims to assist players and coaches in refining techniques by providing real-time feedback and analytics. Furthermore, it displays the intensity of the shot played by displaying different colors on an LED RGB Strip.
 
 ### **🔹 Features**
-- ✅ **Real-time motion tracking** using MPU6050 (accelerometer and gyroscope).
+- ✅ **Real-time acceleration tracking** using MPU6050 (accelerometer and gyroscope).
 - ✅ **Wireless data transmission** via ESP32 Wi-Fi communication.
 - ✅ **LED indicators** to visually represent shot intensity.
 - ✅ **Open-source and customizable** for further development.
@@ -15,8 +15,8 @@ A smart tennis racket designed to analyze shot intensity, speed, and motion usin
 ### **🛠 Hardware Requirements**
 - **🖥 Microcontroller:** ESP32
 - **📟 Sensors:** MPU6050 (Accelerometer & Gyroscope)
-- **📺 Display:** OLED Display (Adafruit_SSD1306)
-- **🔋 Power Source:** 3.7V Battery
+- **📺 Display:** LED RGB Strips (Adafruit_SSD1306)
+- **🔋 Power Source:** 5V Battery
 - **📡 Additional Components:** Wires, Connectors, Resistors
 
 ---
