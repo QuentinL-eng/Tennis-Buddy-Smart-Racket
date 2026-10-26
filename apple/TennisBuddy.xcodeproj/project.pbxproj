@@ -11,6 +11,7 @@
 		0136976E6EEE868451134E30 /* SyncedStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48A26CA798241971A914132B /* SyncedStore.swift */; };
 		0424191C89E90C4E2DFDBEBE /* LiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7FE1568EBF1F305C6ADF3C4 /* LiveView.swift */; };
 		044D7A721F0CE85DB86A97DA /* RacketSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE7A86CCDEFE9D1F8502AC1 /* RacketSceneView.swift */; };
+		05D21A1F862ECFC8F4BE9C54 /* GLBLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28DF7CF160993EBAA8F2EB65 /* GLBLoader.swift */; };
 		0DE09550D0558D6F3CA7D726 /* HuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 040B52703505123B6D01217A /* HuggingFace */; };
 		10FB836BF67A7F6983A899D4 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93FF9841989C788B5B2C46D4 /* AppModel.swift */; };
 		1841A606AC7BC27C12691B92 /* RacketKit in Frameworks */ = {isa = PBXBuildFile; productRef = A4E70D007D8B145569CBD58A /* RacketKit */; };
@@ -18,6 +19,7 @@
 		1D917C4ECF632F4D057F0CBA /* RacketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F73C9942056B6F82D381273 /* RacketView.swift */; };
 		20C7D56510BA2336399B0466 /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2C05509855869C61804935 /* Records.swift */; };
 		25748A9C6E6F19D62F2C6D13 /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = EEC66B2A4FFDA8DDCE11593D /* MLXLLM */; };
+		2AEFC5FDAEB86C5C57C247EE /* TennisRacket.glb in Resources */ = {isa = PBXBuildFile; fileRef = 343375742A01D39CB5E6D41F /* TennisRacket.glb */; };
 		376DBE9C6F1BB56DB7CE06AD /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F165496998F9443B17B628A8 /* WorkoutManager.swift */; };
 		405207A2807350930E06AF81 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47CDCF90CDD3213B7A94C42 /* CalibrationView.swift */; };
 		40CC406C5AB59C2A0719D8EB /* CoachSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 272CEAEF6309A4B8F0DB842E /* CoachSelfTest.swift */; };
@@ -26,6 +28,7 @@
 		5BB0F3B8567210DDC2337D24 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 6F73A653F183D4193124A6A5 /* MLXLMCommon */; };
 		62EBDCA9C808702796A63F85 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A34DFC69F764025C289A856 /* HistoryView.swift */; };
 		6378233C7A0268790A47CF6C /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E790DB056785306E5A4E26C /* Components.swift */; };
+		643060A89493BC64502B2CEB /* TennisRacket.glb in Resources */ = {isa = PBXBuildFile; fileRef = 343375742A01D39CB5E6D41F /* TennisRacket.glb */; };
 		65D4F29ECD63B318321BBF4F /* RacketSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE7A86CCDEFE9D1F8502AC1 /* RacketSceneView.swift */; };
 		679BC005B560A7AE4A5A91EF /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12AAA9C083779C5F7C4404A /* InsightsView.swift */; };
 		78E8E3EDAAF6000CAF5B6630 /* GemmaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* GemmaLoader.swift */; };
@@ -44,6 +47,7 @@
 		AD6B79AF58CF1CB13D72AD08 /* TennisBuddyWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 1F855F6F1292B3220B90A8FB /* TennisBuddyWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		BB68AD1A639395ED9C11FE15 /* CoachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B37449F16667305BA65652 /* CoachModel.swift */; };
 		C520ADDD7496A77DC1BD599B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9D172411555FD246D6484F7 /* Assets.xcassets */; };
+		CD941D083EEC004726C80EE4 /* GLBLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28DF7CF160993EBAA8F2EB65 /* GLBLoader.swift */; };
 		CE8AEE943D5899ED87F7B13A /* GemmaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* GemmaLoader.swift */; };
 		D06127062F0CC45A1C3F14B3 /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2C05509855869C61804935 /* Records.swift */; };
 		D20140CD8ADA7F5AE2D34F8D /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 336ADA4549D2357D274C48E9 /* MLXHuggingFace */; };
@@ -86,7 +90,9 @@
 		1F855F6F1292B3220B90A8FB /* TennisBuddyWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TennisBuddyWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		214D03CD0141E5D33E2C1284 /* TennisBuddy-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TennisBuddy-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		272CEAEF6309A4B8F0DB842E /* CoachSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSelfTest.swift; sourceTree = "<group>"; };
+		28DF7CF160993EBAA8F2EB65 /* GLBLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLBLoader.swift; sourceTree = "<group>"; };
 		2F2019504077756E640617FE /* TennisBuddyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisBuddyApp.swift; sourceTree = "<group>"; };
+		343375742A01D39CB5E6D41F /* TennisRacket.glb */ = {isa = PBXFileReference; path = TennisRacket.glb; sourceTree = "<group>"; };
 		396D35018B2F6B1101D869F2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		3F2C05509855869C61804935 /* Records.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Records.swift; sourceTree = "<group>"; };
 		48A26CA798241971A914132B /* SyncedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncedStore.swift; sourceTree = "<group>"; };
@@ -157,11 +163,20 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		19095F16F7A6E82E5C3835A3 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				343375742A01D39CB5E6D41F /* TennisRacket.glb */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		5BA2F3416C0F1753D8B22F48 /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				A47CDCF90CDD3213B7A94C42 /* CalibrationView.swift */,
 				7E790DB056785306E5A4E26C /* Components.swift */,
+				28DF7CF160993EBAA8F2EB65 /* GLBLoader.swift */,
 				5A34DFC69F764025C289A856 /* HistoryView.swift */,
 				F12AAA9C083779C5F7C4404A /* InsightsView.swift */,
 				F7FE1568EBF1F305C6ADF3C4 /* LiveView.swift */,
@@ -178,6 +193,7 @@
 				B8D662FE66A4E8B265C65D44 /* App */,
 				8D8AE2EE54963017EB5F66E9 /* Coach */,
 				CA642F708FFB3EE784E47CC7 /* Model */,
+				19095F16F7A6E82E5C3835A3 /* Resources */,
 				5BA2F3416C0F1753D8B22F48 /* Views */,
 			);
 			path = Shared;
@@ -385,6 +401,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				42C595C9D9C55F8E2DD00D30 /* Assets.xcassets in Resources */,
+				2AEFC5FDAEB86C5C57C247EE /* TennisRacket.glb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -401,6 +418,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				910335C8DB49994BECCF88FC /* Assets.xcassets in Resources */,
+				643060A89493BC64502B2CEB /* TennisRacket.glb in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -416,6 +434,7 @@
 				D831B13CEC2A2C4E58FC3859 /* CoachModel.swift in Sources */,
 				F68AD655352EC98EE29CC552 /* CoachSelfTest.swift in Sources */,
 				6378233C7A0268790A47CF6C /* Components.swift in Sources */,
+				05D21A1F862ECFC8F4BE9C54 /* GLBLoader.swift in Sources */,
 				CE8AEE943D5899ED87F7B13A /* GemmaLoader.swift in Sources */,
 				62EBDCA9C808702796A63F85 /* HistoryView.swift in Sources */,
 				679BC005B560A7AE4A5A91EF /* InsightsView.swift in Sources */,
@@ -437,6 +456,7 @@
 				BB68AD1A639395ED9C11FE15 /* CoachModel.swift in Sources */,
 				40CC406C5AB59C2A0719D8EB /* CoachSelfTest.swift in Sources */,
 				F25C383A73292364294A4BFF /* Components.swift in Sources */,
+				CD941D083EEC004726C80EE4 /* GLBLoader.swift in Sources */,
 				78E8E3EDAAF6000CAF5B6630 /* GemmaLoader.swift in Sources */,
 				A237A1851BCDEEF4483EAB7F /* HistoryView.swift in Sources */,
 				54D0A472AD32FB216A2612B9 /* InsightsView.swift in Sources */,
