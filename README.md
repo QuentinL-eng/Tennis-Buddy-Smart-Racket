@@ -61,7 +61,8 @@ A smart tennis racket designed to analyze shot intensity, speed, and motion usin
   - Red LED: High impact shot
 
 ### **Circuit Diagram & Wiring Instructions**
-(*Provide a wiring schematic here*)
+![image](https://github.com/user-attachments/assets/33419769-9524-431a-9cc0-07e09bf930fe)
+
 
 ### **Contributing**
 We welcome contributions! Follow these steps:
