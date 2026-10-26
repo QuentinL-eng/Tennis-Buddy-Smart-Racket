@@ -80,8 +80,11 @@ struct InsightsView: View {
                 .chartYAxisLabel(units.speedUnit)
                 .frame(height: 180)
                 Chart(realSessions) { s in
-                    BarMark(x: .value("Date", s.startDate, unit: .day), y: .value("Sweet spot %", s.summary.sweetSpotPercent))
-                        .foregroundStyle(Color.green.gradient)
+                    AreaMark(x: .value("Date", s.startDate), y: .value("Sweet spot %", s.summary.sweetSpotPercent))
+                        .foregroundStyle(Color.green.opacity(0.15).gradient)
+                    LineMark(x: .value("Date", s.startDate), y: .value("Sweet spot %", s.summary.sweetSpotPercent))
+                        .symbol(.circle)
+                        .foregroundStyle(Color.green)
                 }
                 .chartYScale(domain: 0...100)
                 .chartYAxisLabel("Sweet spot %")
