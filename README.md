@@ -1,7 +1,5 @@
 # Smart-Tennis-Racket
 
-# **Smart Tennis Racket - Open Source Project**
-
 ## **README.md**
 
 ### **📌 Project Title: Smart Tennis Racket**
