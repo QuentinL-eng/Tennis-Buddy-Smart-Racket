@@ -3,7 +3,7 @@
 App Store Connect app: **Tennis Buddy Trainer** (bundle ID `com.kellamadams.tennisbuddy`).
 
 **Public beta link:** https://testflight.apple.com/join/137F7kvd (works once Beta App Review approves the build;
-build 1.0 (1) submitted 2:40 PM, Oct 17). Internal group: "Team & Friends" (automatic distribution). External group: "Public Beta".
+build 1.0 (1) submitted 2:30 PM, Oct 17). Internal group: "Team & Friends" (automatic distribution). External group: "Public Beta".
 Upload a new build: `tools/testflight.sh` (archives the iPhone + Watch app and uploads; build numbers are automatic).
 
 ## Test information (App Store Connect → TestFlight → Test Information)
