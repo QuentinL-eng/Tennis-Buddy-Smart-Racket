@@ -1,3 +1,5 @@
+<img src="docs/icon.png" width="120" align="right" alt="Tennis Buddy icon">
+
 # 🎾 Tennis Buddy
 
 A tennis racket that knows every shot you hit. Sensors hidden in the handle of a Yonex VCore 98 measure swing speed,

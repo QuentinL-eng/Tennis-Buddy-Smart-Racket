@@ -16,6 +16,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
 
         model.onShotForWatch = { [weak self] shot in self?.send(shot: shot) }
         model.onSessionChangeForWatch = { [weak self] active in self?.sendSessionState(active: active) }
+        model.onDrillChangeForWatch = { [weak self] drill in self?.send(drill: drill) }
     }
 
     private func send(shot: ShotMetrics) {
@@ -27,9 +28,24 @@ final class WatchBridge: NSObject, WCSessionDelegate {
         WCSession.default.sendMessage(msg, replyHandler: nil)
     }
 
+    /// Drill updates go both as a live message and in the application context, so the Watch catches up on launch.
+    private func send(drill: Drill?) {
+        guard WCSession.default.activationState == .activated else { return }
+        let data = drill.flatMap { try? JSONEncoder().encode($0) } ?? Data()
+        var ctx = WCSession.default.applicationContext
+        ctx["drill"] = data
+        ctx["updated"] = Date().timeIntervalSince1970
+        try? WCSession.default.updateApplicationContext(ctx)
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(["type": "drill", "drill": data], replyHandler: nil)
+        }
+    }
+
     private func sendSessionState(active: Bool) {
         guard WCSession.default.activationState == .activated else { return }
-        let ctx: [String: Any] = ["sessionActive": active, "updated": Date().timeIntervalSince1970]
+        var ctx = WCSession.default.applicationContext
+        ctx["sessionActive"] = active
+        ctx["updated"] = Date().timeIntervalSince1970
         try? WCSession.default.updateApplicationContext(ctx)
         if WCSession.default.isReachable {
             WCSession.default.sendMessage(["type": "session", "active": active], replyHandler: nil)
@@ -49,6 +65,7 @@ final class WatchBridge: NSObject, WCSessionDelegate {
             case "stop": model.stopSession()
             case "point": if let won { model.logPoint(won: won) }
             case "health": model.recordHealth(averageHeartRate: avgHR ?? 0, calories: kcal ?? 0)
+            case "cancelDrill": model.cancelDrill()
             default: break
             }
             replyHandler(["sessionActive": model.isSessionActive])

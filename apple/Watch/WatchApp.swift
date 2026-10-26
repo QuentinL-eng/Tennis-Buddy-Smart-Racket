@@ -28,6 +28,7 @@ final class WatchModel: NSObject, WCSessionDelegate {
     var pointsLost = 0
     var phoneReachable = false
     var units = UnitSystem(metric: false)
+    var drill: Drill?
     let workout = WorkoutManager()
 
     override init() {
@@ -58,6 +59,25 @@ final class WatchModel: NSObject, WCSessionDelegate {
         send(["cmd": "health", "avgHR": workout.averageHeartRate, "kcal": workout.activeCalories])
     }
 
+    /// New drill or progress from the iPhone: tap per counted shot, a celebration when it's done.
+    func updateDrill(_ data: Data) {
+        let new = data.isEmpty ? nil : try? JSONDecoder().decode(Drill.self, from: data)
+        if let new, let old = drill, new.id == old.id, new.completed > old.completed {
+            WKInterfaceDevice.current().play(new.isDone ? .success : .directionUp)
+            if new.isDone {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { WKInterfaceDevice.current().play(.success) }
+            }
+        } else if let new, new.id != drill?.id {
+            WKInterfaceDevice.current().play(.notification)
+        }
+        drill = new
+    }
+
+    func cancelDrill() {
+        drill = nil
+        send(["cmd": "cancelDrill"])
+    }
+
     func logPoint(won: Bool) {
         if won { pointsWon += 1 } else { pointsLost += 1 }
         send(["cmd": "point", "won": won])
@@ -83,6 +103,8 @@ final class WatchModel: NSObject, WCSessionDelegate {
             WKInterfaceDevice.current().play(shot.isSweetSpot ? .success : .retry)
         } else if message["type"] as? String == "session", let active = message["active"] as? Bool {
             setSessionActive(active)
+        } else if message["type"] as? String == "drill", let data = message["drill"] as? Data {
+            updateDrill(data)
         }
     }
 
@@ -93,7 +115,11 @@ final class WatchModel: NSObject, WCSessionDelegate {
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext ctx: [String: Any]) {
         let active = ctx["sessionActive"] as? Bool
-        Task { @MainActor in if let active { self.setSessionActive(active) } }
+        let drill = ctx["drill"] as? Data
+        Task { @MainActor in
+            if let active { self.setSessionActive(active) }
+            if let drill { self.updateDrill(drill) }
+        }
     }
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith state: WCSessionActivationState,
@@ -113,6 +139,7 @@ struct WatchRootView: View {
 
     var body: some View {
         TabView {
+            if model.drill != nil { DrillPage() }
             LastShotPage()
             PointsPage()
             SessionPage()
@@ -154,6 +181,43 @@ struct LastShotPage: View {
         .containerBackground(
             (model.lastShot?.isSweetSpot ?? true ? Color.green : Color.red).opacity(model.lastShot == nil ? 0 : 0.25)
                 .gradient, for: .tabView)
+    }
+}
+
+/// The drill countdown: a ring that fills as matching shots land.
+struct DrillPage: View {
+    @Environment(WatchModel.self) private var model
+
+    var body: some View {
+        if let drill = model.drill {
+            VStack(spacing: 6) {
+                Text(drill.title).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
+                ZStack {
+                    Circle().stroke(.quaternary, lineWidth: 8)
+                    Circle().trim(from: 0, to: drill.progress)
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.snappy, value: drill.completed)
+                    VStack(spacing: 0) {
+                        if drill.isDone {
+                            Image(systemName: "checkmark").font(.title.bold()).foregroundStyle(.green)
+                            Text("Done!").font(.caption)
+                        } else {
+                            Text("\(drill.remaining)").font(.system(size: 34, weight: .bold, design: .rounded))
+                                .monospacedDigit()
+                            Text("to go").font(.caption2).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .frame(width: 92, height: 92)
+                Text(drill.goal).font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .lineLimit(2)
+                Button(drill.isDone ? "Close" : "Stop drill", role: drill.isDone ? nil : .destructive) {
+                    model.cancelDrill()
+                }
+                .font(.caption)
+            }
+        }
     }
 }
 

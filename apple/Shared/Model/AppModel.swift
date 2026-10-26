@@ -39,6 +39,9 @@ final class AppModel {
     var sessionShots: [ShotMetrics] = []
     var isSessionActive: Bool { activeSession != nil }
 
+    // MARK: Drill
+    var activeDrill: Drill?
+
     // MARK: Settings
     var calibration: Calibration { didSet { save(calibration, key: "calibration"); engine.calibration = calibration } }
     var profile: RacketProfile { didSet { save(profile, key: "profile"); engine.profile = profile } }
@@ -71,6 +74,7 @@ final class AppModel {
     /// Hooks for the Watch bridge (iOS).
     var onShotForWatch: ((ShotMetrics) -> Void)?
     var onSessionChangeForWatch: ((Bool) -> Void)?
+    var onDrillChangeForWatch: ((Drill?) -> Void)?
 
     static let recordingsDirectory: URL = {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -166,10 +170,27 @@ final class AppModel {
         try? modelContext?.save()
     }
 
+    // MARK: - Drills
+
+    func startDrill(_ drill: Drill) {
+        activeDrill = drill
+        onDrillChangeForWatch?(drill)
+    }
+
+    func cancelDrill() {
+        activeDrill = nil
+        onDrillChangeForWatch?(nil)
+    }
+
     private func handle(_ shot: ShotMetrics) {
         if calibrationMode {
             onCalibrationImpact?(shot)
             return
+        }
+        if var drill = activeDrill, !drill.isDone, drill.matches(shot) {
+            drill.completed += 1
+            activeDrill = drill
+            onDrillChangeForWatch?(drill)
         }
         lastShot = shot
         shotFlashID = UUID()

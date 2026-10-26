@@ -13,7 +13,7 @@ struct LiveView: View {
             ScrollView {
                 if wide {
                     HStack(alignment: .top, spacing: 20) {
-                        VStack(spacing: 16) { racketPanel(height: geo.size.height * 0.62); sessionControls }
+                        VStack(spacing: 16) { racketPanel(height: geo.size.height * 0.62); drillBanner; sessionControls }
                             .frame(maxWidth: .infinity)
                         VStack(spacing: 16) { shotPanel; recentShots }
                             .frame(width: min(440, geo.size.width * 0.4))
@@ -22,6 +22,7 @@ struct LiveView: View {
                 } else {
                     VStack(spacing: 16) {
                         racketPanel(height: 300)
+                        drillBanner
                         sessionControls
                         shotPanel
                         recentShots
@@ -63,6 +64,38 @@ struct LiveView: View {
             .font(.caption.monospacedDigit())
             .foregroundStyle(.secondary)
             .padding(12)
+        }
+    }
+
+    @ViewBuilder private var drillBanner: some View {
+        if let drill = model.activeDrill {
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle().stroke(.quaternary, lineWidth: 6)
+                    Circle().trim(from: 0, to: drill.progress)
+                        .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                        .rotationEffect(.degrees(-90))
+                        .animation(.snappy, value: drill.completed)
+                    if drill.isDone {
+                        Image(systemName: "checkmark").font(.headline).foregroundStyle(.green)
+                    } else {
+                        Text("\(drill.remaining)").font(.headline.monospacedDigit())
+                    }
+                }
+                .frame(width: 48, height: 48)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(drill.isDone ? "Drill complete!" : drill.title).font(.headline)
+                    Text(drill.goal).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+                }
+                Spacer()
+                Button(drill.isDone ? "Close" : "Stop", systemImage: "xmark.circle.fill") { model.cancelDrill() }
+                    .labelStyle(.iconOnly)
+                    .font(.title3)
+                    .foregroundStyle(.secondary)
+                    .buttonStyle(.plain)
+            }
+            .padding(12)
+            .background(.background.secondary, in: .rect(cornerRadius: 16))
         }
     }
 

@@ -120,8 +120,24 @@ struct InsightsView: View {
                     if coach.isWorking { ProgressView().controlSize(.small) }
                 }
                 if !drill.isEmpty {
-                    Text(drill).font(.callout.monospaced()).padding(10)
-                        .background(.fill.quaternary, in: .rect(cornerRadius: 8))
+                    let parsed = Drill.parse(drill)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(parsed.title).font(.headline)
+                        Text(parsed.goal)
+                        if !parsed.why.isEmpty { Text(parsed.why).font(.caption).foregroundStyle(.secondary) }
+                        Button {
+                            model.startDrill(parsed)
+                        } label: {
+                            Label(model.activeDrill?.title == parsed.title ? "Drill running" : "Start drill (sends to Watch)",
+                                  systemImage: "applewatch")
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .foregroundStyle(.black)
+                        .disabled(model.activeDrill?.title == parsed.title)
+                    }
+                    .padding(12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(.fill.quaternary, in: .rect(cornerRadius: 10))
                 }
             }
         } label: { Label("Coach", systemImage: "sparkles") }
