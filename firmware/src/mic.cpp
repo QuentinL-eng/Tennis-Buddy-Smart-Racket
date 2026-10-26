@@ -4,8 +4,8 @@
 
 #include "sweetspot.h"
 
-// INMP441 wiring (docs/PLAN.md): SCK=D6/GPIO21, WS=D7/GPIO20, SD=D10/GPIO10, L/R tied to GND (left slot).
-static const int PIN_SCK = 21, PIN_WS = 20, PIN_SD = 10;
+// INMP441 wiring as built (docs/WIRING.md): SCK=D0/GPIO2, WS=D1/GPIO3, SD=D2/GPIO4, L/R tied to GND (left slot).
+static const int PIN_SCK = 2, PIN_WS = 3, PIN_SD = 4;
 static const i2s_port_t PORT = I2S_NUM_0;
 
 // Trigger tuning. Samples are int16 (top 16 bits of the mic's 24).

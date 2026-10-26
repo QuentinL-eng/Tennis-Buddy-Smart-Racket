@@ -3,8 +3,8 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-static const int pins[] = {2, 3, 4, 5, 6, 7, 8, 9};   // D0-D3, D4, D5, D8, D9 (D6/D7/D10 = mic)
-static const char *names[] = {"D0", "D1", "D2", "D3", "D4", "D5", "D8", "D9"};
+static const int pins[] = {5, 6, 7, 21, 20, 8, 9, 10};   // D3-D10 (D0-D2 = mic, see docs/WIRING.md)
+static const char *names[] = {"D3", "D4", "D5", "D6", "D7", "D8", "D9", "D10"};
 
 void setup() {
   Serial.begin(115200);

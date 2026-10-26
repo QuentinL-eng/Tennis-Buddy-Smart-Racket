@@ -12,9 +12,10 @@
 #include "mic.h"
 
 // ---- Pins (XIAO ESP32C3) ----
-static const int PIN_SDA = D4;   // GPIO6
-static const int PIN_SCL = D5;   // GPIO7
-static const int PIN_VBAT = A0;  // GPIO2, 220k/220k divider from BAT+
+// As built (see docs/WIRING.md): sensors on the right header, mic on D0-D2.
+static const int PIN_SDA = D9;   // GPIO9 (strapping pin; fine, the I2C pull-ups keep it high at boot)
+static const int PIN_SCL = D10;  // GPIO10
+static const int PIN_VBAT = -1;  // no battery divider fitted (A0 is the mic clock)
 
 // ---- I2C addresses / registers ----
 static const uint8_t MPU_ADDR = 0x68;
@@ -178,7 +179,7 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
 
 static TBStatus makeStatus() {
   TBStatus st;
-  st.battery_mv = (uint16_t)(analogReadMilliVolts(PIN_VBAT) * 2);
+  st.battery_mv = PIN_VBAT >= 0 ? (uint16_t)(analogReadMilliVolts(PIN_VBAT) * 2) : 0;
   st.fw_major = TB_FW_MAJOR;
   st.fw_minor = TB_FW_MINOR;
   st.flags = (mpuOk ? TB_FLAG_MPU_OK : 0) | (h3Ok ? TB_FLAG_H3LIS_OK : 0) | (streaming ? TB_FLAG_STREAMING : 0);
@@ -223,7 +224,7 @@ void setup() {
   mpuOk = setupMPU();
   h3Ok = setupH3LIS();
   Serial.printf("MPU6050: %s   H3LIS331DL: %s\n", mpuOk ? "OK" : "NOT FOUND", h3Ok ? "OK" : "NOT FOUND");
-  if (!mpuOk || !h3Ok) Serial.println("Check wiring: SDA=D4, SCL=D5, 3V3, GND (see docs/PLAN.md)");
+  if (!mpuOk || !h3Ok) Serial.println("Check wiring: SDA=D9, SCL=D10, VCC=3V3, GND=GND (see docs/WIRING.md)");
 
   analogReadResolution(12);
   packetQueue = xQueueCreate(48, sizeof(TBPacket));
