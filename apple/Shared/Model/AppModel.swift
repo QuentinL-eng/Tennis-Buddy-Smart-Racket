@@ -25,6 +25,9 @@ final class AppModel {
     var connectionLabel = "Simulator running"
     var isConnected = true
     var racketStatus: RacketProtocol.Status?
+    /// Latest verdict from the racket's on-device sweet-spot model, and when it arrived.
+    var lastVerdict: RacketProtocol.ShotVerdict?
+    var lastVerdictDate: Date?
     var replayURL: URL?
 
     // MARK: Live
@@ -67,6 +70,7 @@ final class AppModel {
             self.isConnected = state == .connected
         }
         ble.onStatus = { [weak self] status in self?.racketStatus = status }
+        ble.onVerdict = { [weak self] v in self?.lastVerdict = v; self?.lastVerdictDate = Date() }
         return ble
     }()
     private var replay: ReplaySource?

@@ -19,7 +19,7 @@ Don't skip these: they're what make the demo numbers believable.
       and confirm `SHOT …` lines appear on a hit. Check the trigger thresholds in `mic.cpp` and the `inference=…us` time.
 - [ ] **Collect ~100+ labelled clips and retrain** (`tools/collect_clips.py`, then `python3 ml/train.py --real data/impacts`).
       The shipped weights are trained on synthetic sound only.
-- [ ] **App:** subscribe to the new `shotUUID` characteristic in `RacketBLE` and show/log `ShotVerdict` (decoder exists).
+- [x] **App:** RacketBLE subscribes to the verdict characteristic and the Live view shows it (not yet run against a real racket).
 - [ ] **Run on the real devices:** install on the iPhone and Watch from Xcode, load Gemma on the iPhone over good
       Wi-Fi, and check iCloud sync from iPhone → Mac.
 - [ ] **Record a backup demo session** (and a short screen recording) in case Bluetooth misbehaves on stage.

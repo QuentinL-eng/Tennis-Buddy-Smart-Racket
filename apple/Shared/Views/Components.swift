@@ -176,3 +176,28 @@ extension TimeInterval {
             : String(format: "%d:%02d", s / 60, s % 60)
     }
 }
+
+
+/// The racket's own verdict from its on-device sweet-spot model (heard from the impact sound).
+struct VerdictBadge: View {
+    var verdict: RacketProtocol.ShotVerdict
+    var date: Date
+
+    var body: some View {
+        let tint: Color = verdict.isSweet ? .green : .red
+        HStack(spacing: 10) {
+            Image(systemName: "waveform.badge.mic").foregroundStyle(tint)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verdict.isSweet ? "Sweet spot" : "About \(verdict.offCenterPercent)% off the sweet spot")
+                    .font(.subheadline.weight(.semibold))
+                Text("On-racket AI · \(verdict.confidencePercent)% sure")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(12)
+        .background(tint.opacity(0.12), in: .rect(cornerRadius: 14))
+        .id(date)
+        .transition(.opacity)
+    }
+}

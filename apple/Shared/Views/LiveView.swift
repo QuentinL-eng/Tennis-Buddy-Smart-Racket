@@ -134,6 +134,15 @@ struct LiveView: View {
     }
 
     @ViewBuilder private var shotPanel: some View {
+        VStack(spacing: 12) {
+            if let v = model.lastVerdict, let date = model.lastVerdictDate {
+                VerdictBadge(verdict: v, date: date)
+            }
+            shotCard
+        }
+    }
+
+    @ViewBuilder private var shotCard: some View {
         if let shot = model.lastShot {
             ShotCardView(shot: shot, flashID: model.shotFlashID)
                 .id(shot.id)

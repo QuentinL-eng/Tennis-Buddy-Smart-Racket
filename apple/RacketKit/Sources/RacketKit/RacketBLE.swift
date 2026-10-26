@@ -23,6 +23,8 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
     /// Main-queue callbacks.
     public var onState: ((State) -> Void)?
     public var onStatus: ((RacketProtocol.Status) -> Void)?
+    /// Verdict from the racket's on-device sweet-spot model (main queue).
+    public var onVerdict: ((RacketProtocol.ShotVerdict) -> Void)?
 
     public private(set) var state: State = .idle {
         didSet { let s = state; DispatchQueue.main.async { self.onState?(s) } }
@@ -44,6 +46,7 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
     private let imuUUID = CBUUID(string: RacketProtocol.imuUUID)
     private let statusUUID = CBUUID(string: RacketProtocol.statusUUID)
     private let controlUUID = CBUUID(string: RacketProtocol.controlUUID)
+    private let shotUUID = CBUUID(string: RacketProtocol.shotUUID)
 
     public override init() {
         super.init()
@@ -144,7 +147,7 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let s = peripheral.services?.first(where: { $0.uuid == service }) else { return }
-        peripheral.discoverCharacteristics([imuUUID, statusUUID, controlUUID], for: s)
+        peripheral.discoverCharacteristics([imuUUID, statusUUID, controlUUID, shotUUID], for: s)
     }
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
@@ -152,6 +155,7 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
             switch c.uuid {
             case imuUUID: peripheral.setNotifyValue(true, for: c)
             case statusUUID: peripheral.setNotifyValue(true, for: c); peripheral.readValue(for: c)
+            case shotUUID: peripheral.setNotifyValue(true, for: c)
             case controlUUID:
                 control = c
                 peripheral.writeValue(Data([RacketProtocol.Command.startStream.rawValue]), for: c, type: .withResponse)
@@ -166,6 +170,8 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
         guard let data = characteristic.value else { return }
         if characteristic.uuid == imuUUID {
             handleIMU(data)
+        } else if characteristic.uuid == shotUUID, let v = RacketProtocol.decodeShotVerdict(data) {
+            DispatchQueue.main.async { self.onVerdict?(v) }
         } else if characteristic.uuid == statusUUID, let status = RacketProtocol.decodeStatus(data) {
             h3lisRange = status.h3lisRange
             DispatchQueue.main.async { self.onStatus?(status) }
