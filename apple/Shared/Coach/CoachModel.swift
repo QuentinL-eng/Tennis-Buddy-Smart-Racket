@@ -174,7 +174,8 @@ final class CoachModel {
     private var engine: CoachEngine { gemma ?? fallback }
 
     func loadGemma() async {
-        guard gemma == nil else { return }
+        guard gemma == nil, state != .loading else { return }
+        state = .loading
         do {
             gemma = try await GemmaLoader.load { [weak self] progress in
                 Task { @MainActor in self?.state = .downloading(progress) }
