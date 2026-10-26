@@ -221,8 +221,12 @@ void setup() {
 
   Wire.begin(PIN_SDA, PIN_SCL);
   Wire.setClock(400000);
-  mpuOk = setupMPU();
-  h3Ok = setupH3LIS();
+  // The MPU6050 sometimes isn't ready right after power-up: retry both sensors a few times.
+  for (int attempt = 0; attempt < 10 && !(mpuOk && h3Ok); attempt++) {
+    if (!mpuOk) mpuOk = setupMPU();
+    if (!h3Ok) h3Ok = setupH3LIS();
+    if (!(mpuOk && h3Ok)) delay(100);
+  }
   Serial.printf("MPU6050: %s   H3LIS331DL: %s\n", mpuOk ? "OK" : "NOT FOUND", h3Ok ? "OK" : "NOT FOUND");
   if (!mpuOk || !h3Ok) Serial.println("Check wiring: SDA=D9, SCL=D10, VCC=3V3, GND=GND (see docs/WIRING.md)");
 
@@ -258,8 +262,13 @@ void loop() {
     imuChar->notify();
   }
 
-  static uint32_t lastStatus = 0, lastSamples = 0;
+  static uint32_t lastStatus = 0, lastSamples = 0, lastRetry = 0;
   uint32_t now = millis();
+  if ((!mpuOk || !h3Ok) && now - lastRetry > 2000) {
+    lastRetry = now;
+    if (!mpuOk) mpuOk = setupMPU();
+    if (!h3Ok) h3Ok = setupH3LIS();
+  }
   if (now - lastStatus >= 1000) {
     TBStatus st = makeStatus();
     statusChar->setValue((uint8_t *)&st, sizeof(st));
