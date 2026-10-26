@@ -55,9 +55,17 @@ final class AppModel {
     let engine = RacketEngine()
     let recorder = Recorder()
     let simulator = SimulatedRacket()
-    #if !os(watchOS)
-    let ble = RacketBLE()
-    #endif
+    /// Created on first use, so Bluetooth permission is only requested when the real racket is selected.
+    @ObservationIgnored lazy var ble: RacketBLE = {
+        let ble = RacketBLE()
+        ble.onState = { [weak self] state in
+            guard let self, self.sourceKind == .racket else { return }
+            self.connectionLabel = state.label
+            self.isConnected = state == .connected
+        }
+        ble.onStatus = { [weak self] status in self?.racketStatus = status }
+        return ble
+    }()
     private var replay: ReplaySource?
     var modelContext: ModelContext?
     /// Hooks for the Watch bridge (iOS).
@@ -82,15 +90,6 @@ final class AppModel {
         let recorder = recorder
         engine.onRaw = { batch in recorder.append(batch) }
 
-        #if !os(watchOS)
-        ble.onState = { [weak self] state in
-            guard let self, self.sourceKind == .racket else { return }
-            self.connectionLabel = state.label
-            self.isConnected = state == .connected
-        }
-        ble.onStatus = { [weak self] status in self?.racketStatus = status }
-        #endif
-
         refreshRecordings()
         let stored = UserDefaults.standard.string(forKey: "sourceKind").flatMap(SourceKind.init(rawValue:))
         select(stored == .replay ? .simulator : (stored ?? .simulator))
@@ -105,12 +104,10 @@ final class AppModel {
         racketStatus = nil
         switch kind {
         case .racket:
-            #if !os(watchOS)
             engine.attach(ble)
             ble.start()
             connectionLabel = ble.state.label
             isConnected = ble.state == .connected
-            #endif
         case .simulator:
             engine.attach(simulator)
             simulator.start()
