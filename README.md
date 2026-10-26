@@ -1,9 +1,5 @@
 # Smart-Tennis-Racket
 
-## **README.md**
-
-### **📌 Project Title: Smart Tennis Racket**
-
 ### **📜 Project Description**
 A smart tennis racket designed to analyze shot intensity, speed, and motion using an MPU6050 accelerometer and ESP32 for wireless data transmission. The project aims to assist players and coaches in refining techniques by providing real-time feedback and analytics.
 
