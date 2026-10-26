@@ -13,9 +13,13 @@ Don't skip these: they're what make the demo numbers believable.
       matches where balls actually landed.
 - [ ] **Accuracy slide helper:** a small script that lines up app numbers with slow-mo measurements and prints
       the error table for the demo slide.
-- [ ] **Mic impact sensing (stretch, firmware):** read the INMP441 over I2S (SCK D6, WS D7, SD D10), send a short
-      impact-sound feature (peak level + ring energy) in the status/IMU packet, and use it to sharpen impact timing
-      and frame-hit detection.
+- [x] **Mic impact sensing + on-device ML:** the INMP441 is read over I2S and a tiny int8 neural network on the
+      ESP32-C3 answers "sweet spot?" and "how far off (%)". Firmware, trainer and docs are done: see [ml/README.md](../ml/README.md).
+- [ ] **Flash the mic firmware** (`pio run -t upload`; it compiles for the ESP32-C3 but has never run on hardware)
+      and confirm `SHOT …` lines appear on a hit. Check the trigger thresholds in `mic.cpp` and the `inference=…us` time.
+- [ ] **Collect ~100+ labelled clips and retrain** (`tools/collect_clips.py`, then `python3 ml/train.py --real data/impacts`).
+      The shipped weights are trained on synthetic sound only.
+- [ ] **App:** subscribe to the new `shotUUID` characteristic in `RacketBLE` and show/log `ShotVerdict` (decoder exists).
 - [ ] **Run on the real devices:** install on the iPhone and Watch from Xcode, load Gemma on the iPhone over good
       Wi-Fi, and check iCloud sync from iPhone → Mac.
 - [ ] **Record a backup demo session** (and a short screen recording) in case Bluetooth misbehaves on stage.

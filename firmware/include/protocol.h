@@ -8,6 +8,7 @@
 #define TB_IMU_UUID      "7E5B0002-6B1D-4D8E-9C1A-7E5B7E5B0001"
 #define TB_STATUS_UUID   "7E5B0003-6B1D-4D8E-9C1A-7E5B7E5B0001"
 #define TB_CONTROL_UUID  "7E5B0004-6B1D-4D8E-9C1A-7E5B7E5B0001"
+#define TB_SHOT_UUID     "7E5B0005-6B1D-4D8E-9C1A-7E5B7E5B0001"  // on-device ML verdict, notify
 
 #define TB_FW_MAJOR 1
 #define TB_FW_MINOR 0
@@ -50,8 +51,17 @@ struct TBStatus {
   uint8_t h3lis_range;  // 0 = 100 g, 1 = 200 g, 3 = 400 g
   uint16_t dropped;     // packets dropped because the BLE queue was full
 };
+// One verdict from the on-device sweet-spot model (firmware/src/sweetspot.cpp), sent once per detected impact.
+struct TBShot {
+  uint16_t seq;         // counts impacts since boot
+  uint8_t sweet;        // 1 = sweet spot, 0 = off-center
+  uint8_t off_pct;      // 0 if sweet; else 33..100, distance toward the frame (100 = at the frame)
+  uint8_t confidence;   // 50..100 (%), confidence in the sweet/not-sweet call
+  uint8_t level;        // impact loudness, 0..255 (255 = full scale; ~255 means the mic clipped)
+};
 #pragma pack(pop)
 
 static_assert(sizeof(TBSample) == 18, "sample size");
 static_assert(sizeof(TBPacket) == 152, "packet must fit one 185-byte iOS MTU");
 static_assert(sizeof(TBStatus) == 8, "status size");
+static_assert(sizeof(TBShot) == 6, "shot size");

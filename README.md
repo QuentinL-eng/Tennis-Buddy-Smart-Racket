@@ -19,6 +19,7 @@ Simulator mode without the racket).
 | Folder | Contents |
 |---|---|
 | [`firmware/`](firmware/) | PlatformIO project for the Seeed XIAO ESP32C3 (MPU6050 + H3LIS331DL, BLE streaming) |
+| [`ml/`](ml/) | **Open-source on-device model**: sweet spot or not, and % off, from the impact sound (trainer, docs) |
 | [`apple/`](apple/) | Xcode project: iPhone + Mac app, Watch app, shared `RacketKit` Swift package |
 | [`hardware/`](hardware/) | CAD for the handle insert (STEP + Parasolid), wiring |
 | [`tools/`](tools/) | Python analysis scripts, Gemma model download |

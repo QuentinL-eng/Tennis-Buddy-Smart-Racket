@@ -3,6 +3,9 @@
 Seeed XIAO ESP32C3 + MPU6050 + H3LIS331DL. Reads both IMUs at 1 kHz and streams raw samples over BLE as
 "Tennis Buddy". Pin map and protocol: [../docs/PLAN.md](../docs/PLAN.md).
 
+The INMP441 mic feeds an on-device ML model that reports sweet spot / % off-centre for each hit (serial `SHOT …`
+lines and BLE characteristic `…0005`). Docs: [../ml/README.md](../ml/README.md).
+
 ## Flash it
 
 ```bash

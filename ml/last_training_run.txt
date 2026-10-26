@@ -1,0 +1,5 @@
+train                  sweet/not accuracy  90.9%  (TP 2138 FP 295 FN 170 TN 2497)  off-centre MAE 10.4 percentage points (misses only)
+validation             sweet/not accuracy  86.7%  (TP 342 FP 72 FN 48 TN 438)  off-centre MAE 10.8 percentage points (misses only)
+validation (int8)      sweet/not accuracy  86.7%  (TP 341 FP 71 FN 49 TN 439)  off-centre MAE 14.1 percentage points (misses only)
+unseen rackets (int8)  sweet/not accuracy  84.0%  (TP 584 FP 172 FN 68 TN 676)  off-centre MAE 16.7 percentage points (misses only)
+wrote firmware/src/sweetspot_model.h

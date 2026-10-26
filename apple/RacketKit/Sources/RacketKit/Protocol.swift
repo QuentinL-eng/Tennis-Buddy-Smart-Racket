@@ -8,6 +8,8 @@ public enum RacketProtocol {
     public static let imuUUID = "7E5B0002-6B1D-4D8E-9C1A-7E5B7E5B0001"
     public static let statusUUID = "7E5B0003-6B1D-4D8E-9C1A-7E5B7E5B0001"
     public static let controlUUID = "7E5B0004-6B1D-4D8E-9C1A-7E5B7E5B0001"
+    /// On-device ML verdict (sweet spot or not, and how far off), one notification per impact.
+    public static let shotUUID = "7E5B0005-6B1D-4D8E-9C1A-7E5B7E5B0001"
 
     public static let samplesPerPacket = 8
     public static let packetSize = 152
@@ -50,6 +52,24 @@ public enum RacketProtocol {
         public var streaming: Bool
         public var h3lisRange: UInt8
         public var droppedPackets: UInt16
+    }
+
+    /// The racket's own sweet-spot verdict from its on-device model (firmware/src/sweetspot.cpp, ml/README.md).
+    public struct ShotVerdict: Sendable, Equatable {
+        public var seq: UInt16
+        public var isSweet: Bool
+        /// 0 when sweet; otherwise roughly 33...100, how far toward the frame the ball hit (100 = at the frame).
+        public var offCenterPercent: Int
+        public var confidencePercent: Int
+        /// Impact loudness 0...255 (near 255 means the mic clipped).
+        public var level: Int
+    }
+
+    public static func decodeShotVerdict(_ data: Data) -> ShotVerdict? {
+        guard data.count >= 6 else { return nil }
+        let b = [UInt8](data)
+        return ShotVerdict(seq: UInt16(b[0]) | UInt16(b[1]) << 8, isSweet: b[2] != 0,
+                           offCenterPercent: Int(b[3]), confidencePercent: Int(b[4]), level: Int(b[5]))
     }
 
     public static func decodePacket(_ data: Data) -> Packet? {

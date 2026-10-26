@@ -6,3 +6,5 @@ Calibration and test recordings from the racket.
   app and drop them here. Inspect with `python3 tools/analyze_recording.py <file> --plot`.
 - `calibration/drops-*.json`: labeled ball drops from the calibration grid (the app saves them in its
   Documents/Calibration folder).
+- `impacts/`: labelled impact-sound clips for the on-device sweet-spot model (`labels.csv` + raw int16 `.i16` files),
+  made by `tools/collect_clips.py`. See [ml/README.md](../ml/README.md).

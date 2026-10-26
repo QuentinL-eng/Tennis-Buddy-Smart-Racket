@@ -9,6 +9,7 @@
 #include <Wire.h>
 #include <NimBLEDevice.h>
 #include "protocol.h"
+#include "mic.h"
 
 // ---- Pins (XIAO ESP32C3) ----
 static const int PIN_SDA = D4;   // GPIO6
@@ -36,7 +37,9 @@ static TBSample lastSample = {};
 
 static QueueHandle_t packetQueue;
 static NimBLEServer *server;
-static NimBLECharacteristic *imuChar, *statusChar;
+static NimBLECharacteristic *imuChar, *statusChar, *shotChar;
+static QueueHandle_t shotQueue;
+static bool micOk = false;
 
 // ---- I2C helpers ----
 static bool writeReg(uint8_t addr, uint8_t reg, uint8_t val) {
@@ -194,6 +197,7 @@ static void setupBLE() {
   NimBLEService *svc = server->createService(TB_SERVICE_UUID);
   imuChar = svc->createCharacteristic(TB_IMU_UUID, NIMBLE_PROPERTY::NOTIFY);
   statusChar = svc->createCharacteristic(TB_STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
+  shotChar = svc->createCharacteristic(TB_SHOT_UUID, NIMBLE_PROPERTY::NOTIFY);
   NimBLECharacteristic *control =
       svc->createCharacteristic(TB_CONTROL_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
   control->setCallbacks(new ControlCallbacks());
@@ -223,11 +227,29 @@ void setup() {
 
   analogReadResolution(12);
   packetQueue = xQueueCreate(48, sizeof(TBPacket));
+  shotQueue = xQueueCreate(8, sizeof(TBShot));
+  micOk = micBegin(shotQueue);
+  Serial.printf("INMP441 mic + sweet-spot model: %s\n", micOk ? "OK" : "FAILED to start I2S");
+  Serial.println("Send 'c' over serial to toggle clip dump for training data (tools/collect_clips.py)");
   setupBLE();
   xTaskCreate(samplerTask, "sampler", 4096, nullptr, configMAX_PRIORITIES - 2, nullptr);
 }
 
 void loop() {
+  // Serial 'c' toggles clip dumping for data collection.
+  while (Serial.available()) {
+    if (Serial.read() == 'c') {
+      micSetCollect(!micCollecting());
+      Serial.printf("collect mode %s\n", micCollecting() ? "ON" : "OFF");
+    }
+  }
+  // Sweet-spot verdicts from the on-device model.
+  TBShot shot;
+  while (xQueueReceive(shotQueue, &shot, 0) == pdTRUE) {
+    shotChar->setValue((uint8_t *)&shot, sizeof(shot));
+    if (server->getConnectedCount() > 0) shotChar->notify();
+  }
+
   // Send queued packets as notifications.
   TBPacket pkt;
   while (xQueueReceive(packetQueue, &pkt, pdMS_TO_TICKS(2)) == pdTRUE) {

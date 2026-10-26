@@ -17,3 +17,4 @@ models/
 *.gguf
 .build/
 .swiftpm/
+__pycache__/
