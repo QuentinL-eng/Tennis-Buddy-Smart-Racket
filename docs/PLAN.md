@@ -3,11 +3,11 @@
 **Time:** 12:18 to 6:00 (about 5.5 hours). **Team:** CS (apps), EE (wiring + firmware), ME (hardware + calibration + data).
 **Requirement:** fork an open-source project ([AahanPrajapati/Smart-Tennis-Racket](https://github.com/AahanPrajapati/Smart-Tennis-Racket), MIT) and add a **trick** and a **treat**.
 
-> **Status (1:20):** firmware, RacketKit, iPhone/Mac/Watch apps, Gemma coach (verified on Mac), iCloud sync, app icon
+> **Status (1:20):** firmware, RacketKit, iPhone/Mac/Watch apps, Llama coach (swapped from Gemma; not yet re-verified on device), iCloud sync, app icon
 > and Watch drills are built and pushed. Waiting on hardware bring-up. After that, work through [TODO.md](TODO.md).
 
 - **Trick:** the racket itself. Sensors in the handle detect every shot and measure swing speed, ball speed, spin, face angle, swing path and where the ball hit the strings.
-- **Treat:** the analytics. iPhone + Mac apps with identical features, an Apple Watch companion, and an on-device **Gemma 4 E2B** coach that explains your session in plain language (open-weights prize category).
+- **Treat:** the analytics. iPhone + Mac apps with identical features, an Apple Watch companion, and an on-device **Llama 3.2 3B** coach that explains your session in plain language (open-weights prize category).
 
 How we extend the original project:
 
@@ -59,7 +59,7 @@ I2C addresses: MPU6050 `0x68` (AD0 low), H3LIS331 `0x18` (Adafruit default). No 
 Racket (ESP32C3) ──BLE, raw 1 kHz──► iPhone or Mac app ──WatchConnectivity──► Apple Watch
                                        └─ RacketKit (shared Swift package):
                                           decode → orientation → shot detection → metrics → SwiftData
-                                       └─ Gemma 4 E2B (MLX Swift, on device) → coach text
+                                       └─ Llama 3.2 3B (MLX Swift, on device) → coach text
 ```
 
 - **Firmware does no math.** It reads both IMUs at 1 kHz and streams raw samples. All analysis lives in Swift.
@@ -107,7 +107,7 @@ Tabs (iPhone) / sidebar (Mac): **Live · History · Insights · Racket**, plus f
 
 - **Live:** Start/Stop, live 3D racket, a shot card per hit (type, swing speed, ball speed, spin, impact dot) with a green/red edge flash, a running strip (shots, sweet spot %, average speed). Mac: full-screen presenter mode.
 - **History:** sessions list → session summary (shot mix, averages per stroke, impact heat map filtered by stroke) → shot detail.
-- **Insights:** trend charts across sessions, fatigue chart, **Coach** (Gemma summary + "Ask your stats" chat).
+- **Insights:** trend charts across sessions, fatigue chart, **Coach** (Llama summary + "Ask your stats" chat).
 - **Racket:** connection, battery, sensor health, **Calibration mode** (hold still → tip up → lay flat → drop-grid with tap-to-label), recorder (raw record/replay, CSV export), simulated racket toggle.
 - **Storage:** SwiftData, synced iPhone ↔ Mac with CloudKit (paid developer account).
 
@@ -117,17 +117,17 @@ Tabs (iPhone) / sidebar (Mac): **Live · History · Insights · Racket**, plus f
 - **Haptics per shot:** crisp tap = sweet spot, double buzz = mishit.
 - **Last-shot glance:** speed, spin, impact dot.
 - **Point logging** (Nice): tap Won / Lost after each point → "win % when first serve > X".
-- **Drill mode** (Nice): Gemma picks a drill from your weak spots, the Watch counts it down.
+- **Drill mode** (Nice): Llama picks a drill from your weak spots, the Watch counts it down.
 - Later: wear the Watch on the hitting wrist for a wrist-lag metric.
 
-### Gemma 4 E2B (on device, MLX Swift)
+### Llama 3.2 3B (on device, MLX Swift)
 
 1. **Session coach** (Core): stats JSON → short report with 2–3 tips.
 2. **Ask your stats** (Nice): chat; the app answers from computed stats passed into the prompt.
 3. **Drill planner → Watch** (Nice).
 4. **Voice journal** (Stretch): audio input.
 
-Model weights are not in git; `tools/fetch_gemma.sh` downloads them. Pre-load them on the demo iPhone and Mac.
+Model weights are not in git; the app downloads them from Hugging Face on first load. Pre-load them on the demo iPhone and Mac.
 Fallback if MLX won't run in our iOS app: llama.cpp with a GGUF build.
 
 ---
@@ -139,7 +139,7 @@ Fallback if MLX won't run in our iOS app: llama.cpp with a GGUF build.
 | 12:30–1:15 | Wire on the bench per the pin map; flash `firmware/`; check serial output | Measurements; tape a 3×3 grid on the strings; foam-wrap the battery | Plan, firmware, Xcode project, simulated racket |
 | 1:15–2:30 | Get BLE streaming to the app; fix dropouts | Install electronics in the handle; antenna flat against the flange | Live 3D racket on real data; recorder |
 | 2:30–3:30 | Help collect data | Desk calibration, 45 grid drops (tap-to-label), shadow swings, all filmed at 240 fps | Shot detection, swing speed, shot type, sweet spot |
-| 3:30–4:30 | Mic (stretch) or help ME | Hit into a blanket or at the wall; slow-mo for speed and spin checks | History, Insights, Watch, Gemma coach |
+| 3:30–4:30 | Mic (stretch) or help ME | Hit into a blanket or at the wall; slow-mo for speed and spin checks | History, Insights, Watch, Llama coach |
 | 4:30–5:30 | Bug fixes | Accuracy slide: app numbers vs slow-mo | Polish, README, backup demo video |
 | 5:30–6:00 | Everyone: rehearse the demo, submit | | |
 
@@ -154,5 +154,5 @@ Fallback if MLX won't run in our iOS app: llama.cpp with a GGUF build.
 
 1. The problem + the forked project (10 s on what we started from).
 2. Live: swing the racket → 3D racket moves on the Mac; hit a ball into a blanket → shot card with green flash, Watch taps.
-3. Session summary + heat map; Gemma coach reads it out in plain language, fully offline.
+3. Session summary + heat map; Llama coach reads it out in plain language, fully offline.
 4. Accuracy slide (app vs slow-mo). Backup: recorded session replay + video.

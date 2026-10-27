@@ -12,13 +12,13 @@ struct TennisBuddyApp: App {
     #endif
 
     init() {
-        // `--coach-selftest`: load Gemma, coach a sample session, print the result, quit. Used to verify the model.
+        // `--coach-selftest`: load Llama, coach a sample session, print the result, quit. Used to verify the model.
         if CommandLine.arguments.contains("--coach-selftest") {
             Task { @MainActor in
                 let coach = CoachModel()
                 let start = Date()
-                await coach.loadGemma()
-                print("Gemma state: \(coach.state) after \(Int(Date().timeIntervalSince(start)))s")
+                await coach.loadLlama()
+                print("Llama state: \(coach.state) after \(Int(Date().timeIntervalSince(start)))s")
                 let session = SessionRecord()
                 session.endDate = session.startDate.addingTimeInterval(1500)
                 session.shotRecords = CoachSelfTest.sampleShots().map { ShotRecord(metrics: $0) }

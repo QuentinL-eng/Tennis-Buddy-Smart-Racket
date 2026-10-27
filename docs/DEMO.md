@@ -1,6 +1,6 @@
 # Demo script (3 minutes)
 
-**Before going on:** Mac app open full screen on the projector, racket connected (or Simulator as backup), Gemma
+**Before going on:** Mac app open full screen on the projector, racket connected (or Simulator as backup), Llama
 loaded on the Mac and iPhone, Watch on the presenter's non-playing wrist, a ball and a hanging blanket or a partner.
 
 1. **The fork (15 s).** "We forked an open-source smart racket that sent one acceleration number over Wi-Fi and lit a
@@ -14,7 +14,7 @@ loaded on the Mac and iPhone, Watch on the presenter's non-playing wrist, a ball
    - Mention the hardware: two IMUs (gyro + 200 g accelerometer) streaming 1,000 samples/s from inside the handle.
 3. **The treat: analytics (60 s).**
    - End the session on the Watch → History: shot mix, impact heat map per stroke, speed over the session.
-   - Tap **Coach me**: Gemma 4 E2B, an open-weights model, writes the session report **on the device, offline**.
+   - Tap **Coach me**: Llama 3.2 3B, an open-weights model, writes the session report **on the device, offline**.
    - Insights → ask "What's my weakest stroke?" and "Plan my next drill".
 4. **How accurate? (30 s).** Show the slide comparing app numbers with 240 fps slow-mo measurements.
 
