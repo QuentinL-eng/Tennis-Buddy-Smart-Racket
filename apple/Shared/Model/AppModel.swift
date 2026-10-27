@@ -46,7 +46,10 @@ final class AppModel {
     var activeDrill: Drill?
 
     // MARK: Settings
-    var calibration: Calibration { didSet { save(calibration, key: "calibration"); engine.calibration = calibration } }
+    /// Bumped when the racket's IMU changes (MPU6050 + H3LIS331 -> LSM6DSV320X): a calibration from another sensor
+    /// maps the wrong axes, so it is dropped and the app falls back to defaults until the user recalibrates.
+    static let calibrationKey = "calibration.lsm6dsv320x"
+    var calibration: Calibration { didSet { save(calibration, key: Self.calibrationKey); engine.calibration = calibration } }
     var profile: RacketProfile { didSet { save(profile, key: "profile"); engine.profile = profile } }
     var impactModel: ImpactModel { didSet { save(impactModel, key: "impactModel"); engine.impactModel = impactModel } }
 
@@ -94,7 +97,7 @@ final class AppModel {
     }()
 
     init() {
-        calibration = Self.load(key: "calibration") ?? .default
+        calibration = Self.load(key: Self.calibrationKey) ?? .default
         profile = Self.load(key: "profile") ?? RacketProfile()
         impactModel = Self.load(key: "impactModel") ?? ImpactModel()
         engine.calibration = calibration
