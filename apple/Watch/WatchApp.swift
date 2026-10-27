@@ -29,6 +29,8 @@ final class WatchModel: NSObject, WCSessionDelegate {
     var phoneReachable = false
     var units = UnitSystem(metric: false)
     var drill: Drill?
+    /// When the current session began, for the elapsed timer on the session page.
+    var sessionStart: Date?
     let workout = WorkoutManager()
 
     override init() {
@@ -49,7 +51,11 @@ final class WatchModel: NSObject, WCSessionDelegate {
     /// Keeps the Tennis workout (heart rate, calories, Apple Health) in step with the racket session.
     func setSessionActive(_ active: Bool) {
         guard active != sessionActive || active != workout.isRunning else { return }
-        if active && !sessionActive { pointsWon = 0; pointsLost = 0; lastShot = nil; summary = nil }
+        if active && !sessionActive {
+            pointsWon = 0; pointsLost = 0; lastShot = nil; summary = nil
+            sessionStart = Date()
+        }
+        if !active { sessionStart = nil }
         if !active && sessionActive && workout.isRunning { sendHealth() }
         sessionActive = active
         Task { active ? await workout.start() : await workout.stop() }
@@ -148,28 +154,46 @@ struct WatchRootView: View {
     }
 }
 
+
+/// Colors from the Figma Watch mockup.
+enum WatchPalette {
+    static let green = Color(red: 0.188, green: 0.820, blue: 0.345) // #30D158
+    static let red = Color(red: 1.0, green: 0.271, blue: 0.231) // #FF453B
+    static let orange = Color(red: 1.0, green: 0.620, blue: 0.039) // #FF9E0A
+    static let secondary = Color(red: 0.600, green: 0.600, blue: 0.631) // #9999A1
+    static let ringTrack = Color.white.opacity(0.18)
+    static let sweetSpotBackground = Color(red: 0.059, green: 0.251, blue: 0.122) // #0F401F
+    static let mishitBackground = Color(red: 0.302, green: 0.071, blue: 0.071) // #4D1212
+}
+
 struct LastShotPage: View {
     @Environment(WatchModel.self) private var model
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 3) {
             if let shot = model.lastShot {
                 HStack {
-                    Image(systemName: shot.type.symbol)
-                    Text(shot.type.label).font(.headline)
+                    HStack(spacing: 5) {
+                        Image(systemName: shot.type.symbol).font(.system(size: 13, weight: .semibold))
+                        Text(shot.type.label).font(.system(size: 15, weight: .semibold))
+                    }
                     Spacer()
-                    Circle().fill(shot.isSweetSpot ? .green : .red).frame(width: 10, height: 10)
+                    Circle().fill(shot.isSweetSpot ? WatchPalette.green : WatchPalette.red).frame(width: 10, height: 10)
                 }
                 Text(model.units.speedValue(shot.ballSpeedKmh))
-                    .font(.system(size: 46, weight: .bold, design: .rounded)).monospacedDigit()
-                Text("\(model.units.speedUnit) · \(Int(shot.spinRPM)) rpm").font(.caption).foregroundStyle(.secondary)
+                    .font(.system(size: 52, weight: .bold, design: .rounded)).monospacedDigit()
+                Text("\(model.units.speedUnit) · \(Int(shot.spinRPM)) rpm")
+                    .font(.system(size: 12)).foregroundStyle(WatchPalette.secondary)
                 if let s = model.summary {
                     Text("\(s.count) shots · \(Int(s.sweetSpotPercent))% sweet spot")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
                 }
                 if model.workout.heartRate > 0 {
-                    Label("\(Int(model.workout.heartRate)) bpm", systemImage: "heart.fill")
-                        .font(.caption2).foregroundStyle(.red)
+                    HStack(spacing: 3) {
+                        Image(systemName: "heart").font(.system(size: 10))
+                        Text("\(Int(model.workout.heartRate)) bpm")
+                    }
+                    .font(.system(size: 11)).foregroundStyle(WatchPalette.red)
                 }
             } else {
                 Image(systemName: "figure.tennis").font(.largeTitle).foregroundStyle(Color.accentColor)
@@ -178,9 +202,13 @@ struct LastShotPage: View {
             }
         }
         .padding(.horizontal, 4)
-        .containerBackground(
-            (model.lastShot?.isSweetSpot ?? true ? Color.green : Color.red).opacity(model.lastShot == nil ? 0 : 0.25)
-                .gradient, for: .tabView)
+        .containerBackground(background, for: .tabView)
+    }
+
+    /// Solid green after a sweet-spot hit, deep red after a mishit.
+    private var background: Color {
+        guard let shot = model.lastShot else { return .black }
+        return shot.isSweetSpot ? WatchPalette.sweetSpotBackground : WatchPalette.mishitBackground
     }
 }
 
@@ -190,32 +218,32 @@ struct DrillPage: View {
 
     var body: some View {
         if let drill = model.drill {
-            VStack(spacing: 6) {
-                Text(drill.title).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
+            VStack(spacing: 4) {
+                Text(drill.title).font(.system(size: 14, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                 ZStack {
-                    Circle().stroke(.quaternary, lineWidth: 8)
+                    Circle().stroke(WatchPalette.ringTrack, lineWidth: 8)
                     Circle().trim(from: 0, to: drill.progress)
                         .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                         .animation(.snappy, value: drill.completed)
                     VStack(spacing: 0) {
                         if drill.isDone {
-                            Image(systemName: "checkmark").font(.title.bold()).foregroundStyle(.green)
-                            Text("Done!").font(.caption)
+                            Image(systemName: "checkmark").font(.title.bold()).foregroundStyle(WatchPalette.green)
+                            Text("Done!").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
                         } else {
                             Text("\(drill.remaining)").font(.system(size: 34, weight: .bold, design: .rounded))
                                 .monospacedDigit()
-                            Text("to go").font(.caption2).foregroundStyle(.secondary)
+                            Text("to go").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
                         }
                     }
                 }
                 .frame(width: 92, height: 92)
-                Text(drill.goal).font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                    .lineLimit(2)
-                Button(drill.isDone ? "Close" : "Stop drill", role: drill.isDone ? nil : .destructive) {
-                    model.cancelDrill()
-                }
-                .font(.caption)
+                Text(drill.goal).font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
+                    .multilineTextAlignment(.center).lineLimit(2)
+                Button(drill.isDone ? "Close" : "Stop drill") { model.cancelDrill() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(drill.isDone ? Color.accentColor : WatchPalette.red)
             }
         }
     }
@@ -227,16 +255,36 @@ struct PointsPage: View {
     var body: some View {
         VStack(spacing: 8) {
             Text("\(model.pointsWon) – \(model.pointsLost)")
-                .font(.system(size: 34, weight: .bold, design: .rounded)).monospacedDigit()
-            HStack {
-                Button { model.logPoint(won: true) } label: { Label("Won", systemImage: "checkmark") }
-                    .tint(.green)
-                Button { model.logPoint(won: false) } label: { Label("Lost", systemImage: "xmark") }
-                    .tint(.red)
+                .font(.system(size: 38, weight: .bold, design: .rounded)).monospacedDigit()
+            HStack(spacing: 8) {
+                PointButton(title: "Won", symbol: "checkmark", color: WatchPalette.green) { model.logPoint(won: true) }
+                PointButton(title: "Lost", symbol: "xmark", color: WatchPalette.red) { model.logPoint(won: false) }
             }
             .disabled(!model.sessionActive)
-            Text("Log each point").font(.caption2).foregroundStyle(.secondary)
+            .opacity(model.sessionActive ? 1 : 0.4)
+            Text("Log each point").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
         }
+    }
+}
+
+/// A tinted tile with an icon over its label, as in the mockup's Won / Lost buttons.
+private struct PointButton: View {
+    let title: String
+    let symbol: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: symbol).font(.system(size: 16, weight: .semibold))
+                Text(title).font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(color)
+            .frame(width: 80, height: 64)
+            .background(color.opacity(0.28), in: .rect(cornerRadius: 22))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -245,23 +293,44 @@ struct SessionPage: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            if model.sessionActive {
+                if let start = model.sessionStart {
+                    Text(start, style: .timer)
+                        .font(.system(size: 30, weight: .bold, design: .rounded)).monospacedDigit()
+                }
+            } else {
+                Image(systemName: "tennis.racket").font(.system(size: 34)).foregroundStyle(Color.accentColor)
+            }
             Button {
                 model.toggleSession()
             } label: {
-                Label(model.sessionActive ? "End" : "Start", systemImage: model.sessionActive ? "stop.fill" : "play.fill")
-                    .font(.headline)
-            }
-            .tint(model.sessionActive ? .red : .accentColor)
-            .foregroundStyle(model.sessionActive ? .white : .black)
-            if model.workout.isRunning {
-                HStack {
-                    Label("\(Int(model.workout.heartRate))", systemImage: "heart.fill").foregroundStyle(.red)
-                    Label("\(Int(model.workout.activeCalories)) kcal", systemImage: "flame.fill").foregroundStyle(.orange)
+                HStack(spacing: 6) {
+                    Image(systemName: model.sessionActive ? "stop.fill" : "play.fill").font(.system(size: 14))
+                    Text(model.sessionActive ? "End" : "Start").font(.system(size: 17, weight: .semibold))
                 }
-                .font(.caption)
+                .foregroundStyle(model.sessionActive ? .white : .black)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .background(model.sessionActive ? WatchPalette.red : Color.accentColor, in: .capsule)
             }
-            Text(model.phoneReachable ? "iPhone connected" : "Open Tennis Buddy on your iPhone")
-                .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            .buttonStyle(.plain)
+            if model.workout.isRunning {
+                HStack(spacing: 10) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "heart")
+                        Text("\(Int(model.workout.heartRate))")
+                    }
+                    .foregroundStyle(WatchPalette.red)
+                    HStack(spacing: 3) {
+                        Image(systemName: "flame")
+                        Text("\(Int(model.workout.activeCalories)) kcal")
+                    }
+                    .foregroundStyle(WatchPalette.orange)
+                }
+                .font(.system(size: 12.5, weight: .medium))
+            }
+            Text(model.phoneReachable ? "iPhone connected" : "Open Tennis Buddee on your iPhone")
+                .font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary).multilineTextAlignment(.center)
         }
     }
 }
