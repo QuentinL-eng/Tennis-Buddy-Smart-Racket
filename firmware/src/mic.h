@@ -14,3 +14,10 @@ bool micCollecting();
 
 // Stats for the 1 Hz serial status line.
 uint32_t micImpactCount();
+
+// Noise floor (running mean |x|), loudest sample since the previous call, and the current impact trigger
+// threshold, all in int16 sample units. A hit fires when a sample exceeds `trigger`.
+struct MicLevel {
+  int floor, peak, trigger;
+};
+MicLevel micLevel();

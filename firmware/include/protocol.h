@@ -30,10 +30,11 @@ enum : uint8_t {
 };
 
 #pragma pack(push, 1)
+// Units are those of the original MPU6050 + H3LIS331DL; the LSM6DSV320X firmware converts into them.
 struct TBSample {
-  int16_t ax, ay, az;  // MPU6050 accel, 2048 LSB/g (±16 g)
-  int16_t gx, gy, gz;  // MPU6050 gyro, 16.4 LSB/(deg/s) (±2000 deg/s)
-  int16_t hx, hy, hz;  // H3LIS331DL raw, 12-bit left-aligned (>> 4 for counts)
+  int16_t ax, ay, az;  // low-g accel, 2048 LSB/g (±16 g)
+  int16_t gx, gy, gz;  // gyro, 16.4 LSB/(deg/s) (±2000 deg/s)
+  int16_t hx, hy, hz;  // high-g accel as H3LIS331DL counts, 12-bit left-aligned (>> 4), at the h3lis_range scale
 };
 
 struct TBPacket {

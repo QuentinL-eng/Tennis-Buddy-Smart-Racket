@@ -1,7 +1,8 @@
 // Tennis Buddy racket firmware.
 //
-// Reads the MPU6050 (gyro + low-g accel) and H3LIS331DL (high-g accel) at 1 kHz and streams raw
+// Reads the LSM6DSV320X (gyro + low-g accel + high-g accel, on a STEVAL-MKI251A) at 1 kHz and streams
 // samples over BLE. All analysis happens in the apps. Wiring and protocol: docs/PLAN.md.
+// The BLE format predates this IMU (MPU6050 + H3LIS331DL), so samples are converted to those units.
 //
 // Serial monitor (115200) prints a status line every second for bench bring-up.
 
@@ -12,26 +13,29 @@
 #include "mic.h"
 
 // ---- Pins (XIAO ESP32C3) ----
-// As built (see docs/WIRING.md): sensors on the right header, mic on D0-D2.
-static const int PIN_SDA = D9;   // GPIO9 (strapping pin; fine, the I2C pull-ups keep it high at boot)
-static const int PIN_SCL = D10;  // GPIO10
-static const int PIN_VBAT = -1;  // no battery divider fitted (A0 is the mic clock)
+// As built (see docs/WIRING.md): IMU on D4/D5, mic on D1-D3.
+static const int PIN_SDA = D4;   // GPIO6
+static const int PIN_SCL = D5;   // GPIO7
+static const int PIN_VBAT = -1;  // no battery divider fitted (A0/D0 is free)
 
-// ---- I2C addresses / registers ----
-static const uint8_t MPU_ADDR = 0x68;
-static const uint8_t MPU_WHO_AM_I = 0x75, MPU_PWR_MGMT_1 = 0x6B, MPU_SMPLRT_DIV = 0x19,
-                     MPU_CONFIG = 0x1A, MPU_GYRO_CONFIG = 0x1B, MPU_ACCEL_CONFIG = 0x1C,
-                     MPU_ACCEL_XOUT_H = 0x3B;
-
-static const uint8_t H3_ADDR = 0x18;
-static const uint8_t H3_WHO_AM_I = 0x0F, H3_CTRL_REG1 = 0x20, H3_CTRL_REG4 = 0x23,
-                     H3_OUT_X_L = 0x28, H3_AUTO_INC = 0x80;
+// ---- LSM6DSV320X (ST driver lsm6dsv320x_reg.h) ----
+static const uint8_t LSM_ADDR = 0x6A;   // SDO tied to GND
+static const uint8_t LSM_ID = 0x73;
+static const uint8_t LSM_WHO_AM_I = 0x0F, LSM_CTRL1 = 0x10, LSM_CTRL2 = 0x11, LSM_CTRL3 = 0x12,
+                     LSM_CTRL6 = 0x15, LSM_CTRL8 = 0x17, LSM_OUTX_L_G = 0x22, LSM_OUTX_L_A_HG = 0x34,
+                     LSM_CTRL1_XL_HG = 0x4E;
+// Native scales at the full scales set in setupIMU().
+static const float LSM_G_DPS_PER_LSB = 0.070f;    // ±2000 dps
+static const float LSM_HG_MG_PER_LSB = 10.417f;   // ±320 g
+// Wire units (protocol.h): gyro 16.4 LSB/dps; low-g accel 2048 LSB/g, which the LSM's ±16 g (0.488 mg/LSB)
+// already matches; high-g as H3LIS counts << 4 at the app-selected range.
+static const float WIRE_G_LSB_PER_DPS = 16.4f;
 
 // ---- State ----
-static bool mpuOk = false, h3Ok = false;
+static bool imuOk = false;
 static volatile bool streaming = true;   // stream whenever a client subscribes
 static volatile uint8_t h3Range = 1;     // 0 = 100 g, 1 = 200 g, 3 = 400 g
-static volatile bool h3RangeDirty = false;
+
 static volatile uint16_t droppedPackets = 0;
 static volatile uint32_t samplesRead = 0, i2cErrors = 0;
 static TBSample lastSample = {};
@@ -66,31 +70,28 @@ static uint8_t readReg(uint8_t addr, uint8_t reg) {
 }
 
 // ---- Sensor setup ----
-static bool setupMPU() {
-  uint8_t who = readReg(MPU_ADDR, MPU_WHO_AM_I);
-  Serial.printf("MPU6050 WHO_AM_I = 0x%02X (expect 0x68; clones may differ)\n", who);
-  if (who == 0x00 || who == 0xFF) return false;
-  bool ok = writeReg(MPU_ADDR, MPU_PWR_MGMT_1, 0x01);   // wake, PLL on gyro X
+static bool setupIMU() {
+  uint8_t who = readReg(LSM_ADDR, LSM_WHO_AM_I);
+  Serial.printf("LSM6DSV320X WHO_AM_I = 0x%02X (expect 0x%02X)\n", who, LSM_ID);
+  if (who != LSM_ID) return false;
+  bool ok = writeReg(LSM_ADDR, LSM_CTRL3, 0x01);        // software reset
   delay(10);
-  ok &= writeReg(MPU_ADDR, MPU_SMPLRT_DIV, 0x00);       // 1 kHz
-  ok &= writeReg(MPU_ADDR, MPU_CONFIG, 0x01);           // DLPF ~188 Hz
-  ok &= writeReg(MPU_ADDR, MPU_GYRO_CONFIG, 0x18);      // ±2000 deg/s
-  ok &= writeReg(MPU_ADDR, MPU_ACCEL_CONFIG, 0x18);     // ±16 g
+  ok &= writeReg(LSM_ADDR, LSM_CTRL3, 0x44);            // BDU + register auto-increment
+  ok &= writeReg(LSM_ADDR, LSM_CTRL6, 0x04);            // gyro ±2000 dps
+  ok &= writeReg(LSM_ADDR, LSM_CTRL8, 0x03);            // accel ±16 g
+  ok &= writeReg(LSM_ADDR, LSM_CTRL1, 0x0A);            // accel high-performance, 1.92 kHz
+  ok &= writeReg(LSM_ADDR, LSM_CTRL2, 0x0A);            // gyro high-performance, 1.92 kHz
+  ok &= writeReg(LSM_ADDR, LSM_CTRL1_XL_HG, 0xAC);      // high-g: output regs on, 1.92 kHz, ±320 g
   return ok;
 }
 
-static bool applyH3Range(uint8_t range) {
-  uint8_t fs = (range == 0) ? 0x00 : (range == 1) ? 0x10 : 0x30;
-  return writeReg(H3_ADDR, H3_CTRL_REG4, 0x80 | fs);    // BDU + full scale
-}
+static int16_t clamp16(float v) { return (int16_t)constrain(lroundf(v), -32768L, 32767L); }
 
-static bool setupH3LIS() {
-  uint8_t who = readReg(H3_ADDR, H3_WHO_AM_I);
-  Serial.printf("H3LIS331DL WHO_AM_I = 0x%02X (expect 0x32)\n", who);
-  if (who != 0x32) return false;
-  bool ok = writeReg(H3_ADDR, H3_CTRL_REG1, 0x3F);      // normal mode, 1000 Hz, XYZ on
-  ok &= applyH3Range(h3Range);
-  return ok;
+// High-g sample (LSM LSBs) -> H3LIS 12-bit counts, left-aligned, at the range the app selected.
+static int16_t toH3Wire(int16_t raw) {
+  float mgPerCount = (h3Range == 0) ? 49.0f : (h3Range == 1) ? 98.0f : 195.0f;
+  long counts = constrain(lroundf(raw * LSM_HG_MG_PER_LSB / mgPerCount), -2048L, 2047L);
+  return (int16_t)(counts * 16);
 }
 
 // ---- 1 kHz sampling task ----
@@ -98,34 +99,28 @@ static void samplerTask(void *) {
   TBPacket pkt = {};
   uint16_t seq = 0;
   uint8_t n = 0;
-  uint8_t mpu[14], h3[6];
+  uint8_t buf[24];   // 0x22..0x39: gyro, accel, OIS (unused), high-g accel; little-endian
   TickType_t last = xTaskGetTickCount();
 
   for (;;) {
     vTaskDelayUntil(&last, pdMS_TO_TICKS(1));
 
-    if (h3RangeDirty) {
-      if (h3Ok) applyH3Range(h3Range);
-      h3RangeDirty = false;
-    }
-
     TBSample s = {};
     uint32_t t = micros();
-    if (mpuOk && readRegs(MPU_ADDR, MPU_ACCEL_XOUT_H, mpu, 14)) {
-      s.ax = (int16_t)(mpu[0] << 8 | mpu[1]);
-      s.ay = (int16_t)(mpu[2] << 8 | mpu[3]);
-      s.az = (int16_t)(mpu[4] << 8 | mpu[5]);
-      s.gx = (int16_t)(mpu[8] << 8 | mpu[9]);
-      s.gy = (int16_t)(mpu[10] << 8 | mpu[11]);
-      s.gz = (int16_t)(mpu[12] << 8 | mpu[13]);
-    } else if (mpuOk) {
-      i2cErrors++;
-    }
-    if (h3Ok && readRegs(H3_ADDR, H3_OUT_X_L | H3_AUTO_INC, h3, 6)) {
-      s.hx = (int16_t)(h3[1] << 8 | h3[0]);
-      s.hy = (int16_t)(h3[3] << 8 | h3[2]);
-      s.hz = (int16_t)(h3[5] << 8 | h3[4]);
-    } else if (h3Ok) {
+    if (imuOk && readRegs(LSM_ADDR, LSM_OUTX_L_G, buf, sizeof(buf))) {
+      auto le = [&](int i) { return (int16_t)(buf[i + 1] << 8 | buf[i]); };
+      const float g = LSM_G_DPS_PER_LSB * WIRE_G_LSB_PER_DPS;
+      s.gx = clamp16(le(0) * g);
+      s.gy = clamp16(le(2) * g);
+      s.gz = clamp16(le(4) * g);
+      s.ax = le(6);
+      s.ay = le(8);
+      s.az = le(10);
+      const int hg = LSM_OUTX_L_A_HG - LSM_OUTX_L_G;
+      s.hx = toH3Wire(le(hg));
+      s.hy = toH3Wire(le(hg + 2));
+      s.hz = toH3Wire(le(hg + 4));
+    } else if (imuOk) {
       i2cErrors++;
     }
     lastSample = s;
@@ -140,7 +135,7 @@ static void samplerTask(void *) {
     if (n == TB_SAMPLES_PER_PACKET) {
       pkt.seq = seq++;
       pkt.count = n;
-      pkt.flags = (mpuOk ? TB_FLAG_MPU_OK : 0) | (h3Ok ? TB_FLAG_H3LIS_OK : 0) | TB_FLAG_STREAMING;
+      pkt.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | TB_FLAG_STREAMING;
       if (xQueueSend(packetQueue, &pkt, 0) != pdTRUE) droppedPackets++;
       n = 0;
     }
@@ -174,7 +169,6 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
       case TB_CMD_H3LIS_RANGE:
         if (v.size() >= 2 && (v[1] == 0 || v[1] == 1 || v[1] == 3)) {
           h3Range = v[1];
-          h3RangeDirty = true;
         }
         break;
     }
@@ -186,7 +180,7 @@ static TBStatus makeStatus() {
   st.battery_mv = PIN_VBAT >= 0 ? (uint16_t)(analogReadMilliVolts(PIN_VBAT) * 2) : 0;
   st.fw_major = TB_FW_MAJOR;
   st.fw_minor = TB_FW_MINOR;
-  st.flags = (mpuOk ? TB_FLAG_MPU_OK : 0) | (h3Ok ? TB_FLAG_H3LIS_OK : 0) | (streaming ? TB_FLAG_STREAMING : 0);
+  st.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | (streaming ? TB_FLAG_STREAMING : 0);
   st.h3lis_range = h3Range;
   st.dropped = droppedPackets;
   return st;
@@ -225,14 +219,13 @@ void setup() {
 
   Wire.begin(PIN_SDA, PIN_SCL);
   Wire.setClock(400000);
-  // The MPU6050 sometimes isn't ready right after power-up: retry both sensors a few times.
-  for (int attempt = 0; attempt < 10 && !(mpuOk && h3Ok); attempt++) {
-    if (!mpuOk) mpuOk = setupMPU();
-    if (!h3Ok) h3Ok = setupH3LIS();
-    if (!(mpuOk && h3Ok)) delay(100);
+  // The IMU may not be ready right after power-up: retry a few times.
+  for (int attempt = 0; attempt < 10 && !imuOk; attempt++) {
+    imuOk = setupIMU();
+    if (!imuOk) delay(100);
   }
-  Serial.printf("MPU6050: %s   H3LIS331DL: %s\n", mpuOk ? "OK" : "NOT FOUND", h3Ok ? "OK" : "NOT FOUND");
-  if (!mpuOk || !h3Ok) Serial.println("Check wiring: SDA=D9, SCL=D10, VCC=3V3, GND=GND (see docs/WIRING.md)");
+  Serial.printf("LSM6DSV320X: %s\n", imuOk ? "OK" : "NOT FOUND");
+  if (!imuOk) Serial.println("Check wiring: SDA=D4, SCL=D5, VCC=3V3, GND=GND, CS=3V3, SDO=GND (see docs/WIRING.md)");
 
   analogReadResolution(12);
   packetQueue = xQueueCreate(48, sizeof(TBPacket));
@@ -268,10 +261,9 @@ void loop() {
 
   static uint32_t lastStatus = 0, lastSamples = 0, lastRetry = 0;
   uint32_t now = millis();
-  if ((!mpuOk || !h3Ok) && now - lastRetry > 2000) {
+  if (!imuOk && now - lastRetry > 2000) {
     lastRetry = now;
-    if (!mpuOk) mpuOk = setupMPU();
-    if (!h3Ok) h3Ok = setupH3LIS();
+    imuOk = setupIMU();
   }
   if (now - lastStatus >= 1000) {
     TBStatus st = makeStatus();
@@ -283,11 +275,13 @@ void loop() {
     lastStatus = now;
     TBSample s = lastSample;
     float h3Scale = (h3Range == 0) ? 0.049f : (h3Range == 1) ? 0.098f : 0.195f;
+    MicLevel mic = micLevel();
     Serial.printf(
-        "rate %4lu Hz | MPU a[g] %6.2f %6.2f %6.2f  g[dps] %7.1f %7.1f %7.1f | H3LIS a[g] %6.1f %6.1f %6.1f | "
-        "BLE %s, dropped %u, i2c err %lu | bat %u mV\n",
+        "rate %4lu Hz | a[g] %6.2f %6.2f %6.2f  g[dps] %7.1f %7.1f %7.1f | high-g a[g] %6.1f %6.1f %6.1f | "
+        "mic floor %4d peak %5d trig %5d hits %lu | BLE %s, dropped %u, i2c err %lu | bat %u mV\n",
         (unsigned long)rate, s.ax / 2048.0f, s.ay / 2048.0f, s.az / 2048.0f, s.gx / 16.4f, s.gy / 16.4f,
-        s.gz / 16.4f, (s.hx >> 4) * h3Scale, (s.hy >> 4) * h3Scale, (s.hz >> 4) * h3Scale,
+        s.gz / 16.4f, (s.hx >> 4) * h3Scale, (s.hy >> 4) * h3Scale, (s.hz >> 4) * h3Scale, mic.floor, mic.peak,
+        mic.trigger, (unsigned long)micImpactCount(),
         server->getConnectedCount() ? (server->getConnectedCount() > 1 ? "connected x2+" : "connected") : "advertising", droppedPackets, (unsigned long)i2cErrors,
         st.battery_mv);
   }
