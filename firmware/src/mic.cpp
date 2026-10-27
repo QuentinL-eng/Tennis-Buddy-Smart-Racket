@@ -4,22 +4,35 @@
 
 #include "sweetspot.h"
 
-// INMP441 wiring as built (docs/WIRING.md): SCK=D0/GPIO2, WS=D1/GPIO3, SD=D2/GPIO4, L/R tied to GND (left slot).
-static const int PIN_SCK = 2, PIN_WS = 3, PIN_SD = 4;
+// INMP441 wiring as built (docs/WIRING.md): SCK=D1/GPIO3, WS=D2/GPIO4, SD=D3/GPIO5, L/R tied to GND (left slot).
+static const int PIN_SCK = 3, PIN_WS = 4, PIN_SD = 5;
 static const i2s_port_t PORT = I2S_NUM_0;
 
 // Trigger tuning. Samples are int16 (top 16 bits of the mic's 24).
 static const int TRIG_MIN = 1500;          // never trigger below this absolute level
 static const float TRIG_RATIO = 8.0f;      // ... or below this many times the running noise floor
 static const uint32_t REFRACTORY_MS = 250; // ignore ringing / double detections
+static const uint32_t STARTUP_MS = 1500;   // ignore the mic's power-up transient
+static uint32_t startedAt = 0;
 
 static QueueHandle_t outQueue;
 static volatile bool collect = false;
 static volatile uint32_t impacts = 0;
+static volatile float levelFloor = 0;   // running mean |x|, published by the mic task
+static volatile int levelPeak = 0;      // max |x| since the last micLevel() call
 
 void micSetCollect(bool on) { collect = on; }
 bool micCollecting() { return collect; }
 uint32_t micImpactCount() { return impacts; }
+
+MicLevel micLevel() {
+  MicLevel l;
+  l.floor = (int)levelFloor;
+  l.peak = levelPeak;
+  levelPeak = 0;
+  l.trigger = (int)max((float)TRIG_MIN, TRIG_RATIO * levelFloor);
+  return l;
+}
 
 static void printClip(const int16_t *clip) {
   Serial.print("CLIP,");
@@ -43,6 +56,7 @@ static void micTask(void *) {
     int n = bytes / sizeof(int32_t);
     for (int k = 0; k < n; k++) {
       int16_t s = (int16_t)(raw[k] >> 16);  // INMP441: 24-bit MSB-first in a 32-bit slot
+      if (abs((int)s) > levelPeak) levelPeak = abs((int)s);
       if (capturing >= 0) {
         clip[capturing++] = s;
         if (capturing == SS_CLIP_SAMPLES) {
@@ -62,7 +76,8 @@ static void micTask(void *) {
         }
         continue;
       }
-      bool refractory = millis() - lastImpact < REFRACTORY_MS;
+      // The INMP441 pops for ~1 s after power-up; treat that like a refractory period so it isn't scored as a hit.
+      bool refractory = millis() - lastImpact < REFRACTORY_MS || millis() - startedAt < STARTUP_MS;
       float thresh = max((float)TRIG_MIN, TRIG_RATIO * floorAbs);
       if (!refractory && abs((int)s) > thresh) {
         // Start the clip with the buffered pre-trigger samples, then this sample is the onset.
@@ -71,6 +86,7 @@ static void micTask(void *) {
         capturing = SS_PRE_SAMPLES + 1;
       } else {
         floorAbs += 0.001f * (abs((int)s) - floorAbs);
+        levelFloor = floorAbs;
       }
       pre[preHead] = s;
       preHead = (preHead + 1) % SS_PRE_SAMPLES;
@@ -80,6 +96,7 @@ static void micTask(void *) {
 
 bool micBegin(QueueHandle_t out) {
   outQueue = out;
+  startedAt = millis();
   i2s_config_t cfg = {};
   cfg.mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX);
   cfg.sample_rate = SS_SAMPLE_RATE;
