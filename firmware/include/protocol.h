@@ -11,7 +11,7 @@
 #define TB_SHOT_UUID     "7E5B0005-6B1D-4D8E-9C1A-7E5B7E5B0001"  // on-device ML verdict, notify
 
 #define TB_FW_MAJOR 1
-#define TB_FW_MINOR 0
+#define TB_FW_MINOR 1
 
 #define TB_SAMPLES_PER_PACKET 8
 

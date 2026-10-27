@@ -21,8 +21,7 @@ struct RacketView: View {
                 if let s = model.racketStatus {
                     LabeledContent("Battery", value: s.batteryMillivolts > 2500 ? String(format: "%.2f V", Double(s.batteryMillivolts) / 1000) : "Not wired")
                     LabeledContent("Firmware", value: s.firmwareVersion)
-                    LabeledContent("Gyro (MPU6050)", value: s.mpuOK ? "OK" : "Not found")
-                    LabeledContent("High-g (H3LIS331)", value: s.h3lisOK ? "OK" : "Not found")
+                    LabeledContent("IMU (LSM6DSV320X)", value: s.mpuOK && s.h3lisOK ? "OK" : "Not found")
                     LabeledContent("Dropped packets", value: "\(s.droppedPackets)")
                     Picker("High-g range", selection: Binding(get: { s.h3lisRange }, set: { model.ble.setHighGRange($0) })) {
                         Text("±100 g").tag(UInt8(0))
