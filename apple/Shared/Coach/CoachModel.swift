@@ -2,7 +2,7 @@ import Foundation
 import Observation
 import RacketKit
 
-/// Builds the facts the coach talks about. Shared by the template coach and Gemma.
+/// Builds the facts the coach talks about. Shared by the template coach and Llama.
 struct SessionDigest: Codable {
     struct Stroke: Codable {
         var type: String
@@ -68,7 +68,7 @@ struct SessionDigest: Codable {
     }
 }
 
-/// Something that can turn stats into words: Gemma on device, or the built-in template fallback.
+/// Something that can turn stats into words: Llama on device, or the built-in template fallback.
 protocol CoachEngine {
     var name: String { get }
     func summarize(_ digest: SessionDigest) async throws -> String
@@ -119,7 +119,7 @@ enum CoachPrompts {
     }
 }
 
-/// Deterministic coach used when Gemma isn't loaded, so the feature always works.
+/// Deterministic coach used when Llama isn't loaded, so the feature always works.
 struct TemplateCoach: CoachEngine {
     let name = "Built-in coach"
 
@@ -172,17 +172,17 @@ final class CoachModel {
     enum ModelState: Equatable { case notLoaded, downloading(Double), loading, ready, failed(String) }
 
     var state: ModelState = .notLoaded
-    var engineName: String { gemma?.name ?? TemplateCoach().name }
+    var engineName: String { llama?.name ?? TemplateCoach().name }
     var isWorking = false
-    private var gemma: CoachEngine?
+    private var llama: CoachEngine?
     private let fallback = TemplateCoach()
-    private var engine: CoachEngine { gemma ?? fallback }
+    private var engine: CoachEngine { llama ?? fallback }
 
-    func loadGemma() async {
-        guard gemma == nil, state != .loading else { return }
+    func loadLlama() async {
+        guard llama == nil, state != .loading else { return }
         state = .loading
         do {
-            gemma = try await GemmaLoader.load { [weak self] progress in
+            llama = try await LlamaLoader.load { [weak self] progress in
                 Task { @MainActor in self?.state = .downloading(progress) }
             }
             state = .ready

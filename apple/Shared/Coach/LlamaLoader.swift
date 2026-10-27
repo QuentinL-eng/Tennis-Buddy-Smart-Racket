@@ -5,10 +5,11 @@ import MLXLLM
 import MLXLMCommon
 import Tokenizers
 
-/// Gemma 4 E2B (open weights, 4-bit MLX build) running fully on device.
-/// First load downloads the weights from Hugging Face (mlx-community/gemma-4-e2b-it-4bit); after that it works offline.
-final class GemmaCoach: CoachEngine, @unchecked Sendable {
-    let name = "Gemma 4 E2B · on device"
+/// Meta Llama 3.2 3B Instruct (open weights, 4-bit MLX build, ~1.8 GB) running fully on device.
+/// Sized for iPhone 15 and up (6 GB RAM, with the increased-memory-limit entitlement).
+/// First load downloads the weights from Hugging Face (mlx-community/Llama-3.2-3B-Instruct-4bit); after that it works offline.
+final class LlamaCoach: CoachEngine, @unchecked Sendable {
+    let name = "Llama 3.2 3B · on device"
     private let container: ModelContainer
 
     init(container: ModelContainer) {
@@ -27,11 +28,11 @@ final class GemmaCoach: CoachEngine, @unchecked Sendable {
     func drill(_ digest: SessionDigest) async throws -> String { try await generate(CoachPrompts.drill(digest)) }
 }
 
-enum GemmaLoader {
+enum LlamaLoader {
     static func load(progress: @escaping @Sendable (Double) -> Void) async throws -> CoachEngine {
         let container = try await #huggingFaceLoadModelContainer(
-            configuration: LLMRegistry.gemma4_e2b_it_4bit,
+            configuration: LLMRegistry.llama3_2_3B_4bit,
             progressHandler: { p in progress(p.fractionCompleted) })
-        return GemmaCoach(container: container)
+        return LlamaCoach(container: container)
     }
 }

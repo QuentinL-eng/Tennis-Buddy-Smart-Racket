@@ -3,7 +3,7 @@ import RacketKit
 import SwiftData
 import SwiftUI
 
-/// Gemma's take on one session, shown in the session detail.
+/// Llama's take on one session, shown in the session detail.
 struct CoachCard: View {
     @Bindable var session: SessionRecord
     @Environment(CoachModel.self) private var coach
@@ -59,7 +59,7 @@ struct InsightsView: View {
                     trends
                     if let latest = realSessions.last { coachChat(latest) }
                 }
-                gemmaStatus
+                llamaStatus
             }
             .padding()
         }
@@ -153,16 +153,16 @@ struct InsightsView: View {
         Task { chat.append((q, await coach.answer(q, session: session))) }
     }
 
-    private var gemmaStatus: some View {
+    private var llamaStatus: some View {
         GroupBox {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("On-device AI: Gemma 4 E2B").font(.headline)
+                    Text("On-device AI: Meta Llama 3.2 3B").font(.headline)
                     Text(statusText).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 if coach.state == .notLoaded || { if case .failed = coach.state { return true } else { return false } }() {
-                    Button("Load Gemma") { Task { await coach.loadGemma() } }
+                    Button("Load Llama") { Task { await coach.loadLlama() } }
                 }
                 if case .downloading(let p) = coach.state { ProgressView(value: p).frame(width: 120) }
             }

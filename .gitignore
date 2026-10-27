@@ -14,7 +14,7 @@ DerivedData/
 # Python
 __pycache__/
 .venv/
-# Model weights (download with tools/fetch_gemma.sh)
+# Model weights (the app downloads Llama from Hugging Face on first load)
 models/
 *.safetensors
 *.gguf

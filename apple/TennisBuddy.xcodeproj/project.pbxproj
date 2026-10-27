@@ -31,7 +31,7 @@
 		643060A89493BC64502B2CEB /* TennisRacket.glb in Resources */ = {isa = PBXBuildFile; fileRef = 343375742A01D39CB5E6D41F /* TennisRacket.glb */; };
 		65D4F29ECD63B318321BBF4F /* RacketSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE7A86CCDEFE9D1F8502AC1 /* RacketSceneView.swift */; };
 		679BC005B560A7AE4A5A91EF /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12AAA9C083779C5F7C4404A /* InsightsView.swift */; };
-		78E8E3EDAAF6000CAF5B6630 /* GemmaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* GemmaLoader.swift */; };
+		78E8E3EDAAF6000CAF5B6630 /* LlamaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* LlamaLoader.swift */; };
 		7994C77F1F1195681575B2E5 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47CDCF90CDD3213B7A94C42 /* CalibrationView.swift */; };
 		8229E1CA9A14DDE5D1A7E3AE /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 36B656C3EF7F238CB8BCD80C /* MLXLMCommon */; };
 		854651AB575F52DB7C6F69DB /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 831E60AB20B3444C5006846B /* MLXLLM */; };
@@ -48,7 +48,7 @@
 		BB68AD1A639395ED9C11FE15 /* CoachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B37449F16667305BA65652 /* CoachModel.swift */; };
 		C520ADDD7496A77DC1BD599B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9D172411555FD246D6484F7 /* Assets.xcassets */; };
 		CD941D083EEC004726C80EE4 /* GLBLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28DF7CF160993EBAA8F2EB65 /* GLBLoader.swift */; };
-		CE8AEE943D5899ED87F7B13A /* GemmaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* GemmaLoader.swift */; };
+		CE8AEE943D5899ED87F7B13A /* LlamaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* LlamaLoader.swift */; };
 		D06127062F0CC45A1C3F14B3 /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2C05509855869C61804935 /* Records.swift */; };
 		D20140CD8ADA7F5AE2D34F8D /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 336ADA4549D2357D274C48E9 /* MLXHuggingFace */; };
 		D831B13CEC2A2C4E58FC3859 /* CoachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B37449F16667305BA65652 /* CoachModel.swift */; };
@@ -86,7 +86,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0E6197FA469FC609346F39E1 /* GemmaLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GemmaLoader.swift; sourceTree = "<group>"; };
+		0E6197FA469FC609346F39E1 /* LlamaLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LlamaLoader.swift; sourceTree = "<group>"; };
 		1F855F6F1292B3220B90A8FB /* TennisBuddyWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TennisBuddyWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		214D03CD0141E5D33E2C1284 /* TennisBuddy-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TennisBuddy-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		272CEAEF6309A4B8F0DB842E /* CoachSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSelfTest.swift; sourceTree = "<group>"; };
@@ -215,7 +215,7 @@
 			children = (
 				99B37449F16667305BA65652 /* CoachModel.swift */,
 				272CEAEF6309A4B8F0DB842E /* CoachSelfTest.swift */,
-				0E6197FA469FC609346F39E1 /* GemmaLoader.swift */,
+				0E6197FA469FC609346F39E1 /* LlamaLoader.swift */,
 			);
 			path = Coach;
 			sourceTree = "<group>";
@@ -435,7 +435,7 @@
 				F68AD655352EC98EE29CC552 /* CoachSelfTest.swift in Sources */,
 				6378233C7A0268790A47CF6C /* Components.swift in Sources */,
 				05D21A1F862ECFC8F4BE9C54 /* GLBLoader.swift in Sources */,
-				CE8AEE943D5899ED87F7B13A /* GemmaLoader.swift in Sources */,
+				CE8AEE943D5899ED87F7B13A /* LlamaLoader.swift in Sources */,
 				62EBDCA9C808702796A63F85 /* HistoryView.swift in Sources */,
 				679BC005B560A7AE4A5A91EF /* InsightsView.swift in Sources */,
 				0424191C89E90C4E2DFDBEBE /* LiveView.swift in Sources */,
@@ -457,7 +457,7 @@
 				40CC406C5AB59C2A0719D8EB /* CoachSelfTest.swift in Sources */,
 				F25C383A73292364294A4BFF /* Components.swift in Sources */,
 				CD941D083EEC004726C80EE4 /* GLBLoader.swift in Sources */,
-				78E8E3EDAAF6000CAF5B6630 /* GemmaLoader.swift in Sources */,
+				78E8E3EDAAF6000CAF5B6630 /* LlamaLoader.swift in Sources */,
 				A237A1851BCDEEF4483EAB7F /* HistoryView.swift in Sources */,
 				54D0A472AD32FB216A2612B9 /* InsightsView.swift in Sources */,
 				ECB995620E0135240B69EA6F /* LiveView.swift in Sources */,

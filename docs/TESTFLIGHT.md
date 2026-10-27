@@ -9,10 +9,10 @@ Upload a new build: `tools/testflight.sh` (archives the iPhone + Watch app and u
 ## Test information (App Store Connect → TestFlight → Test Information)
 
 - **Beta App Description:** Tennis Buddy turns a sensor-equipped tennis racket into a coach: swing speed, ball speed,
-  spin, sweet-spot hits and an on-device AI coach (Gemma 4). No racket? The app starts in Simulator mode so you can
+  spin, sweet-spot hits and an on-device AI coach (Llama 3.2). No racket? The app starts in Simulator mode so you can
   try every screen. The Apple Watch app taps your wrist for each shot and runs a tennis workout.
 - **What to Test:** Open the Live tab and press Start Session; the simulated racket hits a shot every few seconds.
-  End the session, then check History and Insights. Tap "Load Gemma" in Insights (one-time ~3 GB download on Wi-Fi)
+  End the session, then check History and Insights. Tap "Load Llama" in Insights (one-time ~1.8 GB download on Wi-Fi)
   and try "Coach me" and "Plan my next drill". On Apple Watch, start a session from the watch.
 - **Feedback Email:** your email
 - **Privacy Policy URL:** https://github.com/KellamA/Smart-Tennis-Racket/blob/main/docs/PRIVACY.md

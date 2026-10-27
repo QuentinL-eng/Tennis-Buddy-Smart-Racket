@@ -4,7 +4,7 @@
 
 A tennis racket that knows every shot you hit. Sensors hidden in the handle of a Yonex VCore 98 measure swing speed,
 ball speed, spin, face angle and where the ball hit the strings. iPhone, Mac and Apple Watch apps turn it into
-analytics, and an on-device **Gemma 4 E2B** model coaches you in plain language, fully offline.
+analytics, and an on-device **Llama 3.2 3B** model coaches you in plain language, fully offline.
 
 Forked from [AahanPrajapati/Smart-Tennis-Racket](https://github.com/AahanPrajapati/Smart-Tennis-Racket) (MIT).
 The original project streamed MPU6050 acceleration over Wi-Fi to a second ESP32 and lit a green/red LED for shot
@@ -22,7 +22,7 @@ Simulator mode without the racket).
 | [`ml/`](ml/) | **Open-source on-device model**: sweet spot or not, and % off, from the impact sound (trainer, docs) |
 | [`apple/`](apple/) | Xcode project: iPhone + Mac app, Watch app, shared `RacketKit` Swift package |
 | [`hardware/`](hardware/) | CAD for the handle insert (STEP + Parasolid), wiring |
-| [`tools/`](tools/) | Python analysis scripts, Gemma model download |
+| [`tools/`](tools/) | Python analysis scripts |
 | [`data/`](data/) | Calibration recordings |
 | [`docs/`](docs/) | [Plan](docs/PLAN.md), calibration guide, demo script |
 | [`legacy/`](legacy/) | The original project's sketches and docs |
