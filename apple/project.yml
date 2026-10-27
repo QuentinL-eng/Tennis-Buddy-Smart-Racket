@@ -1,7 +1,7 @@
 # Tennis Buddy Xcode project. Regenerate after adding files:  cd apple && xcodegen
 name: TennisBuddy
 options:
-  bundleIdPrefix: com.kellamadams
+  bundleIdPrefix: com.quentinlynch
   createIntermediateGroups: true
   deploymentTarget:
     iOS: "18.0"
@@ -10,7 +10,7 @@ options:
 
 settings:
   base:
-    DEVELOPMENT_TEAM: B8QLYC5T9U
+    DEVELOPMENT_TEAM: 3KJ46YFZM9
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
@@ -52,15 +52,15 @@ targets:
         product: Tokenizers
     settings:
       base:
-        PRODUCT_NAME: Tennis Buddy
-        PRODUCT_BUNDLE_IDENTIFIER: com.kellamadams.tennisbuddy
+        PRODUCT_NAME: Tennis Buddee
+        PRODUCT_BUNDLE_IDENTIFIER: com.quentinlynch.tennisbuddy
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     info:
       path: iOS/Info.plist
       properties:
-        CFBundleDisplayName: Tennis Buddy
+        CFBundleDisplayName: Tennis Buddee
         UILaunchScreen: {}
         ITSAppUsesNonExemptEncryption: false
         UIBackgroundModes: [bluetooth-central, remote-notification]
@@ -73,7 +73,7 @@ targets:
       path: iOS/TennisBuddy.entitlements
       properties:
         com.apple.developer.kernel.increased-memory-limit: true
-        com.apple.developer.icloud-container-identifiers: [iCloud.com.kellamadams.tennisbuddy]
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.quentinlynch.tennisbuddy]
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
 
@@ -96,15 +96,15 @@ targets:
         product: Tokenizers
     settings:
       base:
-        PRODUCT_NAME: Tennis Buddy
-        PRODUCT_BUNDLE_IDENTIFIER: com.kellamadams.tennisbuddy
+        PRODUCT_NAME: Tennis Buddee
+        PRODUCT_BUNDLE_IDENTIFIER: com.quentinlynch.tennisbuddy
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         ENABLE_HARDENED_RUNTIME: YES
     info:
       path: macOS/Info.plist
       properties:
-        CFBundleDisplayName: Tennis Buddy
+        CFBundleDisplayName: Tennis Buddee
         LSApplicationCategoryType: public.app-category.sports
         ITSAppUsesNonExemptEncryption: false
         NSBluetoothAlwaysUsageDescription: Tennis Buddy connects to your racket's sensor over Bluetooth.
@@ -115,7 +115,7 @@ targets:
         com.apple.security.device.bluetooth: true
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-write: true
-        com.apple.developer.icloud-container-identifiers: [iCloud.com.kellamadams.tennisbuddy]
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.quentinlynch.tennisbuddy]
         com.apple.developer.icloud-services: [CloudKit]
         com.apple.developer.aps-environment: development
 
@@ -128,17 +128,17 @@ targets:
       - package: RacketKit
     settings:
       base:
-        PRODUCT_NAME: Tennis Buddy
-        PRODUCT_BUNDLE_IDENTIFIER: com.kellamadams.tennisbuddy.watchkitapp
+        PRODUCT_NAME: Tennis Buddee
+        PRODUCT_BUNDLE_IDENTIFIER: com.quentinlynch.tennisbuddy.watchkitapp
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     info:
       path: Watch/Info.plist
       properties:
-        CFBundleDisplayName: Tennis Buddy
+        CFBundleDisplayName: Tennis Buddee
         WKApplication: true
         ITSAppUsesNonExemptEncryption: false
-        WKCompanionAppBundleIdentifier: com.kellamadams.tennisbuddy
+        WKCompanionAppBundleIdentifier: com.quentinlynch.tennisbuddy
         WKBackgroundModes: [workout-processing]
         NSHealthShareUsageDescription: Tennis Buddy reads your heart rate and calories during a tennis session.
         NSHealthUpdateUsageDescription: Tennis Buddy saves your tennis sessions as workouts in Apple Health.

@@ -5,7 +5,7 @@ import SwiftData
 /// iPhone show up on the Mac (and the other way round). Falls back to a local-only store when iCloud
 /// isn't available (signed out, unsigned dev build), so the app always launches.
 enum SyncedStore {
-    static let containerID = "iCloud.com.kellamadams.tennisbuddy"
+    static let containerID = "iCloud.com.quentinlynch.tennisbuddy"
     private(set) static var isSyncing = false
 
     static func makeContainer() -> ModelContainer {

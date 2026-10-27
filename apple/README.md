@@ -11,7 +11,7 @@ package that does all the racket math (decoding, orientation, shot detection, ph
 3. Pick a scheme and run:
    - **TennisBuddy-macOS** → My Mac
    - **TennisBuddy-iOS** → your iPhone (the Watch app installs with it; open it from the Watch's app list)
-   Signing uses team `B8QLYC5T9U` with automatic signing. If Xcode complains, pick your team under Signing & Capabilities.
+   Signing uses team `3KJ46YFZM9` with automatic signing. If Xcode complains, pick your team under Signing & Capabilities.
 
 The project file is generated from `project.yml`. After adding or removing files run `xcodegen` in `apple/`
 (`brew install xcodegen`).

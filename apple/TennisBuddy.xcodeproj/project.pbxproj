@@ -25,13 +25,13 @@
 		40CC406C5AB59C2A0719D8EB /* CoachSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 272CEAEF6309A4B8F0DB842E /* CoachSelfTest.swift */; };
 		42C595C9D9C55F8E2DD00D30 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 396D35018B2F6B1101D869F2 /* Assets.xcassets */; };
 		54D0A472AD32FB216A2612B9 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12AAA9C083779C5F7C4404A /* InsightsView.swift */; };
+		5775551E2AB1D25F56D17686 /* LlamaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EBDFB963AF272FFB22A3C6 /* LlamaLoader.swift */; };
 		5BB0F3B8567210DDC2337D24 /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 6F73A653F183D4193124A6A5 /* MLXLMCommon */; };
 		62EBDCA9C808702796A63F85 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A34DFC69F764025C289A856 /* HistoryView.swift */; };
 		6378233C7A0268790A47CF6C /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E790DB056785306E5A4E26C /* Components.swift */; };
 		643060A89493BC64502B2CEB /* TennisRacket.glb in Resources */ = {isa = PBXBuildFile; fileRef = 343375742A01D39CB5E6D41F /* TennisRacket.glb */; };
 		65D4F29ECD63B318321BBF4F /* RacketSceneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE7A86CCDEFE9D1F8502AC1 /* RacketSceneView.swift */; };
 		679BC005B560A7AE4A5A91EF /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12AAA9C083779C5F7C4404A /* InsightsView.swift */; };
-		78E8E3EDAAF6000CAF5B6630 /* LlamaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* LlamaLoader.swift */; };
 		7994C77F1F1195681575B2E5 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47CDCF90CDD3213B7A94C42 /* CalibrationView.swift */; };
 		8229E1CA9A14DDE5D1A7E3AE /* MLXLMCommon in Frameworks */ = {isa = PBXBuildFile; productRef = 36B656C3EF7F238CB8BCD80C /* MLXLMCommon */; };
 		854651AB575F52DB7C6F69DB /* MLXLLM in Frameworks */ = {isa = PBXBuildFile; productRef = 831E60AB20B3444C5006846B /* MLXLLM */; };
@@ -46,9 +46,9 @@
 		A85754268507A65E1386B8D2 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FEDDDA8021F41075F44461 /* WatchApp.swift */; };
 		AD6B79AF58CF1CB13D72AD08 /* TennisBuddyWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 1F855F6F1292B3220B90A8FB /* TennisBuddyWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		BB68AD1A639395ED9C11FE15 /* CoachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B37449F16667305BA65652 /* CoachModel.swift */; };
+		BD2B34760A7783AF953E7A90 /* LlamaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9EBDFB963AF272FFB22A3C6 /* LlamaLoader.swift */; };
 		C520ADDD7496A77DC1BD599B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9D172411555FD246D6484F7 /* Assets.xcassets */; };
 		CD941D083EEC004726C80EE4 /* GLBLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28DF7CF160993EBAA8F2EB65 /* GLBLoader.swift */; };
-		CE8AEE943D5899ED87F7B13A /* LlamaLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E6197FA469FC609346F39E1 /* LlamaLoader.swift */; };
 		D06127062F0CC45A1C3F14B3 /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2C05509855869C61804935 /* Records.swift */; };
 		D20140CD8ADA7F5AE2D34F8D /* MLXHuggingFace in Frameworks */ = {isa = PBXBuildFile; productRef = 336ADA4549D2357D274C48E9 /* MLXHuggingFace */; };
 		D831B13CEC2A2C4E58FC3859 /* CoachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B37449F16667305BA65652 /* CoachModel.swift */; };
@@ -86,7 +86,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		0E6197FA469FC609346F39E1 /* LlamaLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LlamaLoader.swift; sourceTree = "<group>"; };
 		1F855F6F1292B3220B90A8FB /* TennisBuddyWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TennisBuddyWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		214D03CD0141E5D33E2C1284 /* TennisBuddy-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TennisBuddy-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		272CEAEF6309A4B8F0DB842E /* CoachSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachSelfTest.swift; sourceTree = "<group>"; };
@@ -105,6 +104,7 @@
 		93FF9841989C788B5B2C46D4 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		99B37449F16667305BA65652 /* CoachModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachModel.swift; sourceTree = "<group>"; };
 		A47CDCF90CDD3213B7A94C42 /* CalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalibrationView.swift; sourceTree = "<group>"; };
+		B9EBDFB963AF272FFB22A3C6 /* LlamaLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LlamaLoader.swift; sourceTree = "<group>"; };
 		C4E19DEF515B2344BD174C3A /* RacketKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RacketKit; path = RacketKit; sourceTree = SOURCE_ROOT; };
 		C7DB2287A7E04EB6397C1F1E /* TennisBuddy.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TennisBuddy.entitlements; sourceTree = "<group>"; };
 		C9D172411555FD246D6484F7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -215,7 +215,7 @@
 			children = (
 				99B37449F16667305BA65652 /* CoachModel.swift */,
 				272CEAEF6309A4B8F0DB842E /* CoachSelfTest.swift */,
-				0E6197FA469FC609346F39E1 /* LlamaLoader.swift */,
+				B9EBDFB963AF272FFB22A3C6 /* LlamaLoader.swift */,
 			);
 			path = Coach;
 			sourceTree = "<group>";
@@ -355,15 +355,15 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					3EFC7DB683E9828153FD79FE = {
-						DevelopmentTeam = B8QLYC5T9U;
+						DevelopmentTeam = 3KJ46YFZM9;
 						ProvisioningStyle = Automatic;
 					};
 					5DD87B9978D265347CBD8FB3 = {
-						DevelopmentTeam = B8QLYC5T9U;
+						DevelopmentTeam = 3KJ46YFZM9;
 						ProvisioningStyle = Automatic;
 					};
 					EA06D89A6D1216886196243D = {
-						DevelopmentTeam = B8QLYC5T9U;
+						DevelopmentTeam = 3KJ46YFZM9;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -435,10 +435,10 @@
 				F68AD655352EC98EE29CC552 /* CoachSelfTest.swift in Sources */,
 				6378233C7A0268790A47CF6C /* Components.swift in Sources */,
 				05D21A1F862ECFC8F4BE9C54 /* GLBLoader.swift in Sources */,
-				CE8AEE943D5899ED87F7B13A /* LlamaLoader.swift in Sources */,
 				62EBDCA9C808702796A63F85 /* HistoryView.swift in Sources */,
 				679BC005B560A7AE4A5A91EF /* InsightsView.swift in Sources */,
 				0424191C89E90C4E2DFDBEBE /* LiveView.swift in Sources */,
+				5775551E2AB1D25F56D17686 /* LlamaLoader.swift in Sources */,
 				044D7A721F0CE85DB86A97DA /* RacketSceneView.swift in Sources */,
 				1D917C4ECF632F4D057F0CBA /* RacketView.swift in Sources */,
 				20C7D56510BA2336399B0466 /* Records.swift in Sources */,
@@ -457,10 +457,10 @@
 				40CC406C5AB59C2A0719D8EB /* CoachSelfTest.swift in Sources */,
 				F25C383A73292364294A4BFF /* Components.swift in Sources */,
 				CD941D083EEC004726C80EE4 /* GLBLoader.swift in Sources */,
-				78E8E3EDAAF6000CAF5B6630 /* LlamaLoader.swift in Sources */,
 				A237A1851BCDEEF4483EAB7F /* HistoryView.swift in Sources */,
 				54D0A472AD32FB216A2612B9 /* InsightsView.swift in Sources */,
 				ECB995620E0135240B69EA6F /* LiveView.swift in Sources */,
+				BD2B34760A7783AF953E7A90 /* LlamaLoader.swift in Sources */,
 				65D4F29ECD63B318321BBF4F /* RacketSceneView.swift in Sources */,
 				886B779B6E84BAB7928FFEBD /* RacketView.swift in Sources */,
 				D06127062F0CC45A1C3F14B3 /* Records.swift in Sources */,
@@ -497,8 +497,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Watch/TennisBuddyWatch.entitlements;
 				INFOPLIST_FILE = Watch/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kellamadams.tennisbuddy.watchkitapp;
-				PRODUCT_NAME = "Tennis Buddy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy.watchkitapp;
+				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -542,7 +542,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = B8QLYC5T9U;
+				DEVELOPMENT_TEAM = 3KJ46YFZM9;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -587,8 +587,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.kellamadams.tennisbuddy;
-				PRODUCT_NAME = "Tennis Buddy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy;
+				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -630,7 +630,7 @@
 				COPY_PHASE_STRIP = NO;
 				CURRENT_PROJECT_VERSION = 2;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = B8QLYC5T9U;
+				DEVELOPMENT_TEAM = 3KJ46YFZM9;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -667,8 +667,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.kellamadams.tennisbuddy;
-				PRODUCT_NAME = "Tennis Buddy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy;
+				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -681,8 +681,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Watch/TennisBuddyWatch.entitlements;
 				INFOPLIST_FILE = Watch/Info.plist;
-				PRODUCT_BUNDLE_IDENTIFIER = com.kellamadams.tennisbuddy.watchkitapp;
-				PRODUCT_NAME = "Tennis Buddy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy.watchkitapp;
+				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -702,8 +702,8 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.kellamadams.tennisbuddy;
-				PRODUCT_NAME = "Tennis Buddy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy;
+				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -720,8 +720,8 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.kellamadams.tennisbuddy;
-				PRODUCT_NAME = "Tennis Buddy";
+				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy;
+				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
