@@ -25,6 +25,7 @@ struct ContentView: View {
 
                 VStack(alignment: .leading, spacing: 14) {
                     captureControls
+                    sessionPanel
                     detectorControls
                     snapshotPanel
                     Spacer(minLength: 0)
@@ -169,6 +170,50 @@ struct ContentView: View {
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
             }
+        }
+    }
+
+    private var sessionPanel: some View {
+        let racket = camera.racket
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                Button {
+                    if camera.sessionActive { camera.endSession() } else { camera.startSession() }
+                } label: {
+                    Text(camera.sessionActive ? "Stop recording" : "Record session")
+                        .font(.system(.footnote, design: .rounded).weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(camera.sessionActive ? .red : .blue)
+                .disabled(!camera.isRunning)
+
+                Button("Mark") { camera.markEvent() }
+                    .buttonStyle(.bordered)
+                    .font(.footnote)
+                    .disabled(!camera.sessionActive)
+            }
+            Toggle("Save 240 fps video", isOn: $camera.recordVideo)
+                .font(.footnote)
+                .tint(.green)
+                .disabled(camera.sessionActive)
+            row("racket", racket.state)
+            row("imu", String(format: "%.0f pkt/s  %d lost%@", racket.packetsPerSecond, racket.lostPackets,
+                              racket.gyro4000 ? "  ±4000dps" : ""))
+            if racket.batteryMV > 0 {
+                row("battery", "\(racket.batteryMV) mV")
+            }
+            if !camera.sessionNote.isEmpty {
+                Text(camera.sessionNote)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Text("Sessions are in Files > On My iPhone > TennisCamera. Press Mark while knocking the racket on something in view to add a sync point.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

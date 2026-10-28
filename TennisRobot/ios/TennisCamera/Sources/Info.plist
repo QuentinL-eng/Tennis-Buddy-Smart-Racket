@@ -22,6 +22,12 @@
 	<string>1</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>TennisCamera connects to the Tennis Buddy racket so its motion sensor data is recorded on the same clock as the camera.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>TennisCamera captures high-speed frames to locate the tennis ball and send its image-space position to the robot controller.</string>
 	<key>NSLocalNetworkUsageDescription</key>
