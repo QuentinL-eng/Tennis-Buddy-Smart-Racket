@@ -10,6 +10,8 @@ public enum RacketProtocol {
     public static let controlUUID = "7E5B0004-6B1D-4D8E-9C1A-7E5B7E5B0001"
     /// On-device ML verdict (sweet spot or not, and how far off), one notification per impact.
     public static let shotUUID = "7E5B0005-6B1D-4D8E-9C1A-7E5B7E5B0001"
+    /// Handle-tap gesture (single/double/triple), one notification per gesture. Firmware 1.2+.
+    public static let tapUUID = "7E5B0006-6B1D-4D8E-9C1A-7E5B7E5B0001"
 
     public static let samplesPerPacket = 8
     public static let packetSize = 152
@@ -22,7 +24,12 @@ public enum RacketProtocol {
         case startStream = 0x01
         case stopStream = 0x02
         case h3lisRange = 0x10
+        /// Second byte 1 = ±4000 dps (gyro at 8.2 LSB/dps, flagged per packet), 0 = ±2000 dps. Firmware 1.3+.
+        case gyroRange = 0x11
     }
+
+    /// Packet flag: this packet's gyro is at ±4000 dps, 8.2 LSB/dps.
+    public static let flagGyro4000: UInt8 = 1 << 3
 
     /// mg per 12-bit count for each H3LIS range code.
     public static func h3lisGPerCount(range: UInt8) -> Float {
@@ -72,6 +79,32 @@ public enum RacketProtocol {
                            offCenterPercent: Int(b[3]), confidencePercent: Int(b[4]), level: Int(b[5]))
     }
 
+    /// Taps on the handle, grouped by the racket into one gesture (firmware/src/tap.cpp). Swings and ball
+    /// impacts are filtered out on the racket.
+    public struct TapGesture: Sendable, Equatable {
+        public var seq: UInt16
+        /// Taps in the gesture: 1 single, 2 double, 3+ triple.
+        public var count: Int
+        /// Strongest tap's jolt, 0...255 (255 = 2 g or more).
+        public var strength: Int
+        /// Strongest tap's push direction, unit vector in accel (sensor) axes. See TapCalibration.
+        public var direction: SIMD3<Float>
+
+        public init(seq: UInt16, count: Int, strength: Int, direction: SIMD3<Float>) {
+            self.seq = seq
+            self.count = count
+            self.strength = strength
+            self.direction = direction
+        }
+    }
+
+    public static func decodeTap(_ data: Data) -> TapGesture? {
+        guard data.count >= 9 else { return nil }
+        let b = [UInt8](data)
+        let dir = SIMD3(Float(Int8(bitPattern: b[6])), Float(Int8(bitPattern: b[7])), Float(Int8(bitPattern: b[8]))) / 127
+        return TapGesture(seq: UInt16(b[0]) | UInt16(b[1]) << 8, count: Int(b[2]), strength: Int(b[3]), direction: dir)
+    }
+
     public static func decodePacket(_ data: Data) -> Packet? {
         guard data.count >= 8 else { return nil }
         let bytes = [UInt8](data)
@@ -107,13 +140,14 @@ public enum RacketProtocol {
     }
 
     /// Converts a raw sample to physical units in the sensor frames.
-    public static func convert(_ r: RawSample, time: Double, h3lisRange: UInt8) -> IMUSample {
+    public static func convert(_ r: RawSample, time: Double, h3lisRange: UInt8,
+                               gyroLSBPerDps: Float = mpuGyroLSBPerDps) -> IMUSample {
         let gPerCount = h3lisGPerCount(range: h3lisRange)
         let dps2rad = Float.pi / 180
         return IMUSample(
             time: time,
             accel: SIMD3(Float(r.ax), Float(r.ay), Float(r.az)) / mpuAccelLSBPerG,
-            gyro: SIMD3(Float(r.gx), Float(r.gy), Float(r.gz)) / mpuGyroLSBPerDps * dps2rad,
+            gyro: SIMD3(Float(r.gx), Float(r.gy), Float(r.gz)) / gyroLSBPerDps * dps2rad,
             highG: SIMD3(Float(r.hx >> 4), Float(r.hy >> 4), Float(r.hz >> 4)) * gPerCount)
     }
 }
@@ -139,7 +173,8 @@ public struct IMUSample: Sendable, Codable, Equatable {
         simd_length(accel) < 14 ? accel : highG
     }
 
-    public static let gyroSaturation: Float = 1990 * .pi / 180
+    /// Just under the gyro's full scale; RacketBLE raises it while the racket streams at ±4000 dps.
+    public static var gyroSaturation: Float = 1990 * .pi / 180
     public var gyroSaturated: Bool {
         abs(gyro.x) > Self.gyroSaturation || abs(gyro.y) > Self.gyroSaturation || abs(gyro.z) > Self.gyroSaturation
     }

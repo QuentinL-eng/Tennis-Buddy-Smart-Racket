@@ -25,6 +25,8 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
     public var onStatus: ((RacketProtocol.Status) -> Void)?
     /// Verdict from the racket's on-device sweet-spot model (main queue).
     public var onVerdict: ((RacketProtocol.ShotVerdict) -> Void)?
+    /// Handle-tap gesture (main queue).
+    public var onTap: ((RacketProtocol.TapGesture) -> Void)?
 
     public private(set) var state: State = .idle {
         didSet { let s = state; DispatchQueue.main.async { self.onState?(s) } }
@@ -47,6 +49,7 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
     private let statusUUID = CBUUID(string: RacketProtocol.statusUUID)
     private let controlUUID = CBUUID(string: RacketProtocol.controlUUID)
     private let shotUUID = CBUUID(string: RacketProtocol.shotUUID)
+    private let tapUUID = CBUUID(string: RacketProtocol.tapUUID)
 
     public override init() {
         super.init()
@@ -105,8 +108,11 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
         if packet.t0Micros < lastMicros, lastMicros - packet.t0Micros > 1_000_000_000 { wraps += 4294.967296 }
         lastMicros = packet.t0Micros
         let t0 = Double(packet.t0Micros) / 1e6 + wraps
+        let wide = packet.flags & RacketProtocol.flagGyro4000 != 0
+        IMUSample.gyroSaturation = (wide ? 3990 : 1990) * .pi / 180
+        let gyroScale = wide ? RacketProtocol.mpuGyroLSBPerDps / 2 : RacketProtocol.mpuGyroLSBPerDps
         let samples = packet.samples.enumerated().map { k, raw in
-            RacketProtocol.convert(raw, time: t0 + Double(k) * 0.001, h3lisRange: h3lisRange)
+            RacketProtocol.convert(raw, time: t0 + Double(k) * 0.001, h3lisRange: h3lisRange, gyroLSBPerDps: gyroScale)
         }
         onSamples?(samples)
     }
@@ -150,7 +156,7 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let s = peripheral.services?.first(where: { $0.uuid == service }) else { return }
-        peripheral.discoverCharacteristics([imuUUID, statusUUID, controlUUID, shotUUID], for: s)
+        peripheral.discoverCharacteristics([imuUUID, statusUUID, controlUUID, shotUUID, tapUUID], for: s)
     }
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
@@ -158,10 +164,12 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
             switch c.uuid {
             case imuUUID: peripheral.setNotifyValue(true, for: c)
             case statusUUID: peripheral.setNotifyValue(true, for: c); peripheral.readValue(for: c)
-            case shotUUID: peripheral.setNotifyValue(true, for: c)
+            case shotUUID, tapUUID: peripheral.setNotifyValue(true, for: c)
             case controlUUID:
                 control = c
                 peripheral.writeValue(Data([RacketProtocol.Command.startStream.rawValue]), for: c, type: .withResponse)
+                // ±2000 dps clips fast spins (twirling the racket in the hand). Older firmware ignores this.
+                peripheral.writeValue(Data([RacketProtocol.Command.gyroRange.rawValue, 1]), for: c, type: .withResponse)
             default: break
             }
         }
@@ -175,6 +183,8 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
             handleIMU(data)
         } else if characteristic.uuid == shotUUID, let v = RacketProtocol.decodeShotVerdict(data) {
             DispatchQueue.main.async { self.onVerdict?(v) }
+        } else if characteristic.uuid == tapUUID, let t = RacketProtocol.decodeTap(data) {
+            DispatchQueue.main.async { self.onTap?(t) }
         } else if characteristic.uuid == statusUUID, let status = RacketProtocol.decodeStatus(data) {
             h3lisRange = status.h3lisRange
             DispatchQueue.main.async { self.onStatus?(status) }

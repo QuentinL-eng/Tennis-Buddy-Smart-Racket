@@ -21,3 +21,12 @@ models/
 .build/
 .swiftpm/
 __pycache__/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Capture junk: sync-tool conflict copies and raw session recordings
+*.sync-conflict-*
+data/sessions/

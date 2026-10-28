@@ -9,6 +9,8 @@ final class SessionRecord {
     var startDate: Date = Date()
     var endDate: Date?
     var title: String = ""
+    /// Name of the player who was active when the session started.
+    var playerName: String = ""
     var notes: String = ""
     var coachSummary: String = ""
     var pointsWon: Int = 0

@@ -1,0 +1,71 @@
+  :root {
+    --hud-white: #ffffff;
+    --hud-dim: rgba(255,255,255,0.62);
+    --heart: #ff5a4e;
+    --kcal: #ffb02e;
+    --ball: #c8f03c;
+    --navy-top: #1f3a8a;
+    --navy-bot: #0f1f55;
+    --navy-edge: #4a6fe0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1600px; height: 900px; overflow: hidden; background: #000; }
+  body { font-family: "Inter", -apple-system, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* The world, seen through the lens: slightly soft, since the eye is focused on the display plane */
+  .world {
+    position: absolute; inset: -20px;
+    background: url("court-hires.jpg") center 60% / cover no-repeat;
+    filter: blur(1.2px) saturate(1.05) contrast(1.03) brightness(0.86);
+  }
+  /* Light lens tint + vignette so it reads as looking through glasses */
+  .lens {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 85% 95% at 55% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,0.28) 85%, rgba(0,0,0,0.55) 100%),
+      linear-gradient(180deg, rgba(40,60,90,0.06), rgba(20,30,40,0.10));
+  }
+
+  /* Monocular display in the right lens. It is additive: black = see-through. */
+  .display {
+    position: absolute;
+    width: 560px; height: 560px;
+    left: 860px; top: 215px;
+    transform: scale(0.86);
+    mix-blend-mode: screen;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px;
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.18));
+  }
+  .time {
+    font-size: 132px; font-weight: 800; letter-spacing: -2px; line-height: 1;
+    color: var(--hud-white); font-variant-numeric: tabular-nums;
+  }
+  .vitals { display: flex; gap: 34px; font-size: 32px; font-weight: 600; margin-top: 6px; }
+  .vitals span { display: inline-flex; align-items: center; gap: 10px; }
+  .bpm { color: var(--heart); }
+  .kcal { color: var(--kcal); }
+  .vitals svg { width: 28px; height: 28px; }
+  .shots { font-size: 25px; color: var(--hud-dim); font-weight: 500; }
+
+  .score {
+    margin-top: 8px; width: 480px;
+    display: grid; grid-template-columns: 1fr 96px;
+    border: 1.5px solid var(--navy-edge); border-radius: 12px; overflow: hidden;
+  }
+  .score .names { background: linear-gradient(180deg, var(--navy-top), var(--navy-bot)); }
+  .row { height: 54px; display: grid; grid-template-columns: 1fr 50px 50px; align-items: center; padding: 0 12px 0 16px; }
+  .row + .row { border-top: 1px solid rgba(120,150,255,0.35); }
+  .who { font-size: 25px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 12px; letter-spacing: 0.3px; }
+  .who .ballslot { width: 22px; display: inline-flex; }
+  .who svg { width: 22px; height: 22px; }
+  .g { font-size: 27px; font-weight: 700; color: #fff; text-align: center; }
+  .s { font-size: 27px; font-weight: 700; color: var(--ball); text-align: center; }
+  .pts { background: #f2f3f7; }
+  .pts div { height: 54px; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 800; color: #111; }
+  .pts div + div { border-top: 1px solid #c9ccd6; }
+
+  .pill {
+    margin-top: 10px; padding: 9px 22px; border-radius: 999px;
+    background: #262626; color: rgba(255,255,255,0.72); font-size: 20px; font-weight: 500;
+  }

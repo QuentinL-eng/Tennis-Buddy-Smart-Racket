@@ -3,6 +3,9 @@ import Observation
 import RacketKit
 import SwiftData
 import simd
+#if canImport(UIKit)
+import UIKit
+#endif
 
 enum SourceKind: String, CaseIterable, Identifiable {
     case racket, simulator, replay
@@ -14,6 +17,12 @@ enum SourceKind: String, CaseIterable, Identifiable {
         case .replay: "Replay"
         }
     }
+}
+
+/// The per-player fields that used to be stored on `RacketProfile`, read only to migrate old saves.
+private struct LegacyPlayerFields: Decodable {
+    var rightHanded: Bool?
+    var heightM: Float?
 }
 
 /// App-wide state: data source, live orientation, the active session and settings.
@@ -29,6 +38,12 @@ final class AppModel {
     var lastVerdict: RacketProtocol.ShotVerdict?
     var lastVerdictDate: Date?
     var replayURL: URL?
+
+    // MARK: Firmware update
+    /// The racket firmware shipped inside the app (firmware/tools/bundle_for_app.sh).
+    let bundledFirmware = FirmwareImage.bundled()
+    var firmwareUpdate: RacketBLE.FirmwareUpdateState = .idle
+    var racketSupportsFirmwareUpdate = false
 
     // MARK: Live
     var live = LiveState(orientation: simd_quatf(angle: 0, axis: SIMD3(0, 0, 1)), gyroDps: 0, highG: 0,
@@ -51,6 +66,10 @@ final class AppModel {
     static let calibrationKey = "calibration.lsm6dsv320x"
     var calibration: Calibration { didSet { save(calibration, key: Self.calibrationKey); engine.calibration = calibration } }
     var profile: RacketProfile { didSet { save(profile, key: "profile"); engine.profile = profile } }
+    /// Everyone who hits with this racket. Sessions are tagged with the player active when they start.
+    var players: [PlayerProfile] { didSet { save(players, key: "players"); applyActivePlayer() } }
+    var activePlayerID: UUID { didSet { UserDefaults.standard.set(activePlayerID.uuidString, forKey: "activePlayerID"); applyActivePlayer() } }
+    var activePlayer: PlayerProfile? { players.first { $0.id == activePlayerID } }
     var impactModel: ImpactModel { didSet { save(impactModel, key: "impactModel"); engine.impactModel = impactModel } }
 
     // MARK: Recorder
@@ -73,6 +92,14 @@ final class AppModel {
             self.isConnected = state == .connected
         }
         ble.onStatus = { [weak self] status in self?.racketStatus = status }
+        ble.onFirmwareUpdateSupport = { [weak self] supported in self?.racketSupportsFirmwareUpdate = supported }
+        ble.onFirmwareUpdate = { [weak self] state in
+            self?.firmwareUpdate = state
+            #if canImport(UIKit)
+            // A locked phone suspends the transfer, so keep the screen on while it runs.
+            UIApplication.shared.isIdleTimerDisabled = state.isInProgress
+            #endif
+        }
         ble.onVerdict = { [weak self] v in
             guard let self else { return }
             self.lastVerdict = v
@@ -99,7 +126,15 @@ final class AppModel {
     init() {
         calibration = Self.load(key: Self.calibrationKey) ?? .default
         profile = Self.load(key: "profile") ?? RacketProfile()
+        // Before player profiles, the handedness and height lived on the racket under "profile". Carry them over once.
+        let legacy: LegacyPlayerFields? = Self.load(key: "profile")
+        let storedPlayers: [PlayerProfile]? = Self.load(key: "players")
+        let initialPlayers = storedPlayers ?? [PlayerProfile(name: "Player 1", rightHanded: legacy?.rightHanded ?? true,
+                                                             heightM: legacy?.heightM)]
+        players = initialPlayers
+        activePlayerID = UserDefaults.standard.string(forKey: "activePlayerID").flatMap(UUID.init) ?? initialPlayers[0].id
         impactModel = Self.load(key: "impactModel") ?? ImpactModel()
+        profile.rightHanded = players.first { $0.id == activePlayerID }?.rightHanded ?? true
         engine.calibration = calibration
         engine.profile = profile
         engine.impactModel = impactModel
@@ -156,9 +191,29 @@ final class AppModel {
 
     // MARK: - Sessions
 
+    func addPlayer() {
+        let player = PlayerProfile(name: "Player \(players.count + 1)")
+        players.append(player)
+        activePlayerID = player.id
+    }
+
+    /// The last remaining player can't be deleted, so there is always someone to attribute sessions to.
+    func deletePlayer(_ id: UUID) {
+        guard players.count > 1 else { return }
+        players.removeAll { $0.id == id }
+        if activePlayerID == id { activePlayerID = players[0].id }
+    }
+
+    /// Copies the active player's handedness into the racket profile, which the shot classifier reads.
+    private func applyActivePlayer() {
+        guard let rightHanded = activePlayer?.rightHanded, profile.rightHanded != rightHanded else { return }
+        profile.rightHanded = rightHanded
+    }
+
     func startSession() {
         guard activeSession == nil else { return }
         let session = SessionRecord()
+        session.playerName = activePlayer?.name ?? ""
         modelContext?.insert(session)
         activeSession = session
         sessionShots = []

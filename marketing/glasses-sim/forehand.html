@@ -1,0 +1,57 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tennis Buddee Forehand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="hud.css">
+<style>
+  :root { --sweet: #3ccf6b; }
+  .display { gap: 18px; }
+  .shot {
+    width: 440px; padding: 24px 28px 22px;
+    border: 2px solid var(--sweet); border-radius: 28px;
+    background: #1c1c1e;
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .shot-head { display: flex; align-items: center; gap: 12px; font-size: 27px; font-weight: 700; color: #fff; }
+  .shot-head svg { width: 24px; height: 24px; }
+  .tag { font-size: 18px; font-weight: 600; color: var(--sweet); background: rgba(60,207,107,0.2); padding: 4px 12px; border-radius: 999px; }
+  .speed { display: flex; align-items: baseline; gap: 8px; margin-top: 4px; }
+  .speed b { font-size: 118px; font-weight: 800; letter-spacing: -2px; line-height: 1.05; color: #fff; }
+  .speed span { font-size: 28px; font-weight: 500; color: var(--hud-dim); }
+  .detail { font-size: 21px; color: var(--hud-dim); margin-top: 4px; }
+  .score { width: 440px; margin-top: 0; }
+</style>
+</head>
+<body>
+  <div class="world"></div>
+  <div class="lens"></div>
+
+  <div class="display">
+    <div class="shot">
+      <div class="shot-head">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 6 6v5"/></svg>
+        Forehand <span class="tag">Sweet spot</span>
+      </div>
+      <div class="speed"><b>68</b><span>mph</span></div>
+      <div class="detail">1840 rpm topspin · 74 mph swing</div>
+    </div>
+
+    <div class="score">
+      <div class="names">
+        <div class="row">
+          <div class="who"><span class="ballslot"><svg viewBox="0 0 24 24" fill="none" stroke="#c8f03c" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M5.2 5.4c3 2.6 3 10.6 0 13.2M18.8 5.4c-3 2.6-3 10.6 0 13.2"/></svg></span>YOU</div>
+          <div class="g">6</div><div class="s">3</div>
+        </div>
+        <div class="row">
+          <div class="who"><span class="ballslot"></span>OPPONENT</div>
+          <div class="g">4</div><div class="s">2</div>
+        </div>
+      </div>
+      <div class="pts"><div>40</div><div>15</div></div>
+    </div>
+  </div>
+</body>
+</html>

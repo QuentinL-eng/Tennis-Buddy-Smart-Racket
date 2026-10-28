@@ -31,6 +31,10 @@ struct RacketView: View {
                 }
             }
 
+            if model.sourceKind == .racket, let s = model.racketStatus {
+                FirmwareUpdateSection(installed: s.firmwareVersion)
+            }
+
             Section {
                 LabeledContent("Status", value: model.calibration.isCalibrated ? "Calibrated" : "Using CAD defaults")
                 Button("Calibrate racket…", systemImage: "scope") { showCalibration = true }
@@ -50,23 +54,42 @@ struct RacketView: View {
                 Text("\(useMetric ? "km/h and cm" : "mph and inches"). iCloud sync: \(SyncedStore.statusText).")
             }
 
-            Section("Racket & player") {
-                TextField("Racket", text: $model.profile.name)
-                Picker("Plays", selection: $model.profile.rightHanded) {
-                    Text("Right-handed").tag(true)
-                    Text("Left-handed").tag(false)
+            Section {
+                Picker("Active player", selection: $model.activePlayerID) {
+                    ForEach(model.players) { Text($0.name).tag($0.id) }
                 }
-                if useMetric {
-                    measurement("Weight", value: $model.profile.massKg, scale: 1000, unit: "g")
-                    measurement("Balance point", value: $model.profile.balancePointM, scale: 1000, unit: "mm")
-                    measurement("String center", value: $model.profile.stringCenterM, scale: 1000, unit: "mm")
-                    measurement("Swing radius", value: $model.profile.effectiveRadiusM, scale: 100, unit: "cm")
-                } else {
-                    measurement("Weight", value: $model.profile.massKg, scale: 35.274, unit: "oz", decimals: 1)
-                    measurement("Balance point", value: $model.profile.balancePointM, scale: 39.3701, unit: "in", decimals: 2)
-                    measurement("String center", value: $model.profile.stringCenterM, scale: 39.3701, unit: "in", decimals: 2)
-                    measurement("Swing radius", value: $model.profile.effectiveRadiusM, scale: 39.3701, unit: "in", decimals: 1)
+                .disabled(model.isSessionActive)
+                if let index = model.players.firstIndex(where: { $0.id == model.activePlayerID }) {
+                    TextField("Name", text: $model.players[index].name)
+                    Picker("Plays", selection: $model.players[index].rightHanded) {
+                        Text("Right-handed").tag(true)
+                        Text("Left-handed").tag(false)
+                    }
+                    LabeledContent("Height") {
+                        HStack {
+                            TextField("Height", text: heightText(for: model.players[index].id))
+                                .labelsHidden()
+                                .multilineTextAlignment(.trailing)
+                                #if os(iOS)
+                                .keyboardType(.decimalPad)
+                                #endif
+                                .frame(maxWidth: 90)
+                            Text(useMetric ? "cm" : "in").foregroundStyle(.secondary)
+                        }
+                    }
                 }
+                Button("Add player", systemImage: "person.badge.plus") { model.addPlayer() }
+                    .disabled(model.isSessionActive)
+                if model.players.count > 1 {
+                    Button("Delete player", systemImage: "trash", role: .destructive) {
+                        model.deletePlayer(model.activePlayerID)
+                    }
+                    .disabled(model.isSessionActive)
+                }
+            } header: {
+                Text("Players")
+            } footer: {
+                Text("One racket, many players. Each session is tagged with the player who was active when it started.")
             }
 
             Section {
@@ -102,22 +125,18 @@ struct RacketView: View {
         }
     }
 
-    /// Number field showing `value × scale` in the chosen unit.
-    private func measurement(_ label: String, value: Binding<Float>, scale: Double, unit: String,
-                             decimals: Int = 0) -> some View {
-        LabeledContent(label) {
-            HStack {
-                TextField(label, value: Binding(get: { Double(value.wrappedValue) * scale },
-                                                set: { value.wrappedValue = Float($0 / scale) }),
-                          format: .number.precision(.fractionLength(0...decimals)))
-                    .labelsHidden()
-                    .multilineTextAlignment(.trailing)
-                    #if os(iOS)
-                    .keyboardType(.decimalPad)
-                    #endif
-                    .frame(maxWidth: 90)
-                Text(unit).foregroundStyle(.secondary)
+    /// Height shown in cm or inches, stored in meters. Empty until the player enters one.
+    private func heightText(for id: UUID) -> Binding<String> {
+        let scale = useMetric ? 100.0 : 39.3701
+        return Binding(
+            get: {
+                guard let height = model.players.first(where: { $0.id == id })?.heightM else { return "" }
+                return String(format: useMetric ? "%.0f" : "%.1f", Double(height) * scale)
+            },
+            set: { text in
+                guard let index = model.players.firstIndex(where: { $0.id == id }) else { return }
+                model.players[index].heightM = Double(text).map { Float($0 / scale) }
             }
-        }
+        )
     }
 }

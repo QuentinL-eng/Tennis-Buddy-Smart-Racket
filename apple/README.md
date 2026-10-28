@@ -6,9 +6,7 @@ package that does all the racket math (decoding, orientation, shot detection, ph
 ## Run it
 
 1. Open `apple/TennisBuddy.xcodeproj` in Xcode.
-2. First open only: Xcode asks to **Trust & Enable** the `MLXHuggingFace` macro (part of the Llama integration). Click it.
-   If a build fails with "missing Metal Toolchain", run `xcodebuild -downloadComponent MetalToolchain` once.
-3. Pick a scheme and run:
+2. Pick a scheme and run:
    - **TennisBuddy-macOS** → My Mac
    - **TennisBuddy-iOS** → your iPhone (the Watch app installs with it; open it from the Watch's app list)
    Signing uses team `3KJ46YFZM9` with automatic signing. If Xcode complains, pick your team under Signing & Capabilities.
@@ -21,14 +19,41 @@ The project file is generated from `project.yml`. After adding or removing files
 The app starts on the **Simulator** data source: a virtual racket that swings and hits every few seconds, so every
 screen works without hardware. Switch to the real racket from the connection menu on the Live tab or in the Racket tab.
 
-## Llama 3.2 3B coach
+## Muse coach
 
-Insights tab → **Load Llama**. The first load downloads the 4-bit model (`mlx-community/Llama-3.2-3B-Instruct-4bit`) from
-Hugging Face; after that it runs fully offline. Until it's loaded, a built-in template coach answers, so the
-feature never breaks a demo. **Load it on the demo iPhone and Mac before the demo** over good Wi-Fi.
+In Insights → **Muse coach**, paste your Meta Model API key and choose **Save key and enable Muse**.
+The key stays in this device's Keychain; it is never bundled or synced. Save it separately on each demo device.
+Muse sends questions and requested shot/session statistics to Meta, so use Wi-Fi for the demo.
+Health data and session notes are excluded. Disable **Use Muse online** or remove the key to use the deterministic built-in coach.
+Any Muse error also falls back to that coach, and the UI shows the engine that actually answered.
+No local language model is downloaded or loaded.
 
-Command-line check on the Mac: `"Tennis Buddy.app/Contents/MacOS/Tennis Buddy" --coach-selftest` loads Llama,
-coaches a sample session, prints the result and quits.
+Muse uses `POST https://api.meta.ai/v1/chat/completions`, Bearer authentication and `muse-spark-1.3` (Standard mode).
+Native function calling is confirmed in [Meta's tool calling docs](https://dev.meta.ai/docs/tool-calling).
+[Published limits](https://dev.meta.ai/docs/pricing-rate-limits) are 3,000 RPM / 4,000,000 TPM for this model as of October 27, 2026;
+HTTP 429 immediately falls back, without automatic retries. Each request times out after 45 seconds.
+The agent makes at most five requests and runs at most eight tool calls per response. The final request omits tools.
+
+Tools: `query_shots`, `compare_sessions`, `get_session_digest`, `get_live_state`, and `simulate_change`.
+The digest includes a session UUID/date catalog; selectors also accept `current`, `latest` and `previous`.
+Only `query_shots` accepts `all`. Date filters use inclusive ISO 8601 timestamps. Tools return explicit units;
+missing motion metrics are null. All stored/live access and tool dispatch run on the main actor.
+
+`ShotSimulator` is a pure speed/spin sensitivity model using the analyzer's restitution and brush equations,
+with a 2D face/path approximation. It clamps swing speed to 0–200 km/h, path to ±80°, face to ±60°,
+contact x/y to ±12/14 cm and incoming speed to 0–200 km/h. The tool also caps proposed deltas.
+It uses the player's average usable motion shot, excluding mic-only and gyro-saturated shots.
+Incoming speed is assumed (serve 0, volley 54, groundstroke 43.2 km/h).
+Outputs are **estimated**, and no launch angle, flight, net clearance or landing depth is claimed.
+
+Validation:
+
+```sh
+swift test --package-path apple/RacketKit
+xcodebuild -project apple/TennisBuddy.xcodeproj -scheme TennisBuddy-macOS -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO test
+```
+
+The coach tests mock HTTP and model responses; an end-to-end API check requires your own key in the app.
 
 ## Layout
 
@@ -37,6 +62,6 @@ coaches a sample session, prints the result and quits.
 | `RacketKit/` | Protocol decode, `RacketBLE`, `MahonyFilter`, `RacketEngine` (shot detection), `ShotAnalyzer` (physics), `SimulatedRacket`, recorder/replay. `swift test` runs a simulator round-trip test. |
 | `Shared/Model` | `AppModel` (sources, sessions, settings), SwiftData records |
 | `Shared/Views` | Live, History, Insights, Racket, Calibration, 3D racket (SceneKit), string bed |
-| `Shared/Coach` | Coach prompts, template coach, Llama (MLX Swift) |
+| `Shared/Coach` | Muse HTTP client, Keychain key storage, tool dispatcher, bounded agent loop, prompts and template fallback |
 | `iOS/WatchBridge.swift` | iPhone ↔ Watch messages |
 | `Watch/` | Watch app: last shot + haptics, point logging, session start/stop with a Tennis workout (heart rate → Health) |

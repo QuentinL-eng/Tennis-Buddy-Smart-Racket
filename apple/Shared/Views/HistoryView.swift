@@ -34,6 +34,7 @@ struct SessionRow: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(session.title).font(.headline)
             HStack(spacing: 12) {
+                if !session.playerName.isEmpty { Label(session.playerName, systemImage: "person") }
                 Label("\(summary.count)", systemImage: "tennisball")
                 Label("\(Int(summary.sweetSpotPercent))%", systemImage: "scope")
                 Label(session.duration.clock, systemImage: "timer")

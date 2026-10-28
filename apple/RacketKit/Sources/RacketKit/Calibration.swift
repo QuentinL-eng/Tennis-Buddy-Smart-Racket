@@ -100,6 +100,21 @@ extension simd_float3x3: @retroactive Codable {
     }
 }
 
+/// A person who hits with the racket. One racket can have many players.
+public struct PlayerProfile: Codable, Sendable, Equatable, Identifiable {
+    public var id = UUID()
+    public var name: String
+    public var rightHanded: Bool = true
+    /// Height in meters. Optional so it can stay blank.
+    public var heightM: Float?
+
+    public init(name: String, rightHanded: Bool = true, heightM: Float? = nil) {
+        self.name = name
+        self.rightHanded = rightHanded
+        self.heightM = heightM
+    }
+}
+
 /// Physical racket constants used by the shot physics. Edit after the ME measures the racket.
 public struct RacketProfile: Codable, Sendable, Equatable {
     public var name: String = "Yonex VCore 98"
@@ -112,6 +127,7 @@ public struct RacketProfile: Codable, Sendable, Equatable {
     public var imuFromButtM: Float = 0.039
     /// Effective rotation radius for swing speed (shoulder to sweet spot), tuned against slow-mo video.
     public var effectiveRadiusM: Float = 1.15
+    /// Handedness of the active player. The app copies it from `PlayerProfile` when the player changes.
     public var rightHanded: Bool = true
 
     public init() {}

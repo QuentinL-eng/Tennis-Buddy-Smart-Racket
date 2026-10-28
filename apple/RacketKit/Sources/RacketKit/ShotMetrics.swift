@@ -49,7 +49,7 @@ public struct ImpactFeatures: Codable, Sendable, Equatable {
     }
 }
 
-/// Everything we know about one shot. Shared by the apps, the Watch and the Llama coach.
+/// Everything we know about one shot. Shared by the apps, the Watch and the coach.
 public struct ShotMetrics: Codable, Sendable, Identifiable, Equatable {
     public var id = UUID()
     public var date: Date
