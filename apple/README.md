@@ -36,7 +36,23 @@ Native function calling is confirmed in [Meta's tool calling docs](https://dev.m
 HTTP 429 immediately falls back, without automatic retries. Each request times out after 45 seconds.
 The agent makes at most five requests and runs at most eight tool calls per response. The final request omits tools.
 
-Tools: `query_shots`, `compare_sessions`, `get_session_digest`, `get_live_state`, and `simulate_change`.
+Tools (`Shared/Coach/CoachTools.swift`): `query_shots`, `compare_sessions`, `get_session_digest`, `get_live_state`,
+`simulate_change`, and the racket as an agent can ask it: `list_shots` (individual stored shots), `read_live_sensors`
+(the last 0.2–5 s of live readings: rotation rate, high-g, stream rate, racket tilt; `AppModel.liveHistory`),
+`get_racket_status` (firmware, battery, sensors, impact mode, ranges), plus long-term memory: `recall_notes` and
+`remember_note`. Summaries and drills still start from the session digest; questions don't: Muse gets only the
+question and fetches what it needs.
+
+**Coach memory** (`CoachNote`, synced in the same SwiftData/iCloud store): per-player notes such as habits, goals or
+past injuries, edited in Insights → Coach → Memory. With **Let Muse use these notes** on (the default), Muse can read
+them and add up to two per answer (240 characters each, 200 per player, duplicates skipped). Notes it adds are tagged
+"Added by coach" and listed under the answer. Notes, including injury notes, go to Meta when Muse reads them; turning
+the switch off keeps them on the device.
+
+**What if** (Insights → Coach → What if): sliders for swing speed, face, path and contact on the player's average
+stroke, with the estimate recomputed on the device by the same baseline and `ShotSimulator` as `simulate_change`
+(`Shared/Coach/WhatIf.swift`), plus buttons that ask Muse about the change or to find the best one.
+Training data for this flow: `docs/WHATIF_DATASET.md`.
 The digest includes a session UUID/date catalog; selectors also accept `current`, `latest` and `previous`.
 Only `query_shots` accepts `all`. Date filters use inclusive ISO 8601 timestamps. Tools return explicit units;
 missing motion metrics are null. All stored/live access and tool dispatch run on the main actor.

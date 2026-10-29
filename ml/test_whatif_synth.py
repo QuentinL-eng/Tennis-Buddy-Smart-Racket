@@ -119,7 +119,7 @@ class Dataset(unittest.TestCase):
         for e in self.examples:
             m = e["messages"]
             self.assertEqual([x["role"] for x in m[:4]], ["system", "user", "assistant", "tool"])
-            self.assertEqual(m[2]["tool_calls"][0]["id"], "session_context")
+            self.assertEqual(m[2]["tool_calls"][0]["function"]["name"], "get_session_digest")
             self.assertEqual(m[-1]["role"], "assistant")
             self.assertTrue(m[-1]["content"])
             calls = {}

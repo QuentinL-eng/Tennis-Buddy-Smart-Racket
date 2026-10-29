@@ -164,6 +164,7 @@ targets:
       - path: Shared/Model/Records.swift
       - path: Shared/Model/InsightsModel.swift
       - path: Shared/Model/AppModel.swift
+      - path: Shared/Model/ScoreAnnouncer.swift
     dependencies:
       - package: RacketKit
     settings:

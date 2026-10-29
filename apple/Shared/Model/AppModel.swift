@@ -50,6 +50,9 @@ final class AppModel {
                          samplesPerSecond: 0)
     var lastShot: ShotMetrics?
     var shotFlashID = UUID()
+    /// The last few seconds of live readings (~30 per second), for the coach's `read_live_sensors` tool.
+    @ObservationIgnored private(set) var liveHistory: [(date: Date, state: LiveState)] = []
+    static let liveHistorySeconds: TimeInterval = 5
 
     // MARK: Session
     var signedInPlayerName: String?
@@ -180,7 +183,7 @@ final class AppModel {
         engine.profile = profile
         engine.impactModel = impactModel
 
-        engine.onLive = { [weak self] state in self?.live = state }
+        engine.onLive = { [weak self] state in self?.receiveLive(state) }
         engine.onShot = { [weak self] shot in self?.handle(shot) }
         let recorder = recorder
         engine.onRaw = { batch in recorder.append(batch) }
@@ -224,6 +227,15 @@ final class AppModel {
     }
 
     func recenter() { engine.recenter() }
+
+    private func receiveLive(_ state: LiveState) {
+        live = state
+        let now = Date()
+        liveHistory.append((now, state))
+        if let first = liveHistory.firstIndex(where: { now.timeIntervalSince($0.date) <= Self.liveHistorySeconds }), first > 0 {
+            liveHistory.removeFirst(first)
+        }
+    }
 
     /// Firmware 1.5+ finds hits on the racket and sends only the samples around each one, which keeps the link
     /// light and shots quick. Calibration and a manual raw recording need the full stream instead.

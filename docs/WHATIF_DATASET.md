@@ -34,8 +34,9 @@ off), so on-court contact uses that shape scaled by 0.55–1.0. The result is 46
 ## Generated files (`data/whatif/`, git-ignored)
 
 - `conversations_{train,val,test}.jsonl`: 2,164 examples split by player (80/10/10), in OpenAI chat format with
-  `tools` (the same schemas as `CoachTools.schemas`). The first four messages are exactly what `MuseCoach` sends:
-  system prompt, question prompt, the injected `get_session_digest` call, and its result. `metadata` holds the
+  `tools` (the same schemas as `CoachTools.schemas`, including the racket and memory tools). The first two messages
+  are exactly what `MuseCoach` sends for a question (system prompt, then the question with no data), and Muse's
+  first move is to call `get_session_digest` itself. `metadata` holds the
   ground truth: the injected flaw, whether the chosen change addresses it (`flaw_found`, 78%), link conditions
   and units.
 - `whatif_table.csv`: 80,920 simulated changes (baseline, deltas, before/after, whether each passes the

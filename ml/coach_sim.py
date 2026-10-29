@@ -236,14 +236,18 @@ SYSTEM = (
     "Mic-only shots have no speed, spin, angles or contact direction; missing metrics are null and must not be "
     "described as measured zeros. "
     "For comparisons, use session IDs from the tool catalog. On the last turn, answer with available facts; explain "
-    "missing information briefly."
+    "missing information briefly. "
+    "Check recall_notes before technique or fitness advice and use relevant notes naturally; never suggest something "
+    "that loads an injury the notes mention. "
+    "Use remember_note only for a lasting habit, goal or fact about the player, never for one session's numbers."
 )
 
 
 def question_prompt(question):
-    """CoachPrompts.question with the digest replaced, as MuseCoach does."""
-    return (f"Session data:\nUse the session_context tool result below.\n\nPlayer's question: {question}\n"
-            "Answer in under 80 words using the data.")
+    """CoachPrompts.agentQuestion: questions carry no data; the agent looks it up with the tools."""
+    return (f"Player's question: {question}\nLook up what you need with the tools: the session digest, individual "
+            "shots, the racket's live sensors and status, the player's notes and the what-if simulator. "
+            "Answer in under 80 words.")
 
 
 def _tool(name, description, properties, required=()):
@@ -257,6 +261,7 @@ def tool_schemas():
     number = lambda d: {"type": "number", "description": d}  # noqa: E731
     session = string("Session UUID from the digest catalog, or current/latest/previous. Defaults to current.")
     stroke = string("Stroke filter. Omit for all non-calibration shots.", SHOT_TYPES)
+    category = string("Note category.", ["technique", "fitness", "injury", "goal", "preference", "other"])
     metrics = sorted(["ball_speed", "swing_speed", "spin", "face_angle", "path_angle", "contact_x", "contact_y",
                       "contact_distance"])
     return [
@@ -280,4 +285,25 @@ def tool_schemas():
                "path_deg": number("Path angle delta degrees, clamped to -15...15"),
                "contact_x_cm": number("Contact x delta cm, clamped to -5...5"),
                "contact_y_cm": number("Contact y delta cm, clamped to -5...5")}),
+        _tool("list_shots", "Individual stored shots, newest first by default: time, stroke, speeds, spin, angles and "
+              "contact. Mic-only shots have null motion fields. Use it to look at specific hits instead of averages.",
+              {"session": string("UUID/current/latest/previous/all. Defaults to current."), "type": stroke,
+               "from": string("Start ISO 8601 timestamp"), "to": string("End ISO 8601 timestamp"),
+               "contact": string("Only sweet-spot or only off-center hits.", ["sweet_spot", "off_center"]),
+               "order": string("newest (default) or oldest first.", ["newest", "oldest"]),
+               "limit": number("Shots to return, 1...50. Defaults to 20.")}),
+        _tool("read_live_sensors", "Read the racket's sensors over the last few seconds: rotation rate, high-g, stream "
+              "rate and the racket's current tilt. Use it for questions about what the player is doing right now.",
+              {"seconds": number("Window length in seconds, 0.2...5. Defaults to 1.")}),
+        _tool("get_racket_status", "The racket's hardware state: data source, connection, firmware, battery, which "
+              "sensors work, impact mode and sensor ranges.", {}),
+        _tool("recall_notes", "Long-term notes about this player from earlier sessions: technique habits, fitness, "
+              "injuries, goals and preferences. Check them before giving advice.",
+              {"category": category, "query": string("Optional words to search for in the notes."),
+               "limit": number("Notes to return, 1...30. Defaults to 20.")}),
+        _tool("remember_note", "Save a short lasting note about the player for future sessions, such as a habit seen "
+              "across sessions or something the player told you. Not for numbers already stored with the shots. At "
+              "most two per answer.",
+              {"text": string("The note, one sentence, at most 240 characters."), "category": category},
+              ["text", "category"]),
     ]

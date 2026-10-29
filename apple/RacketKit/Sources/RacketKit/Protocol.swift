@@ -116,6 +116,13 @@ public enum RacketProtocol {
         public var impactMode = false
         /// The gyro is at ±4000 dps (firmware 1.3+ reports it; 1.6+ starts there).
         public var gyro4000 = false
+
+        public init(batteryMillivolts: UInt16, firmwareVersion: String, mpuOK: Bool, h3lisOK: Bool, streaming: Bool,
+                    h3lisRange: UInt8, droppedPackets: UInt16, impactMode: Bool = false, gyro4000: Bool = false) {
+            self.batteryMillivolts = batteryMillivolts; self.firmwareVersion = firmwareVersion
+            self.mpuOK = mpuOK; self.h3lisOK = h3lisOK; self.streaming = streaming; self.h3lisRange = h3lisRange
+            self.droppedPackets = droppedPackets; self.impactMode = impactMode; self.gyro4000 = gyro4000
+        }
     }
 
     public enum HitSource: UInt8, Sendable {

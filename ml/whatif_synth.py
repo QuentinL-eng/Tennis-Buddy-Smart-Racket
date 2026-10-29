@@ -455,11 +455,11 @@ def tool_call(cid, name, args):
 
 
 def conversation(session, catalog, units, question):
-    """The fixed opening MuseCoach sends: system, question, the injected digest call and its result."""
+    """MuseCoach sends the system prompt and the question; the agent's first move is fetching the digest itself."""
     return [{"role": "system", "content": SYSTEM},
             {"role": "user", "content": question_prompt(question)},
-            {"role": "assistant", "content": None, "tool_calls": [tool_call("session_context", "get_session_digest", {})]},
-            {"role": "tool", "tool_call_id": "session_context", "content": tool_json(get_session_digest(session, catalog, units))}]
+            {"role": "assistant", "content": None, "tool_calls": [tool_call("call_0", "get_session_digest", {})]},
+            {"role": "tool", "tool_call_id": "call_0", "content": tool_json(get_session_digest(session, catalog, units))}]
 
 
 def add_calls(messages, session, units, calls, counter):
