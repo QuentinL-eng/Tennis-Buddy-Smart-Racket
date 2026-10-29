@@ -19,6 +19,7 @@
 		0F8AFFC0DB5B3EBEA6B6F094 /* CoachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B37449F16667305BA65652 /* CoachModel.swift */; };
 		10FB836BF67A7F6983A899D4 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93FF9841989C788B5B2C46D4 /* AppModel.swift */; };
 		117FB391373D2548F66FB7C9 /* Records.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F2C05509855869C61804935 /* Records.swift */; };
+		17A2D3BEB6B3516A3B652482 /* TapCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FA88E51FD976A8351A6535 /* TapCalibrationView.swift */; };
 		1841A606AC7BC27C12691B92 /* RacketKit in Frameworks */ = {isa = PBXBuildFile; productRef = A4E70D007D8B145569CBD58A /* RacketKit */; };
 		18ED092F8AD39F15C95F2472 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93FF9841989C788B5B2C46D4 /* AppModel.swift */; };
 		1BF92FFB370ADD9475898E75 /* AccountModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AF058FB24A66BF261A3613 /* AccountModel.swift */; };
@@ -29,11 +30,13 @@
 		2AEFC5FDAEB86C5C57C247EE /* TennisRacket.glb in Resources */ = {isa = PBXBuildFile; fileRef = 343375742A01D39CB5E6D41F /* TennisRacket.glb */; };
 		2FDD375CDBD93DA6E5D24A38 /* SocialModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA1BAD03DABDEAFC506F38D /* SocialModels.swift */; };
 		2FFE390154509ACA2C095B92 /* MuseCoach.swift in Sources */ = {isa = PBXBuildFile; fileRef = A95212CDD7E03E99DE2060E5 /* MuseCoach.swift */; };
+		3578E6B4D9E1B3E29A069483 /* GlassesHUD.swift in Sources */ = {isa = PBXBuildFile; fileRef = 236FFE32A5D82A97C42CC0DF /* GlassesHUD.swift */; };
 		37629004E033DFB7367AD5D0 /* ConsumerFeatureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FF8FDF2FFBFD51C15660DFC /* ConsumerFeatureTests.swift */; };
 		376DBE9C6F1BB56DB7CE06AD /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F165496998F9443B17B628A8 /* WorkoutManager.swift */; };
 		37FECF58E2C1D7FB1CE48CAA /* AppleSignInChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB650E789B25A3DC1BC3772 /* AppleSignInChallenge.swift */; };
 		405207A2807350930E06AF81 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47CDCF90CDD3213B7A94C42 /* CalibrationView.swift */; };
 		42C595C9D9C55F8E2DD00D30 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 396D35018B2F6B1101D869F2 /* Assets.xcassets */; };
+		42CE072E77A2A7DDB612E52F /* ScoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F2F74C107A7D5F69D1DAFF /* ScoreView.swift */; };
 		4F15F2DACEF3786B8DD4DDDD /* AccountModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7AF058FB24A66BF261A3613 /* AccountModel.swift */; };
 		51110641B09E243EA61CAAA3 /* AppleSignInChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB650E789B25A3DC1BC3772 /* AppleSignInChallenge.swift */; };
 		54D0A472AD32FB216A2612B9 /* InsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F12AAA9C083779C5F7C4404A /* InsightsView.swift */; };
@@ -49,6 +52,7 @@
 		6F6453B3E2A133AFD0F375DB /* RacketFirmware.json in Resources */ = {isa = PBXBuildFile; fileRef = EAC10B9BA8B384E61A13C06C /* RacketFirmware.json */; };
 		719C505CF59A80AB372A02CA /* RacketFirmware.bin in Resources */ = {isa = PBXBuildFile; fileRef = 790582683D3D7A26D4F75DE5 /* RacketFirmware.bin */; };
 		7994C77F1F1195681575B2E5 /* CalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A47CDCF90CDD3213B7A94C42 /* CalibrationView.swift */; };
+		8229E1CA9A14DDE5D1A7E3AE /* MWDATCore in Frameworks */ = {isa = PBXBuildFile; productRef = ECE6263EB1969F99BC3EBB99 /* MWDATCore */; };
 		854651AB575F52DB7C6F69DB /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = A89730073F6D55E1C7C7204C /* Supabase */; };
 		886B779B6E84BAB7928FFEBD /* RacketView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F73C9942056B6F82D381273 /* RacketView.swift */; };
 		89E375132CC6F3B9CDE4BDF0 /* CoachTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47587C1A3ADFF8D79D0B943F /* CoachTools.swift */; };
@@ -62,12 +66,15 @@
 		9C9B32A4B14014387AAF2B3E /* SharedSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718D6AFC3060101468F35101 /* SharedSessionView.swift */; };
 		9D306744801A6F5AF71738FF /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 750EC5969F8A326324C4F2FF /* AccountView.swift */; };
 		9D99BFE7952F59F2664D23A6 /* RacketSkinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490440BE4772F79F23F88592 /* RacketSkinView.swift */; };
+		9E3E0CB9FABB9341D796F791 /* MWDATDisplay in Frameworks */ = {isa = PBXBuildFile; productRef = 0F878F75563E9D910862E048 /* MWDATDisplay */; };
 		9E84B51D564034336F8FC5B5 /* RacketFirmware.bin in Resources */ = {isa = PBXBuildFile; fileRef = 790582683D3D7A26D4F75DE5 /* RacketFirmware.bin */; };
+		A161491671423AA7E78A9E7D /* GlassesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9946B6CF4A383F80879D30 /* GlassesView.swift */; };
 		A237A1851BCDEEF4483EAB7F /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A34DFC69F764025C289A856 /* HistoryView.swift */; };
 		A29365338828346B2B9B6AD3 /* MuseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E13B818CB23D8733395B203 /* MuseClient.swift */; };
 		A85754268507A65E1386B8D2 /* WatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4FEDDDA8021F41075F44461 /* WatchApp.swift */; };
 		AA1836C763981D2FB882E24D /* BackendConfig.plist in Resources */ = {isa = PBXBuildFile; fileRef = E2C677F14C8214171007F688 /* BackendConfig.plist */; };
 		AD6B79AF58CF1CB13D72AD08 /* TennisBuddyWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 1F855F6F1292B3220B90A8FB /* TennisBuddyWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AE1DCF94BBC33388B82DB56F /* GlassesController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037371CBA2AEE6E7B73842E5 /* GlassesController.swift */; };
 		B3CFD141A4E340EC768454FE /* FirmwareUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032EE97EB7178A0FC98058FD /* FirmwareUpdateView.swift */; };
 		B7C4A843D654C85CF41833D9 /* FirmwareUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032EE97EB7178A0FC98058FD /* FirmwareUpdateView.swift */; };
 		BB68AD1A639395ED9C11FE15 /* CoachModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99B37449F16667305BA65652 /* CoachModel.swift */; };
@@ -85,11 +92,13 @@
 		E64946D2285658AB720BA443 /* RacketKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4213A0360D6E158513E50004 /* RacketKit */; };
 		E656B9C4C14FCBF2B563203F /* SharedSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718D6AFC3060101468F35101 /* SharedSessionView.swift */; };
 		E657A6B2910FAA7615245B8C /* RacketFirmware.json in Resources */ = {isa = PBXBuildFile; fileRef = EAC10B9BA8B384E61A13C06C /* RacketFirmware.json */; };
+		E98F385A75F9EAEE893C4E8B /* TapCalibrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FA88E51FD976A8351A6535 /* TapCalibrationView.swift */; };
 		EBC61CC12A3CE428AD72951E /* InsightsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE60961EC627EB1B2573766 /* InsightsModel.swift */; };
 		ECB995620E0135240B69EA6F /* LiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7FE1568EBF1F305C6ADF3C4 /* LiveView.swift */; };
 		EEA0C59DD2FC726D13B23FAC /* Info.sync-conflict-20261027-201221-GC6FYOE.plist in Resources */ = {isa = PBXBuildFile; fileRef = 836E5AF465B4B1929E2B5ED9 /* Info.sync-conflict-20261027-201221-GC6FYOE.plist */; };
 		F25C383A73292364294A4BFF /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E790DB056785306E5A4E26C /* Components.swift */; };
 		F4B8561C42C11C591B8CE156 /* WatchBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848E320738AD43BEA253A649 /* WatchBridge.swift */; };
+		F4D3258438561EE80DBF3D90 /* ScoreView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39F2F74C107A7D5F69D1DAFF /* ScoreView.swift */; };
 		F753195D0FE588BFD780C29E /* RacketSkinView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490440BE4772F79F23F88592 /* RacketSkinView.swift */; };
 		F8F9E722AB61743137226BAD /* InsightsModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D301DF1565F9F1034A3E3B45 /* InsightsModelTests.swift */; };
 /* End PBXBuildFile section */
@@ -120,14 +129,19 @@
 
 /* Begin PBXFileReference section */
 		032EE97EB7178A0FC98058FD /* FirmwareUpdateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirmwareUpdateView.swift; sourceTree = "<group>"; };
+		037371CBA2AEE6E7B73842E5 /* GlassesController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesController.swift; sourceTree = "<group>"; };
+		0A9946B6CF4A383F80879D30 /* GlassesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesView.swift; sourceTree = "<group>"; };
 		1F855F6F1292B3220B90A8FB /* TennisBuddyWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TennisBuddyWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		214D03CD0141E5D33E2C1284 /* TennisBuddy-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "TennisBuddy-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		236FFE32A5D82A97C42CC0DF /* GlassesHUD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlassesHUD.swift; sourceTree = "<group>"; };
 		28DF7CF160993EBAA8F2EB65 /* GLBLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GLBLoader.swift; sourceTree = "<group>"; };
 		2F2019504077756E640617FE /* TennisBuddyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TennisBuddyApp.swift; sourceTree = "<group>"; };
 		2FB650E789B25A3DC1BC3772 /* AppleSignInChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleSignInChallenge.swift; sourceTree = "<group>"; };
 		31B4851C1B388FB90B5E9AEC /* Info.sync-conflict-20261027-204109-GC6FYOE.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Info.sync-conflict-20261027-204109-GC6FYOE.plist"; sourceTree = "<group>"; };
 		343375742A01D39CB5E6D41F /* TennisRacket.glb */ = {isa = PBXFileReference; path = TennisRacket.glb; sourceTree = "<group>"; };
 		396D35018B2F6B1101D869F2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		39F2F74C107A7D5F69D1DAFF /* ScoreView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreView.swift; sourceTree = "<group>"; };
+		39FA88E51FD976A8351A6535 /* TapCalibrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapCalibrationView.swift; sourceTree = "<group>"; };
 		3F2C05509855869C61804935 /* Records.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Records.swift; sourceTree = "<group>"; };
 		47587C1A3ADFF8D79D0B943F /* CoachTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachTools.swift; sourceTree = "<group>"; };
 		48A26CA798241971A914132B /* SyncedStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncedStore.swift; sourceTree = "<group>"; };
@@ -201,12 +215,24 @@
 			files = (
 				1841A606AC7BC27C12691B92 /* RacketKit in Frameworks */,
 				854651AB575F52DB7C6F69DB /* Supabase in Frameworks */,
+				8229E1CA9A14DDE5D1A7E3AE /* MWDATCore in Frameworks */,
+				9E3E0CB9FABB9341D796F791 /* MWDATDisplay in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		007AE4EF51614426A78B60C0 /* Glasses */ = {
+			isa = PBXGroup;
+			children = (
+				037371CBA2AEE6E7B73842E5 /* GlassesController.swift */,
+				236FFE32A5D82A97C42CC0DF /* GlassesHUD.swift */,
+				0A9946B6CF4A383F80879D30 /* GlassesView.swift */,
+			);
+			path = Glasses;
+			sourceTree = "<group>";
+		};
 		076597B10FF7D9672B6BE221 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -251,6 +277,8 @@
 				5CE7A86CCDEFE9D1F8502AC1 /* RacketSceneView.swift */,
 				490440BE4772F79F23F88592 /* RacketSkinView.swift */,
 				8F73C9942056B6F82D381273 /* RacketView.swift */,
+				39F2F74C107A7D5F69D1DAFF /* ScoreView.swift */,
+				39FA88E51FD976A8351A6535 /* TapCalibrationView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -353,6 +381,7 @@
 				31B4851C1B388FB90B5E9AEC /* Info.sync-conflict-20261027-204109-GC6FYOE.plist */,
 				C7DB2287A7E04EB6397C1F1E /* TennisBuddy.entitlements */,
 				848E320738AD43BEA253A649 /* WatchBridge.swift */,
+				007AE4EF51614426A78B60C0 /* Glasses */,
 			);
 			path = iOS;
 			sourceTree = "<group>";
@@ -398,6 +427,8 @@
 			packageProductDependencies = (
 				A4E70D007D8B145569CBD58A /* RacketKit */,
 				A89730073F6D55E1C7C7204C /* Supabase */,
+				ECE6263EB1969F99BC3EBB99 /* MWDATCore */,
+				0F878F75563E9D910862E048 /* MWDATDisplay */,
 			);
 			productName = "TennisBuddy-iOS";
 			productReference = E8A6CA4F7A3ACAA4D0A9F9E4 /* TennisBuddy-iOS.app */;
@@ -480,6 +511,7 @@
 			mainGroup = 71D6B139A60DD7256BEA953B;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				22DC6D48560DC1F616B64E4C /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */,
 				144FEFAA82C204F93211C740 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				BCAAF0D4E3FAA6AB5FD4F2D3 /* XCLocalSwiftPackageReference "RacketKit" */,
 			);
@@ -559,9 +591,11 @@
 				1D917C4ECF632F4D057F0CBA /* RacketView.swift in Sources */,
 				20C7D56510BA2336399B0466 /* Records.swift in Sources */,
 				8A96015274E29EFE642A942E /* ScoreAnnouncer.swift in Sources */,
+				42CE072E77A2A7DDB612E52F /* ScoreView.swift in Sources */,
 				9C9B32A4B14014387AAF2B3E /* SharedSessionView.swift in Sources */,
 				24A10F85D9E15C0C2E6EB092 /* SocialModels.swift in Sources */,
 				0136976E6EEE868451134E30 /* SyncedStore.swift in Sources */,
+				E98F385A75F9EAEE893C4E8B /* TapCalibrationView.swift in Sources */,
 				9941A2CD7E5BE18F509CC16A /* TennisBuddyApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -599,6 +633,9 @@
 				F25C383A73292364294A4BFF /* Components.swift in Sources */,
 				B7C4A843D654C85CF41833D9 /* FirmwareUpdateView.swift in Sources */,
 				CD941D083EEC004726C80EE4 /* GLBLoader.swift in Sources */,
+				AE1DCF94BBC33388B82DB56F /* GlassesController.swift in Sources */,
+				3578E6B4D9E1B3E29A069483 /* GlassesHUD.swift in Sources */,
+				A161491671423AA7E78A9E7D /* GlassesView.swift in Sources */,
 				A237A1851BCDEEF4483EAB7F /* HistoryView.swift in Sources */,
 				EBC61CC12A3CE428AD72951E /* InsightsModel.swift in Sources */,
 				54D0A472AD32FB216A2612B9 /* InsightsView.swift in Sources */,
@@ -610,9 +647,11 @@
 				886B779B6E84BAB7928FFEBD /* RacketView.swift in Sources */,
 				D06127062F0CC45A1C3F14B3 /* Records.swift in Sources */,
 				DDE9324A8ADD56E702D6D57D /* ScoreAnnouncer.swift in Sources */,
+				F4D3258438561EE80DBF3D90 /* ScoreView.swift in Sources */,
 				E656B9C4C14FCBF2B563203F /* SharedSessionView.swift in Sources */,
 				2FDD375CDBD93DA6E5D24A38 /* SocialModels.swift in Sources */,
 				9333B8A680C26C215AC8C20D /* SyncedStore.swift in Sources */,
+				17A2D3BEB6B3516A3B652482 /* TapCalibrationView.swift in Sources */,
 				010997E40C3E9BBAD1916A0A /* TennisBuddyApp.swift in Sources */,
 				F4B8561C42C11C591B8CE156 /* WatchBridge.swift in Sources */,
 			);
@@ -688,7 +727,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = 3KJ46YFZM9;
 				ENABLE_PREVIEWS = YES;
@@ -792,7 +831,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 3KJ46YFZM9;
 				ENABLE_NS_ASSERTIONS = NO;
@@ -840,6 +879,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLIENT_TOKEN = "";
 				CODE_SIGN_ENTITLEMENTS = iOS/TennisBuddy.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
@@ -847,6 +887,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				META_APP_ID = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy;
 				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = iphoneos;
@@ -893,6 +934,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLIENT_TOKEN = "";
 				CODE_SIGN_ENTITLEMENTS = iOS/TennisBuddy.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				INFOPLIST_FILE = iOS/Info.plist;
@@ -900,6 +942,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
+				META_APP_ID = "";
 				PRODUCT_BUNDLE_IDENTIFIER = com.quentinlynch.tennisbuddy;
 				PRODUCT_NAME = "Tennis Buddee";
 				SDKROOT = iphoneos;
@@ -973,9 +1016,22 @@
 				version = 2.55.5;
 			};
 		};
+		22DC6D48560DC1F616B64E4C /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/facebook/meta-wearables-dat-ios";
+			requirement = {
+				kind = exactVersion;
+				version = 1.0.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		0F878F75563E9D910862E048 /* MWDATDisplay */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 22DC6D48560DC1F616B64E4C /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATDisplay;
+		};
 		11BAB9CB5C384645445DF631 /* Supabase */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 144FEFAA82C204F93211C740 /* XCRemoteSwiftPackageReference "supabase-swift" */;
@@ -1001,6 +1057,11 @@
 		DDAE53CB46C98158C43FF1C1 /* RacketKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RacketKit;
+		};
+		ECE6263EB1969F99BC3EBB99 /* MWDATCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 22DC6D48560DC1F616B64E4C /* XCRemoteSwiftPackageReference "meta-wearables-dat-ios" */;
+			productName = MWDATCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

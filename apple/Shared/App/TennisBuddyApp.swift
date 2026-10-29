@@ -11,6 +11,7 @@ struct TennisBuddyApp: App {
     let container: ModelContainer = SyncedStore.makeContainer()
     #if os(iOS)
     @State private var watchBridge = WatchBridge()
+    @State private var glasses = GlassesController()
     #endif
 
     var body: some Scene {
@@ -19,6 +20,10 @@ struct TennisBuddyApp: App {
                 .environment(model)
                 .environment(coach)
                 .environment(account)
+                #if os(iOS)
+                .environment(glasses)
+                .onOpenURL { glasses.handle(url: $0) }
+                #endif
                 .task { await account.observeAuthentication() }
                 .onChange(of: account.displayName) { _, value in model.signedInPlayerName = value }
                 .onChange(of: account.isSignedIn) { _, value in coach.setSignedIn(value) }
@@ -38,6 +43,7 @@ struct TennisBuddyApp: App {
                     coach.setSignedIn(account.isSignedIn)
                     #if os(iOS)
                     watchBridge.connect(to: model, account: account)
+                    glasses.connect(to: model, account: account)
                     #endif
                 }
         }

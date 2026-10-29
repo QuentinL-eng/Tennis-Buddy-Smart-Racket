@@ -1,6 +1,15 @@
 {
-  "originHash" : "2c9633c20e06377accac3aa2fdd340a30953f5b1af8877e281c7552369c68d9b",
+  "originHash" : "c986561b90b57a84f405bb03feb481c4e74d8e3fda606eaad44851c330dc9d1e",
   "pins" : [
+    {
+      "identity" : "meta-wearables-dat-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/facebook/meta-wearables-dat-ios",
+      "state" : {
+        "revision" : "0bd369298eef6a980ad0bdb6c8a5502f2c02a08c",
+        "version" : "1.0.1"
+      }
+    },
     {
       "identity" : "supabase-swift",
       "kind" : "remoteSourceControl",
