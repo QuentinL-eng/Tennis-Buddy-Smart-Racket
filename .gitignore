@@ -33,3 +33,14 @@ data/sessions/
 
 # Local online-service configuration
 apple/Shared/Resources/BackendConfig.plist
+
+# Large raw recordings stay local, like data/sessions/
+data/club-*/
+data/phone/
+
+# Large marketing media and tool scratch
+marketing/Videos/
+marketing/*.mp4
+marketing/*.mp3
+backend/supabase/.temp/
+*.bak
