@@ -38,6 +38,15 @@ public final class SimulatedRacket: SampleSource, @unchecked Sendable {
         timer = nil
     }
 
+    /// A whole session at once (no timer), for tests: idle, then `shots` swings each followed by a pause.
+    func generate(shots: Int) -> [IMUSample] {
+        q = Self.idle
+        time = 0
+        var out = makeIdle(seconds: 1.0)
+        for _ in 0..<shots { out += makeShot() + makeIdle(seconds: 0.8) }
+        return out
+    }
+
     private func tick() {
         var out: [IMUSample] = []
         out.reserveCapacity(10)
