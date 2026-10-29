@@ -40,12 +40,22 @@ public struct ImpactFeatures: Codable, Sendable, Equatable {
     public var jolt: Float
     /// Size of the swing-axis rotation jump, rad/s (impact strength proxy).
     public var impulse: Float
+    /// Racket-frame rotation about the across-face axis just before contact, rad/s. Its sign tells forehand from
+    /// backhand without the orientation estimate. Optional so older saved shots still decode.
+    public var spinAxisY: Float?
+    /// Share of the pre-contact rotation that is about world vertical, -1...1, positive the player's forehand way
+    /// (counter-clockwise from above for a right-hander); serves and backhands turn the other way. Optional like
+    /// `spinAxisY`.
+    public var verticalSpin: Float?
+    /// Degrees the racket turned in the 350 ms before contact; volleys are short swings. Optional like `spinAxisY`.
+    public var swingDeg: Float?
 
-    public init(rollRatio: Float, ringNorm: Float, jolt: Float, impulse: Float) {
+    public init(rollRatio: Float, ringNorm: Float, jolt: Float, impulse: Float, spinAxisY: Float? = nil) {
         self.rollRatio = rollRatio
         self.ringNorm = ringNorm
         self.jolt = jolt
         self.impulse = impulse
+        self.spinAxisY = spinAxisY
     }
 }
 
