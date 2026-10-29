@@ -11,17 +11,18 @@ public enum TapSide: String, Codable, Sendable {
 
 /// Score keeping by handle taps.
 public enum ScoreCommand: Equatable, Sendable {
-    /// Double tap on a wide side: you won the point.
+    /// Double tap (on a wide side, or any side before the taps are calibrated): you won the point.
     case won
-    /// Single tap on a narrow side: your opponent won the point.
+    /// Single tap (on a narrow side, or any side before calibration): your opponent won the point.
     case lost
     /// Triple tap anywhere: take back the last point.
     case undo
 
     public static func from(count: Int, side: TapSide?) -> ScoreCommand? {
         if count >= 3 { return .undo }
-        if count == 2 && side == .wide { return .won }
-        if count == 1 && side == .narrow { return .lost }
+        // An unknown side (taps not calibrated, or an unclear tap) still counts: double tap = you, single = them.
+        if count == 2 && side != .narrow { return .won }
+        if count == 1 && side != .wide { return .lost }
         return nil
     }
 }

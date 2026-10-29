@@ -108,6 +108,39 @@ final class TennisScoreTests: XCTestCase {
         play(&s, .opponent, 4)
         XCTAssertEqual(s.announcement(for: .game(.opponent)), "Game, opponent. 1 all.")
     }
+
+    func testSimpleCountJustCountsPoints() {
+        var rules = MatchRules()
+        rules.simpleCount = true
+        var t = ScoreTracker(rules: rules)
+        for _ in 0..<7 { XCTAssertEqual(t.award(.me), .point) }   // no game at 4, no set at 24
+        XCTAssertEqual(t.award(.opponent), .point)
+        XCTAssertEqual(t.score.points, ScorePair(me: 7, opponent: 1))
+        XCTAssertEqual(t.score.games, ScorePair())
+        XCTAssertNil(t.score.winner)
+        XCTAssertEqual(t.score.pointText, "7–1")
+        XCTAssertEqual(t.score.pointCall(.me), "7")
+        XCTAssertEqual(t.score.announcement(for: .point), "7 1.")
+        XCTAssertEqual(t.setsText, "")
+        t.undo()
+        XCTAssertEqual(t.score.pointText, "7–0")
+        for _ in 0..<7 { t.award(.opponent) }
+        XCTAssertEqual(t.score.announcement(for: .point), "7 all.")
+    }
+
+    func testOldSavedRulesDecodeWithDefaults() throws {
+        let old = Data(#"{"setsToWin":3,"gamesPerSet":4}"#.utf8)
+        let rules = try JSONDecoder().decode(MatchRules.self, from: old)
+        XCTAssertEqual(rules.setsToWin, 3)
+        XCTAssertEqual(rules.gamesPerSet, 4)
+        XCTAssertFalse(rules.noAd)
+        XCTAssertFalse(rules.matchTiebreak)
+        XCTAssertFalse(rules.simpleCount)
+        XCTAssertEqual(try JSONDecoder().decode(MatchRules.self, from: Data("{}".utf8)), MatchRules())
+        var simple = MatchRules()
+        simple.simpleCount = true
+        XCTAssertEqual(try JSONDecoder().decode(MatchRules.self, from: JSONEncoder().encode(simple)), simple)
+    }
 }
 
 final class TapSideTests: XCTestCase {
@@ -118,7 +151,8 @@ final class TapSideTests: XCTestCase {
         XCTAssertEqual(ScoreCommand.from(count: 4, side: .wide), .undo)
         XCTAssertNil(ScoreCommand.from(count: 1, side: .wide))
         XCTAssertNil(ScoreCommand.from(count: 2, side: .narrow))
-        XCTAssertNil(ScoreCommand.from(count: 2, side: nil))
+        XCTAssertEqual(ScoreCommand.from(count: 2, side: nil), .won)
+        XCTAssertEqual(ScoreCommand.from(count: 1, side: nil), .lost)
     }
 
     func testFitIgnoresSignAndNoise() throws {

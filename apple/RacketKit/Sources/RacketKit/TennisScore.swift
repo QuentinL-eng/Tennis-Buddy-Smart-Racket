@@ -28,7 +28,22 @@ public struct MatchRules: Codable, Sendable, Equatable {
     public var noAd = false
     /// The deciding set is a 10-point match tiebreak (common in club doubles).
     public var matchTiebreak = false
+    /// Just count points up, one for you and one for your opponent: no games, sets or tiebreaks.
+    public var simpleCount = false
     public init() {}
+
+    private enum CodingKeys: String, CodingKey {
+        case setsToWin, gamesPerSet, noAd, matchTiebreak, simpleCount
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        setsToWin = try c.decodeIfPresent(Int.self, forKey: .setsToWin) ?? 2
+        gamesPerSet = try c.decodeIfPresent(Int.self, forKey: .gamesPerSet) ?? 6
+        noAd = try c.decodeIfPresent(Bool.self, forKey: .noAd) ?? false
+        matchTiebreak = try c.decodeIfPresent(Bool.self, forKey: .matchTiebreak) ?? false
+        simpleCount = try c.decodeIfPresent(Bool.self, forKey: .simpleCount) ?? false
+    }
 }
 
 /// What a point decided, for the announcement.
@@ -67,6 +82,7 @@ public struct MatchScore: Codable, Sendable, Equatable {
     public mutating func award(_ p: Player) -> ScoreEvent {
         guard winner == nil else { return .match(winner!) }
         points[p] += 1
+        if rules.simpleCount { return .point }
         let a = points[p], b = points[p.other]
         if isTiebreak {
             let target = isMatchTiebreak ? 10 : 7
@@ -106,7 +122,7 @@ public struct MatchScore: Codable, Sendable, Equatable {
 
     /// The current game score for display, wearer first: "30–15", "Deuce", "Ad you", or "5–3" in a tiebreak.
     public var pointText: String {
-        if isTiebreak { return "\(points.me)–\(points.opponent)" }
+        if isTiebreak || rules.simpleCount { return "\(points.me)–\(points.opponent)" }
         let a = points.me, b = points.opponent
         if a >= 3 && b >= 3 {
             if a == b { return rules.noAd ? "Deciding point" : "Deuce" }
@@ -117,7 +133,7 @@ public struct MatchScore: Codable, Sendable, Equatable {
 
     /// One player's column on a scoreboard: "0", "15", "30", "40", "AD", or tiebreak points.
     public func pointCall(_ p: Player) -> String {
-        if isTiebreak { return "\(points[p])" }
+        if isTiebreak || rules.simpleCount { return "\(points[p])" }
         let a = points[p], b = points[p.other]
         if a >= 3 && b >= 3 { return a > b ? "AD" : "40" }
         return Self.calls[min(a, 3)]
@@ -140,6 +156,9 @@ public struct MatchScore: Codable, Sendable, Equatable {
         case .game(let p):
             return "Game, \(name(p)). \(lead(games))."
         case .point:
+            if rules.simpleCount {
+                return points.me == points.opponent ? "\(points.me) all." : "\(points.me) \(points.opponent)."
+            }
             if isTiebreak { return "\(isMatchTiebreak ? "Match tiebreak" : "Tiebreak"), \(lead(points))." }
             let a = points.me, b = points.opponent
             if a >= 3 && b >= 3 {
@@ -182,8 +201,9 @@ public struct ScoreTracker: Codable, Sendable, Equatable {
         return log.popLast()
     }
 
-    /// Finished sets plus the set in progress, e.g. "6–4 3–2".
+    /// Finished sets plus the set in progress, e.g. "6–4 3–2". Empty for a simple point count, which has no sets.
     public var setsText: String {
+        if score.rules.simpleCount { return "" }
         var parts = score.sets.map { "\($0.me)–\($0.opponent)" }
         if score.winner == nil { parts.append("\(score.games.me)–\(score.games.opponent)") }
         return parts.joined(separator: "  ")

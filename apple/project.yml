@@ -14,7 +14,7 @@ settings:
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "2"
+    CURRENT_PROJECT_VERSION: "3"
     ENABLE_PREVIEWS: YES
 
 packages:
@@ -23,6 +23,9 @@ packages:
     exactVersion: 2.55.5
   RacketKit:
     path: RacketKit
+  MetaWearables:
+    url: https://github.com/facebook/meta-wearables-dat-ios
+    exactVersion: 1.0.1
 
 targets:
   TennisBuddy-iOS:
@@ -32,19 +35,23 @@ targets:
       - path: Shared
         excludes:
           - "**/*.sync-conflict-*"
-          # Legacy tap UI is not wired to the current AppModel.
-          - Views/ScoreView.swift
-          - Views/TapCalibrationView.swift
       - path: iOS
     dependencies:
       - package: RacketKit
       - package: Supabase
+      - package: MetaWearables
+        product: MWDATCore
+      - package: MetaWearables
+        product: MWDATDisplay
       - target: TennisBuddyWatch
     settings:
       base:
         PRODUCT_NAME: Tennis Buddee
         PRODUCT_BUNDLE_IDENTIFIER: com.quentinlynch.tennisbuddy
         TARGETED_DEVICE_FAMILY: "1,2"
+        # Empty = Meta's Developer Mode. For release, set both from the Wearables Developer Center.
+        META_APP_ID: ""
+        CLIENT_TOKEN: ""
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     info:
@@ -56,8 +63,17 @@ targets:
             CFBundleURLName: com.quentinlynch.tennisbuddy.auth
         UILaunchScreen: {}
         ITSAppUsesNonExemptEncryption: false
-        UIBackgroundModes: [bluetooth-central, audio, remote-notification]
-        NSBluetoothAlwaysUsageDescription: Tennis Buddy connects to your racket's sensor over Bluetooth.
+        UIBackgroundModes: [bluetooth-central, bluetooth-peripheral, audio, remote-notification, processing, external-accessory]
+        UISupportedExternalAccessoryProtocols: [com.meta.ar.wearable]
+        BGTaskSchedulerPermittedIdentifiers: [com.quentinlynch.tennisbuddy.processing]
+        NSBluetoothAlwaysUsageDescription: Tennis Buddy connects to your racket's sensor and your glasses over Bluetooth.
+        NSLocalNetworkUsageDescription: Lets your phone find and talk to your glasses over Wi-Fi.
+        NSBonjourServices: [_bonjour._tcp]
+        MWDAT:
+          AppLinkURLScheme: tennisbuddee://
+          MetaAppID: $(META_APP_ID)
+          ClientToken: $(CLIENT_TOKEN)
+          TeamID: $(DEVELOPMENT_TEAM)
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UIFileSharingEnabled: true
@@ -77,9 +93,6 @@ targets:
       - path: Shared
         excludes:
           - "**/*.sync-conflict-*"
-          # Legacy tap UI is not wired to the current AppModel.
-          - Views/ScoreView.swift
-          - Views/TapCalibrationView.swift
     dependencies:
       - package: RacketKit
       - package: Supabase
@@ -151,6 +164,7 @@ targets:
       - path: Shared/Model/Records.swift
       - path: Shared/Model/InsightsModel.swift
       - path: Shared/Model/AppModel.swift
+      - path: Shared/Model/ScoreAnnouncer.swift
     dependencies:
       - package: RacketKit
     settings:

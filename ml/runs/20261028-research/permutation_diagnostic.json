@@ -1,0 +1,12 @@
+{
+  "method": "fixed ridge, grouped OOF, within-session target shuffling",
+  "permutations": 99,
+  "actual_mae_cm": 1.83157907961167,
+  "permuted_mae_cm_mean": 2.506272811461573,
+  "permuted_mae_cm_range": [
+    2.2657420979472147,
+    2.727054658976644
+  ],
+  "empirical_p_lower_mae": 0.01,
+  "note": "Exploratory association check on reviewed development data, not an independent field accuracy test."
+}

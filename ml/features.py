@@ -33,24 +33,34 @@ def extract(clip):
     """clip: array-like of N int16 -> np.float32 vector of N_FEATURES."""
     x = np.asarray(clip, dtype=np.float32)
     assert x.shape == (N,), f"expected {N} samples, got {x.shape}"
+    return extract_window(x)
+
+
+def extract_window(clip):
+    """Offline window experiment. The firmware extractor still uses exactly N samples."""
+    x = np.asarray(clip, dtype=np.float32)
+    if x.ndim != 1 or x.size < 12 * BLOCK or x.size % BLOCK:
+        raise ValueError("feature window must be 1-D, at least 192 samples, and a multiple of 16")
+    size = x.size
+    blocks = size // BLOCK
     x = x - np.float32(x.mean())
     sumsq = np.float32(np.sum(x * x))
     feats = []
     for f in BAND_HZ:
-        r = goertzel_power(x, f) / (np.float32(N) * sumsq + np.float32(1.0))
+        r = goertzel_power(x, f) / (np.float32(size) * sumsq + np.float32(1.0))
         feats.append(np.log10(max(float(r), 0.0) + 1e-6))
 
-    env = np.abs(x).reshape(NBLK, BLOCK).sum(axis=1)
+    env = np.abs(x).reshape(blocks, BLOCK).sum(axis=1)
     pk = int(np.argmax(env))
     below = np.nonzero(env[pk:] < 0.25 * env[pk])[0]
-    decay_blocks = int(below[0]) if below.size else NBLK - pk
-    feats.append(decay_blocks / NBLK)
+    decay_blocks = int(below[0]) if below.size else blocks - pk
+    feats.append(decay_blocks / blocks)
 
     feats.append(float(env[4:12].sum() / (env.sum() + 1.0)))
 
     sgn = x >= 0
-    feats.append(float(np.count_nonzero(sgn[1:] != sgn[:-1])) / (N - 1))
+    feats.append(float(np.count_nonzero(sgn[1:] != sgn[:-1])) / (size - 1))
 
-    rms = np.sqrt(sumsq / N)
+    rms = np.sqrt(sumsq / size)
     feats.append(float(np.log10(np.max(np.abs(x)) / (rms + 1.0) + 1e-6)))
     return np.asarray(feats, dtype=np.float32)

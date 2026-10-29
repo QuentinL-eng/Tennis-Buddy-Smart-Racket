@@ -5,17 +5,23 @@ UI, plus slots for real footage. No AI-generated video.
 
 | Composition | Length | Use |
 |---|---|---|
-| `Reveal` | ~60 s | CGI only. X/LinkedIn post, opening of the demo |
-| `Demo` | ~2:50 | Hackathon submission (limit 3:00). CGI + footage slots |
+| `Reveal` | ~60 s | CGI only, crossfades |
+| `RevealSong` | 1:08 | CGI only, hard cuts on the beat of "Keep It Movin'". The X post |
+| `Demo` | 2:57 | Hackathon submission (limit 3:00). CGI + footage slots |
 | `Scenes/scene-*` | each beat | Iterate on one scene at a time |
 
 ## Run
+
+`RevealSong` and the hype cut need `public/audio/keep-it-movin.mp3`. It is licensed to the project owner and kept out of
+this public repo (see `public/audio/CREDITS.md`), so copy it in locally before rendering them.
 
 ```bash
 npm install
 npm run studio          # live preview at http://localhost:3000
 npm run render:reveal   # -> out/reveal.mp4
+npm run render:song     # -> out/reveal-song.mp4
 npm run render:demo     # -> out/demo.mp4
+npm run timeline -- RevealSong   # timecodes (and bars) of any cut
 npm run frames          # key frames of every scene -> out/review/
 ```
 
@@ -29,6 +35,8 @@ You should almost never need to open a scene file.
 | Scene order, length, crossfade | `src/config/timeline.ts` (`reveal`, `demo`) |
 | Add your filmed clips | drop in `public/footage/`, set `file:` on the slot in `src/config/timeline.ts` |
 | Colours, fonts, resolution | `src/config/brand.ts` |
+| Music, effect files, per-scene sound cues | `src/config/sound.ts` (credits in `public/audio/CREDITS.md`) |
+| Cut to a new song | run `scripts/analyze-song.mjs` on it for BPM + first downbeat, then copy the `revealSong` pattern in `src/config/timeline.ts` (scene lengths in bars, `skip` to land key moments on beats) |
 | Ball-flight arc in the what-if scene | `features.showBallFlight` in `src/config/timeline.ts` (only once ShotSimulator models flight) |
 
 ### Footage slots

@@ -15,9 +15,12 @@
 #define TB_HIT_UUID      "7E5B0008-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBHit, notify, sent the moment a hit is seen
 #define TB_WINDOW_UUID   "7E5B0009-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBWindowChunk, notify, the samples around it
 #define TB_POSE_UUID     "7E5B000A-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBPose, notify, ~30 Hz orientation for live views
+// Firmware 1.6+: the shot computed on the racket (shot.cpp), sent before its window. Its presence tells the app the
+// racket supports TB_STREAM_IMPACTS_ACKED.
+#define TB_SUMMARY_UUID  "7E5B000B-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBShotSummary, notify
 
 #define TB_FW_MAJOR 1
-#define TB_FW_MINOR 5
+#define TB_FW_MINOR 6
 
 #define TB_SAMPLES_PER_PACKET 8
 
@@ -31,18 +34,29 @@
 enum : uint8_t {
   TB_CMD_START_STREAM = 0x01,
   TB_CMD_STOP_STREAM  = 0x02,
-  TB_CMD_H3LIS_RANGE  = 0x10,  // second byte: 0 = 100 g, 1 = 200 g, 3 = 400 g
+  TB_CMD_H3LIS_RANGE  = 0x10,  // second byte: 0 = 100 g, 1 = 200 g, 3 = 400 g. Ignored since 1.6 (always 400 g);
+                               // TBStatus.h3lis_range reports the range in use.
   TB_CMD_GYRO_RANGE   = 0x11,  // second byte: 0 = ±2000 dps (16.4 LSB/dps), 1 = ±4000 dps (8.2 LSB/dps).
-                               // Firmware 1.3+. Back to ±2000 dps when the last client disconnects, so an
-                               // app that never sends this keeps the original units.
+                               // Firmware 1.3+. Since 1.6 the racket starts at ±4000 dps and returns to it when
+                               // the last client disconnects; every packet's TB_FLAG_GYRO_4000 says which.
   TB_CMD_STREAM_MODE  = 0x12,  // second byte: 0 = raw (every sample on the IMU characteristic), 1 = impacts
                                // (hit, window and pose characteristics only). Firmware 1.5+. Back to raw when
                                // the last client disconnects, so an app that never sends this still streams.
+  // Firmware 1.6+:
+  TB_CMD_SHOT_CONFIG  = 0x13,  // then TB_SHOT_CONFIG_PAYLOAD bytes (shot.h): calibration and racket profile
+  TB_CMD_WINDOW_ACK   = 0x14,  // then boot u16, seq u16: the app has that window; the racket frees it
+  TB_CMD_WINDOW_RESEND = 0x15, // then boot u16, seq u16, n u8, n chunk indexes (n = 0: the whole window)
+  TB_CMD_SET_TIME     = 0x16,  // then unix time in ms, u64: lets backlog shots carry the time they were hit
 };
 
 enum : uint8_t {
   TB_STREAM_RAW = 0,
   TB_STREAM_IMPACTS = 1,
+  // Firmware 1.6+: impacts, plus a TBShotSummary per hit, windows kept until the app acks them (TB_CMD_WINDOW_ACK)
+  // and resent if it doesn't, and windows captured while no phone was connected (RAM, then flash) sent later.
+  // Chunks are TBWindowChunkAcked. Once an app has asked for this mode the racket keeps capturing windows
+  // even with no phone connected, across reboots.
+  TB_STREAM_IMPACTS_ACKED = 2,
 };
 
 // What found a hit (TBHit.source)
@@ -58,6 +72,15 @@ enum : uint8_t {
   TB_FLAG_STREAMING = 1 << 2,
   TB_FLAG_GYRO_4000 = 1 << 3,  // gyro samples in this packet are 8.2 LSB/dps (±4000 dps), not 16.4
   TB_FLAG_IMPACT_MODE = 1 << 4,  // status only: the racket is in impact mode (TB_CMD_STREAM_MODE)
+  TB_FLAG_BACKLOG = 1 << 5,      // window chunk / summary: captured while the link was busy or down, sent late
+};
+
+// TBShotSummary.type / .spin (ShotType / SpinType in ShotMetrics.swift)
+enum : uint8_t { TB_SHOT_FOREHAND = 0, TB_SHOT_BACKHAND = 1, TB_SHOT_SERVE = 2, TB_SHOT_VOLLEY = 3 };
+enum : uint8_t { TB_SPIN_TOPSPIN = 0, TB_SPIN_FLAT = 1, TB_SPIN_SLICE = 2 };
+enum : uint8_t {
+  TB_SUMMARY_SATURATED = 1 << 0,   // gyro hit its full scale around the swing
+  TB_SUMMARY_BACKLOG = 1 << 1,     // sent late (link was busy or down)
 };
 
 #pragma pack(push, 1)
@@ -88,7 +111,7 @@ struct TBShot {
   uint16_t seq;         // counts impacts since boot
   uint8_t sweet;        // 1 = sweet spot, 0 = off-center
   uint8_t off_pct;      // 0 if sweet; else 33..100, distance toward the frame (100 = at the frame)
-  uint8_t confidence;   // 50..100 (%), confidence in the sweet/not-sweet call
+  uint8_t confidence;   // 0 = unavailable (ridge); legacy classifier used 50..100 percent
   uint8_t level;        // impact loudness, 0..255 (255 = full scale; ~255 means the mic clipped)
 };
 // One handle-tap gesture (firmware/src/tap.cpp), sent once the taps stop: a single, double or triple tap.
@@ -125,6 +148,33 @@ struct TBWindowChunk {
   uint8_t flags;        // TB_FLAG_*
   TBSample s[TB_SAMPLES_PER_PACKET];
 };
+// TB_STREAM_IMPACTS_ACKED: the same chunk with the racket's boot number, so acks and resends name one window even
+// across reboots (seq restarts at 0 on every boot).
+struct TBWindowChunkAcked {
+  uint16_t seq;
+  uint8_t index;
+  uint8_t total;
+  uint16_t impact;
+  int16_t q0[4];
+  uint32_t t0_us;
+  uint8_t count;
+  uint8_t flags;        // TB_FLAG_*; TB_FLAG_BACKLOG when sent late
+  uint16_t boot;        // increments on every power-up
+  TBSample s[TB_SAMPLES_PER_PACKET];
+};
+// The shot computed on the racket (firmware/src/shot.cpp), one per hit, before its window.
+struct TBShotSummary {
+  uint16_t seq;         // the TBHit / window it belongs to
+  uint16_t boot;
+  uint8_t gen;          // TB_CMD_SHOT_CONFIG generation it was computed with
+  uint8_t type;         // TB_SHOT_*
+  uint8_t spin;         // TB_SPIN_*
+  uint8_t flags;        // TB_SUMMARY_*
+  uint32_t age_ms;      // ms between the hit and sending this; 0xFFFFFFFF if hit before the last reboot
+  uint64_t unix_ms;     // when it was hit, if the app had set the time (TB_CMD_SET_TIME); else 0
+  float swing_kmh, ball_kmh, spin_rpm, face_deg, path_deg, impact_x_cm, impact_y_cm, peak_g;
+  float roll_ratio, ring_norm, jolt, impulse, spin_axis_y, vertical_spin, swing_deg;   // ImpactFeatures
+};
 // Live orientation while in impact mode, ~30 Hz.
 struct TBPose {
   int16_t q[4];
@@ -142,4 +192,6 @@ static_assert(sizeof(TBTap) == 9, "tap size");
 static_assert(sizeof(TBHit) == 18, "hit size");
 static_assert(sizeof(TBWindowChunk) == 164, "window chunk must fit one 185-byte iOS MTU");
 static_assert(sizeof(TBPose) == 12, "pose size");
+static_assert(sizeof(TBWindowChunkAcked) == 166, "acked window chunk must fit one 185-byte iOS MTU");
+static_assert(sizeof(TBShotSummary) == 80, "shot summary size");
 static_assert(TB_WINDOW_SAMPLES % TB_SAMPLES_PER_PACKET == 0, "window must be whole chunks");

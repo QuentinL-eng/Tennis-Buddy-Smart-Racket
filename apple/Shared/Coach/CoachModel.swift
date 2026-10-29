@@ -103,6 +103,12 @@ enum CoachPrompts {
         "Session data:\n\(d.json)\n\nPlayer's question: \(q)\nAnswer in under 80 words using the data."
     }
 
+    /// For the tool-using coach: no data in the prompt, it looks up what it needs.
+    static func agentQuestion(_ q: String) -> String {
+        "Player's question: \(q)\nLook up what you need with the tools: the session digest, individual shots, the racket's live sensors and status, " +
+        "the player's notes and the what-if simulator. Answer in under 80 words."
+    }
+
     static func drill(_ d: SessionDigest) -> String {
         """
         Session data:
@@ -174,11 +180,17 @@ final class CoachModel {
     var isWorking = false
     private(set) var lastEngineName: String?
     private(set) var lastFallbackReason: String?
+    /// Notes Muse saved while producing the last answer, shown under it so nothing is remembered silently.
+    private(set) var lastRemembered: [String] = []
     /// Online coaching is available while signed in (the server holds the Muse key).
     private(set) var museAvailable = false
     var engineName: String { lastEngineName ?? (museEnabled && museAvailable ? "Muse Spark · online" : fallback.name) }
     var museEnabled: Bool {
         didSet { UserDefaults.standard.set(museEnabled, forKey: "coach.museEnabled"); lastEngineName = nil }
+    }
+    /// Lets Muse read the player's notes and add new ones. Off: notes stay on the device.
+    var memoryEnabled: Bool {
+        didSet { UserDefaults.standard.set(memoryEnabled, forKey: "coach.memoryEnabled") }
     }
     @ObservationIgnored private weak var app: AppModel?
     private let fallback = TemplateCoach()
@@ -187,6 +199,7 @@ final class CoachModel {
     init(transportProvider: @escaping @MainActor () async -> MuseTransport? = { nil }) {
         self.transportProvider = transportProvider
         museEnabled = UserDefaults.standard.object(forKey: "coach.museEnabled") as? Bool ?? true
+        memoryEnabled = UserDefaults.standard.object(forKey: "coach.memoryEnabled") as? Bool ?? true
     }
 
     func connect(to app: AppModel) { self.app = app }
@@ -212,10 +225,21 @@ final class CoachModel {
         guard !isWorking else { return "The coach is already answering. Please try again shortly." }
         isWorking = true
         lastFallbackReason = nil
+        lastRemembered = []
         defer { isWorking = false }
         if museEnabled, museAvailable, let transport = await transportProvider() {
             let app = self.app
-            let tools = CoachTools(current: session, app: app) {
+            let memory = memoryEnabled ? app.flatMap { app in
+                app.modelContext.map { context in
+                    let store = CoachMemory.store(context, playerID: app.activePlayerID, sessionID: session.id)
+                    return CoachMemory(notes: store.notes) { [weak self] text, category in
+                        let note = try store.save(text, category)
+                        self?.lastRemembered.append(text)
+                        return note
+                    }
+                }
+            } : nil
+            let tools = CoachTools(current: session, app: app, memory: memory) {
                 guard let context = app?.modelContext else { return [session] }
                 return try context.fetch(FetchDescriptor<SessionRecord>(sortBy: [SortDescriptor(\.startDate)]))
             }

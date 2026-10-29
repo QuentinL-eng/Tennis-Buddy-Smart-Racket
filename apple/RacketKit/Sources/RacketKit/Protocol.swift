@@ -17,6 +17,9 @@ public enum RacketProtocol {
     public static let hitUUID = "7E5B0008-6B1D-4D8E-9C1A-7E5B7E5B0001"
     public static let windowUUID = "7E5B0009-6B1D-4D8E-9C1A-7E5B7E5B0001"
     public static let poseUUID = "7E5B000A-6B1D-4D8E-9C1A-7E5B7E5B0001"
+    /// Firmware 1.6+: the shot the racket computed itself, before its window. Its presence means the racket
+    /// supports `StreamMode.impactsAcked`.
+    public static let summaryUUID = "7E5B000B-6B1D-4D8E-9C1A-7E5B7E5B0001"
 
     // Legacy OTA firmware used 0006 for a writable control characteristic; tap firmware uses
     // that UUID for a notify-only gesture. RacketBLE distinguishes them by characteristic properties.
@@ -45,6 +48,31 @@ public enum RacketProtocol {
         case gyroRange = 0x11
         /// Second byte: a `StreamMode`. Firmware 1.5+; older firmware ignores it and keeps streaming raw.
         case streamMode = 0x12
+        /// Firmware 1.6+: `shotConfigPayload`, so the racket computes shots with this calibration and profile.
+        case shotConfig = 0x13
+        /// Firmware 1.6+: then boot u16, seq u16. The app has that window; the racket frees it.
+        case windowAck = 0x14
+        /// Firmware 1.6+: then boot u16, seq u16, n u8, n chunk indexes (n = 0: the whole window).
+        case windowResend = 0x15
+        /// Firmware 1.6+: then unix time in ms, u64, so backlog shots carry when they were hit.
+        case setTime = 0x16
+    }
+
+    static func windowAckPayload(boot: UInt16, seq: UInt16) -> Data {
+        Data([Command.windowAck.rawValue, UInt8(boot & 0xFF), UInt8(boot >> 8), UInt8(seq & 0xFF), UInt8(seq >> 8)])
+    }
+
+    static func windowResendPayload(boot: UInt16, seq: UInt16, chunks: [Int]) -> Data {
+        // More than the racket takes in one request: ask for the whole window.
+        let list = chunks.count <= 24 ? chunks.map { UInt8($0) } : []
+        return Data([Command.windowResend.rawValue, UInt8(boot & 0xFF), UInt8(boot >> 8), UInt8(seq & 0xFF),
+                     UInt8(seq >> 8), UInt8(list.count)] + list)
+    }
+
+    static func setTimePayload(_ date: Date) -> Data {
+        var d = Data([Command.setTime.rawValue])
+        withUnsafeBytes(of: UInt64(date.timeIntervalSince1970 * 1000).littleEndian) { d.append(contentsOf: $0) }
+        return d
     }
 
     public enum StreamMode: UInt8, Sendable {
@@ -52,6 +80,9 @@ public enum RacketProtocol {
         case raw = 0
         /// Hits, their windows and live orientation only; the racket detects hits.
         case impacts = 1
+        /// Firmware 1.6+: as `impacts`, plus a `ShotSummary` per hit, windows kept until acked and resent if not,
+        /// and windows captured while the phone was away sent later.
+        case impactsAcked = 2
     }
 
     /// Packet flag: this packet's gyro is at ±4000 dps, 8.2 LSB/dps.
@@ -59,6 +90,8 @@ public enum RacketProtocol {
     public static let flagMotionOK: UInt8 = 1 << 0
     /// Status flag: the racket is in impact mode.
     public static let flagImpactMode: UInt8 = 1 << 4
+    /// Window chunk flag: captured while the link was busy or down, sent late.
+    public static let flagBacklog: UInt8 = 1 << 5
 
     public enum OTACommand: UInt8 {
         case begin = 0x01   // then UInt32 size, UInt32 CRC-32 (little-endian)
@@ -83,6 +116,26 @@ public enum RacketProtocol {
         case 6: "The racket wasn't expecting that step"
         default: "The racket reported update error \(code)"
         }
+    }
+
+    /// Payload of `Command.shotConfig` after the command byte (firmware/src/shot.h, TB_SHOT_CONFIG_PAYLOAD): what the
+    /// racket needs to compute each shot itself, exactly as `RacketEngine` would.
+    public static func shotConfigPayload(gen: UInt8, calibration c: Calibration, profile: RacketProfile,
+                                         model: ImpactModel) -> Data {
+        func rows(_ m: simd_float3x3) -> [Float] {
+            let t = m.transpose
+            return [t.columns.0, t.columns.1, t.columns.2].flatMap { [$0.x, $0.y, $0.z] }
+        }
+        let calQ = simd_quatf(c.mpuToRacket.transpose)
+        var f: [Float] = rows(c.mpuToRacket) + rows(c.h3lisToRacket)
+        f += [c.gyroBias.x, c.gyroBias.y, c.gyroBias.z, c.h3lisBias.x, c.h3lisBias.y, c.h3lisBias.z, c.accelScale]
+        f += [calQ.real, calQ.imag.x, calQ.imag.y, calQ.imag.z]
+        f += [profile.effectiveRadiusM, profile.forehandBodySign]
+        f += [model.lateralGain, model.longitudinalGain, model.joltDeadband, model.acorCenter, model.spinGain]
+        var d = Data([gen])
+        for v in f { withUnsafeBytes(of: v.bitPattern.littleEndian) { d.append(contentsOf: $0) } }
+        d.append(profile.rightHanded ? 1 : 0)
+        return d
     }
 
     /// mg per 12-bit count for each H3LIS range code.
@@ -114,6 +167,15 @@ public enum RacketProtocol {
         public var h3lisRange: UInt8
         public var droppedPackets: UInt16
         public var impactMode = false
+        /// The gyro is at ±4000 dps (firmware 1.3+ reports it; 1.6+ starts there).
+        public var gyro4000 = false
+
+        public init(batteryMillivolts: UInt16, firmwareVersion: String, mpuOK: Bool, h3lisOK: Bool, streaming: Bool,
+                    h3lisRange: UInt8, droppedPackets: UInt16, impactMode: Bool = false, gyro4000: Bool = false) {
+            self.batteryMillivolts = batteryMillivolts; self.firmwareVersion = firmwareVersion
+            self.mpuOK = mpuOK; self.h3lisOK = h3lisOK; self.streaming = streaming; self.h3lisRange = h3lisRange
+            self.droppedPackets = droppedPackets; self.impactMode = impactMode; self.gyro4000 = gyro4000
+        }
     }
 
     public enum HitSource: UInt8, Sendable {
@@ -145,6 +207,9 @@ public enum RacketProtocol {
         public var startOrientation: simd_quatf
         public var t0Micros: UInt32
         public var samples: [RawSample]
+        /// The racket's boot number (acked mode, firmware 1.6+); nil for plain impact mode.
+        public var boot: UInt16? = nil
+        public var flags: UInt8 = 0
     }
 
     /// Live orientation in impact mode, ~30 Hz.
@@ -179,10 +244,14 @@ public enum RacketProtocol {
         let b = [UInt8](data)
         let count = Int(b[18])
         guard data.count >= 20 + count * 18 else { return nil }
+        // Acked mode (TBWindowChunkAcked) adds the boot number after the flags.
+        let acked = data.count == 22 + count * 18
+        let first = acked ? 22 : 20
         let t0 = UInt32(b[14]) | UInt32(b[15]) << 8 | UInt32(b[16]) << 16 | UInt32(b[17]) << 24
         return WindowChunk(seq: UInt16(b[0]) | UInt16(b[1]) << 8, index: Int(b[2]), total: Int(b[3]),
                            impact: Int(UInt16(b[4]) | UInt16(b[5]) << 8), startOrientation: quaternion(b, at: 6),
-                           t0Micros: t0, samples: (0..<count).map { rawSample(b, at: 20 + $0 * 18) })
+                           t0Micros: t0, samples: (0..<count).map { rawSample(b, at: first + $0 * 18) },
+                           boot: acked ? UInt16(b[20]) | UInt16(b[21]) << 8 : nil, flags: b[19])
     }
 
     public static func decodePose(_ data: Data) -> Pose? {
@@ -190,6 +259,63 @@ public enum RacketProtocol {
         let b = [UInt8](data)
         return Pose(orientation: quaternion(b, at: 0), gyroDps: Float(UInt16(b[8]) | UInt16(b[9]) << 8),
                     highG: Float(b[10]), flags: b[11])
+    }
+
+    /// The shot as the racket computed it (firmware/src/shot.cpp, TBShotSummary), firmware 1.6+.
+    public struct ShotSummary: Sendable, Equatable {
+        public var seq: UInt16
+        public var boot: UInt16
+        /// The `Command.shotConfig` generation it was computed with.
+        public var gen: UInt8
+        public var type: ShotType
+        public var spin: SpinType
+        public var gyroSaturated: Bool
+        /// Captured while the link was busy or down.
+        public var backlog: Bool
+        /// ms between the hit and sending; nil if it was hit before the racket last rebooted.
+        public var ageMs: UInt32?
+        /// When it was hit, if the app had set the racket's clock; else nil.
+        public var unixMs: UInt64?
+        public var swingKmh, ballKmh, spinRPM, faceDeg, pathDeg, impactXcm, impactYcm, peakG: Float
+        public var rollRatio, ringNorm, jolt, impulse, spinAxisY, verticalSpin, swingDeg: Float
+
+        /// When the ball was hit, as well as the racket knows.
+        public func hitDate(receivedAt now: Date) -> Date {
+            if let unixMs { return Date(timeIntervalSince1970: Double(unixMs) / 1000) }
+            if let ageMs { return now.addingTimeInterval(-Double(ageMs) / 1000) }
+            return now
+        }
+
+        public func metrics(receivedAt now: Date) -> ShotMetrics {
+            var features = ImpactFeatures(rollRatio: rollRatio, ringNorm: ringNorm, jolt: jolt, impulse: impulse,
+                                          spinAxisY: spinAxisY)
+            features.verticalSpin = verticalSpin
+            features.swingDeg = swingDeg
+            return ShotMetrics(date: hitDate(receivedAt: now), type: type, swingSpeedKmh: Double(swingKmh),
+                               ballSpeedKmh: Double(ballKmh), spinRPM: Double(spinRPM), spin: spin,
+                               faceAngleDeg: Double(faceDeg), swingPathDeg: Double(pathDeg),
+                               impactXcm: Double(impactXcm), impactYcm: Double(impactYcm), peakG: Double(peakG),
+                               gyroSaturated: gyroSaturated, features: features)
+        }
+    }
+
+    public static func decodeShotSummary(_ data: Data) -> ShotSummary? {
+        guard data.count >= 80 else { return nil }
+        let b = [UInt8](data)
+        func u16(_ i: Int) -> UInt16 { UInt16(b[i]) | UInt16(b[i + 1]) << 8 }
+        func u32(_ i: Int) -> UInt32 { (0..<4).reduce(0) { $0 | UInt32(b[i + $1]) << (8 * UInt32($1)) } }
+        func u64(_ i: Int) -> UInt64 { (0..<8).reduce(0) { $0 | UInt64(b[i + $1]) << (8 * UInt64($1)) } }
+        func f(_ k: Int) -> Float { Float(bitPattern: u32(20 + 4 * k)) }
+        let types: [ShotType] = [.forehand, .backhand, .serve, .volley]
+        let spins: [SpinType] = [.topspin, .flat, .slice]
+        guard Int(b[5]) < types.count, Int(b[6]) < spins.count else { return nil }
+        let age = u32(8), unix = u64(12)
+        return ShotSummary(seq: u16(0), boot: u16(2), gen: b[4], type: types[Int(b[5])], spin: spins[Int(b[6])],
+                           gyroSaturated: b[7] & 1 != 0, backlog: b[7] & 2 != 0,
+                           ageMs: age == .max ? nil : age, unixMs: unix == 0 ? nil : unix,
+                           swingKmh: f(0), ballKmh: f(1), spinRPM: f(2), faceDeg: f(3), pathDeg: f(4),
+                           impactXcm: f(5), impactYcm: f(6), peakG: f(7), rollRatio: f(8), ringNorm: f(9),
+                           jolt: f(10), impulse: f(11), spinAxisY: f(12), verticalSpin: f(13), swingDeg: f(14))
     }
 
     /// The racket's own sweet-spot verdict from its on-device model (firmware/src/sweetspot.cpp, ml/README.md).
@@ -260,7 +386,8 @@ public enum RacketProtocol {
             streaming: b[4] & 4 != 0,
             h3lisRange: b[5],
             droppedPackets: UInt16(b[6]) | UInt16(b[7]) << 8,
-            impactMode: b[4] & flagImpactMode != 0)
+            impactMode: b[4] & flagImpactMode != 0,
+            gyro4000: b[4] & flagGyro4000 != 0)
     }
 
     /// Converts a raw sample to physical units in the sensor frames.

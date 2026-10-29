@@ -1,0 +1,24 @@
+> Print PAgl(P0, 5)
+ -142.702
+> Print PAgl(P0 /B, 5)
+ -56.1212
+> Print TargetOK(P0 /B), TargetOK(P2 /B), TargetOK(P1 /B)
+ 0 -1 -1
+> Print TargetOK(P0 /L), TargetOK(P0 /L /B), TargetOK(P0 /L /F), TargetOK(P0 /L /B /F)
+ 0 0 0 0
+> Print TargetOK(P0 /F), TargetOK(P0 /B /F), TargetOK(P2), TargetOK(P1)
+ 0 0 0 -1
+> Tool 1
+> Print TargetOK(P0), TargetOK(P2), TargetOK(P1)
+ 0 0 0
+> Tool 0
+> Tool 1
+> Print TargetOK(P0), TargetOK(P2), TargetOK(P1)
+ 0 0 0
+> Tool 0
+> Print TargetOK(P0 :V(-90) :W(-90)), TargetOK(P2 :V(-90) :W(-90)), TargetOK(P1 :V(-90) :W(-90))
+ -1 -1 -1
+> Weight 0.300
+> Weight
+0.300, 0.000
+> 

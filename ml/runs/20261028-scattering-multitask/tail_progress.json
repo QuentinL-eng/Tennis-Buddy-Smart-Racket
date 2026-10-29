@@ -1,0 +1,596 @@
+[
+  {
+    "fold": 0,
+    "train": 139,
+    "test": 38,
+    "held_out_groups": [
+      "20261028-155849-long-run2:block007",
+      "20261028-155849-long-run2:block009",
+      "20261028-155849-long-run2:block014",
+      "20261028-155849-long-run2:block018",
+      "20261028-155849-long-run2:block022"
+    ],
+    "selections": {
+      "mae_selected": {
+        "config": {
+          "feature": "current",
+          "kind": "multitask",
+          "epochs": 400,
+          "decay": 0.01
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.6492652924435018,
+          "n": 139,
+          "accuracy": 0.6474820143884892,
+          "balanced_accuracy": 0.6480944490472245,
+          "sweet_recall": 0.6197183098591549,
+          "off_centre_recall": 0.6764705882352942,
+          "tp": 44,
+          "tn": 46,
+          "fp": 22,
+          "fn": 27
+        }
+      },
+      "classification_selected": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "classical",
+          "method": "ridge",
+          "alpha": 0.1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.722933135637838,
+          "n": 139,
+          "accuracy": 0.6690647482014388,
+          "balanced_accuracy": 0.6698425849212926,
+          "sweet_recall": 0.6338028169014085,
+          "off_centre_recall": 0.7058823529411765,
+          "tp": 45,
+          "tn": 48,
+          "fp": 20,
+          "fn": 26
+        }
+      },
+      "scattering_classical": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "classical",
+          "method": "ridge",
+          "alpha": 0.1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.722933135637838,
+          "n": 139,
+          "accuracy": 0.6690647482014388,
+          "balanced_accuracy": 0.6698425849212926,
+          "sweet_recall": 0.6338028169014085,
+          "off_centre_recall": 0.7058823529411765,
+          "tp": 45,
+          "tn": 48,
+          "fp": 20,
+          "fn": 26
+        }
+      },
+      "multitask_current": {
+        "config": {
+          "feature": "current",
+          "kind": "multitask",
+          "epochs": 400,
+          "decay": 0.01
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.6492652924435018,
+          "n": 139,
+          "accuracy": 0.6474820143884892,
+          "balanced_accuracy": 0.6480944490472245,
+          "sweet_recall": 0.6197183098591549,
+          "off_centre_recall": 0.6764705882352942,
+          "tp": 44,
+          "tn": 46,
+          "fp": 22,
+          "fn": 27
+        }
+      },
+      "multitask_scattering": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "multitask",
+          "epochs": 150,
+          "decay": 0.01
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.7765937582508755,
+          "n": 139,
+          "accuracy": 0.6618705035971223,
+          "balanced_accuracy": 0.6637323943661972,
+          "sweet_recall": 0.5774647887323944,
+          "off_centre_recall": 0.75,
+          "tp": 41,
+          "tn": 51,
+          "fp": 17,
+          "fn": 30
+        }
+      }
+    }
+  },
+  {
+    "fold": 1,
+    "train": 142,
+    "test": 35,
+    "held_out_groups": [
+      "20261028-155849-long-run2:block003",
+      "20261028-155849-long-run2:block012",
+      "20261028-155849-long-run2:block019",
+      "20261028-155849-long-run2:block021",
+      "20261028-155849-long-run2:block023"
+    ],
+    "selections": {
+      "mae_selected": {
+        "config": {
+          "feature": "current",
+          "kind": "classical",
+          "method": "ridge",
+          "alpha": 1
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.7257371129242982,
+          "n": 142,
+          "accuracy": 0.6197183098591549,
+          "balanced_accuracy": 0.6216915422885572,
+          "sweet_recall": 0.5866666666666667,
+          "off_centre_recall": 0.6567164179104478,
+          "tp": 44,
+          "tn": 44,
+          "fp": 23,
+          "fn": 31
+        }
+      },
+      "classification_selected": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "classical",
+          "method": "rbf",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.76893334038799,
+          "n": 142,
+          "accuracy": 0.6267605633802817,
+          "balanced_accuracy": 0.6275621890547263,
+          "sweet_recall": 0.6133333333333333,
+          "off_centre_recall": 0.6417910447761194,
+          "tp": 46,
+          "tn": 43,
+          "fp": 24,
+          "fn": 29
+        }
+      },
+      "scattering_classical": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "classical",
+          "method": "rbf",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.76893334038799,
+          "n": 142,
+          "accuracy": 0.6267605633802817,
+          "balanced_accuracy": 0.6275621890547263,
+          "sweet_recall": 0.6133333333333333,
+          "off_centre_recall": 0.6417910447761194,
+          "tp": 46,
+          "tn": 43,
+          "fp": 24,
+          "fn": 29
+        }
+      },
+      "multitask_current": {
+        "config": {
+          "feature": "current",
+          "kind": "multitask",
+          "epochs": 400,
+          "decay": 0.1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.7624886975961316,
+          "n": 142,
+          "accuracy": 0.6126760563380281,
+          "balanced_accuracy": 0.6078606965174129,
+          "sweet_recall": 0.6933333333333334,
+          "off_centre_recall": 0.5223880597014925,
+          "tp": 52,
+          "tn": 35,
+          "fp": 32,
+          "fn": 23
+        }
+      },
+      "multitask_scattering": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "multitask",
+          "epochs": 150,
+          "decay": 0.01
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.8818093768621373,
+          "n": 142,
+          "accuracy": 0.6197183098591549,
+          "balanced_accuracy": 0.6193034825870647,
+          "sweet_recall": 0.6266666666666667,
+          "off_centre_recall": 0.6119402985074627,
+          "tp": 47,
+          "tn": 41,
+          "fp": 26,
+          "fn": 28
+        }
+      }
+    }
+  },
+  {
+    "fold": 2,
+    "train": 140,
+    "test": 37,
+    "held_out_groups": [
+      "20261028-155849-long-run2:block000",
+      "20261028-155849-long-run2:block004",
+      "20261028-155849-long-run2:block005",
+      "20261028-155849-long-run2:block015",
+      "20261028-155849-long-run2:block016"
+    ],
+    "selections": {
+      "mae_selected": {
+        "config": {
+          "feature": "current",
+          "kind": "classical",
+          "method": "ridge",
+          "alpha": 1
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.7978410011093835,
+          "n": 140,
+          "accuracy": 0.5714285714285714,
+          "balanced_accuracy": 0.5705245968565014,
+          "sweet_recall": 0.6338028169014085,
+          "off_centre_recall": 0.5072463768115942,
+          "tp": 45,
+          "tn": 35,
+          "fp": 34,
+          "fn": 26
+        }
+      },
+      "classification_selected": {
+        "config": {
+          "feature": "scattering",
+          "kind": "classical",
+          "method": "ridge",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.8840146053382683,
+          "n": 140,
+          "accuracy": 0.6357142857142857,
+          "balanced_accuracy": 0.636150234741784,
+          "sweet_recall": 0.6056338028169014,
+          "off_centre_recall": 0.6666666666666666,
+          "tp": 43,
+          "tn": 46,
+          "fp": 23,
+          "fn": 28
+        }
+      },
+      "scattering_classical": {
+        "config": {
+          "feature": "scattering",
+          "kind": "classical",
+          "method": "ridge",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.8840146053382683,
+          "n": 140,
+          "accuracy": 0.6357142857142857,
+          "balanced_accuracy": 0.636150234741784,
+          "sweet_recall": 0.6056338028169014,
+          "off_centre_recall": 0.6666666666666666,
+          "tp": 43,
+          "tn": 46,
+          "fp": 23,
+          "fn": 28
+        }
+      },
+      "multitask_current": {
+        "config": {
+          "feature": "current",
+          "kind": "multitask",
+          "epochs": 150,
+          "decay": 0.01
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.8978480562954567,
+          "n": 140,
+          "accuracy": 0.6285714285714286,
+          "balanced_accuracy": 0.6276791181873851,
+          "sweet_recall": 0.6901408450704225,
+          "off_centre_recall": 0.5652173913043478,
+          "tp": 49,
+          "tn": 39,
+          "fp": 30,
+          "fn": 22
+        }
+      },
+      "multitask_scattering": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "multitask",
+          "epochs": 150,
+          "decay": 0.01
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.9782846300915289,
+          "n": 140,
+          "accuracy": 0.6071428571428571,
+          "balanced_accuracy": 0.6067564809144723,
+          "sweet_recall": 0.6338028169014085,
+          "off_centre_recall": 0.5797101449275363,
+          "tp": 45,
+          "tn": 40,
+          "fp": 29,
+          "fn": 26
+        }
+      }
+    }
+  },
+  {
+    "fold": 3,
+    "train": 141,
+    "test": 36,
+    "held_out_groups": [
+      "20261028-155849-long-run2:block002",
+      "20261028-155849-long-run2:block010",
+      "20261028-155849-long-run2:block011",
+      "20261028-155849-long-run2:block013",
+      "20261028-155849-long-run2:block017"
+    ],
+    "selections": {
+      "mae_selected": {
+        "config": {
+          "feature": "current",
+          "kind": "classical",
+          "method": "pls",
+          "alpha": 1
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.7333233616708985,
+          "n": 141,
+          "accuracy": 0.6099290780141844,
+          "balanced_accuracy": 0.6114360629286002,
+          "sweet_recall": 0.581081081081081,
+          "off_centre_recall": 0.6417910447761194,
+          "tp": 43,
+          "tn": 43,
+          "fp": 24,
+          "fn": 31
+        }
+      },
+      "classification_selected": {
+        "config": {
+          "feature": "current",
+          "kind": "classical",
+          "method": "rbf",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.8186858196671047,
+          "n": 141,
+          "accuracy": 0.6666666666666666,
+          "balanced_accuracy": 0.668313836224284,
+          "sweet_recall": 0.6351351351351351,
+          "off_centre_recall": 0.7014925373134329,
+          "tp": 47,
+          "tn": 47,
+          "fp": 20,
+          "fn": 27
+        }
+      },
+      "scattering_classical": {
+        "config": {
+          "feature": "scattering",
+          "kind": "classical",
+          "method": "pls",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.9285877428004607,
+          "n": 141,
+          "accuracy": 0.6170212765957447,
+          "balanced_accuracy": 0.6210165389269867,
+          "sweet_recall": 0.5405405405405406,
+          "off_centre_recall": 0.7014925373134329,
+          "tp": 40,
+          "tn": 47,
+          "fp": 20,
+          "fn": 34
+        }
+      },
+      "multitask_current": {
+        "config": {
+          "feature": "current",
+          "kind": "multitask",
+          "epochs": 400,
+          "decay": 0.01
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 2.2341365566117206,
+          "n": 141,
+          "accuracy": 0.6170212765957447,
+          "balanced_accuracy": 0.6174868898749496,
+          "sweet_recall": 0.6081081081081081,
+          "off_centre_recall": 0.6268656716417911,
+          "tp": 45,
+          "tn": 42,
+          "fp": 25,
+          "fn": 29
+        }
+      },
+      "multitask_scattering": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "multitask",
+          "epochs": 150,
+          "decay": 0.01
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 2.025026726497856,
+          "n": 141,
+          "accuracy": 0.6028368794326241,
+          "balanced_accuracy": 0.6053852359822509,
+          "sweet_recall": 0.5540540540540541,
+          "off_centre_recall": 0.6567164179104478,
+          "tp": 41,
+          "tn": 44,
+          "fp": 23,
+          "fn": 33
+        }
+      }
+    }
+  },
+  {
+    "fold": 4,
+    "train": 146,
+    "test": 31,
+    "held_out_groups": [
+      "20261028-155849-long-run2:block001",
+      "20261028-155849-long-run2:block006",
+      "20261028-155849-long-run2:block008",
+      "20261028-155849-long-run2:block020"
+    ],
+    "selections": {
+      "mae_selected": {
+        "config": {
+          "feature": "current",
+          "kind": "classical",
+          "method": "rbf",
+          "alpha": 1
+        },
+        "head": "distance_head",
+        "inner": {
+          "mae_cm": 1.725558701471011,
+          "n": 146,
+          "accuracy": 0.6438356164383562,
+          "balanced_accuracy": 0.6457745153397327,
+          "sweet_recall": 0.6103896103896104,
+          "off_centre_recall": 0.6811594202898551,
+          "tp": 47,
+          "tn": 47,
+          "fp": 22,
+          "fn": 30
+        }
+      },
+      "classification_selected": {
+        "config": {
+          "feature": "scattering",
+          "kind": "classical",
+          "method": "rbf",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.762077700837193,
+          "n": 146,
+          "accuracy": 0.684931506849315,
+          "balanced_accuracy": 0.6869941652550349,
+          "sweet_recall": 0.6493506493506493,
+          "off_centre_recall": 0.7246376811594203,
+          "tp": 50,
+          "tn": 50,
+          "fp": 19,
+          "fn": 27
+        }
+      },
+      "scattering_classical": {
+        "config": {
+          "feature": "scattering",
+          "kind": "classical",
+          "method": "rbf",
+          "alpha": 1
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 1.762077700837193,
+          "n": 146,
+          "accuracy": 0.684931506849315,
+          "balanced_accuracy": 0.6869941652550349,
+          "sweet_recall": 0.6493506493506493,
+          "off_centre_recall": 0.7246376811594203,
+          "tp": 50,
+          "tn": 50,
+          "fp": 19,
+          "fn": 27
+        }
+      },
+      "multitask_current": {
+        "config": {
+          "feature": "current",
+          "kind": "multitask",
+          "epochs": 400,
+          "decay": 0.01
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 2.020781134277447,
+          "n": 146,
+          "accuracy": 0.6164383561643836,
+          "balanced_accuracy": 0.6167890080933559,
+          "sweet_recall": 0.6103896103896104,
+          "off_centre_recall": 0.6231884057971014,
+          "tp": 47,
+          "tn": 43,
+          "fp": 26,
+          "fn": 30
+        }
+      },
+      "multitask_scattering": {
+        "config": {
+          "feature": "current_scattering",
+          "kind": "multitask",
+          "epochs": 150,
+          "decay": 0.01
+        },
+        "head": "region_head",
+        "inner": {
+          "mae_cm": 2.0912381038560612,
+          "n": 146,
+          "accuracy": 0.6095890410958904,
+          "balanced_accuracy": 0.6133069828722002,
+          "sweet_recall": 0.5454545454545454,
+          "off_centre_recall": 0.6811594202898551,
+          "tp": 42,
+          "tn": 47,
+          "fp": 22,
+          "fn": 35
+        }
+      }
+    }
+  }
+]

@@ -52,3 +52,50 @@ final class ShotRecord {
 
     var metrics: ShotMetrics? { try? JSONDecoder().decode(ShotMetrics.self, from: metricsData) }
 }
+
+/// Something the coach should remember about a player across sessions ("rushes the backhand when tired",
+/// "sore right elbow in 2025"). Written by the player, or by Muse through `remember_note`.
+@Model
+final class CoachNote {
+    var id: UUID = UUID()
+    /// `PlayerProfile.id` of the player the note is about.
+    var playerID: UUID = UUID()
+    var createdAt: Date = Date()
+    var updatedAt: Date = Date()
+    var text: String = ""
+    var categoryRaw: String = CoachNote.Category.technique.rawValue
+    /// "player" or "coach".
+    var source: String = "player"
+    /// The session that prompted the note, when there was one.
+    var sessionID: UUID?
+
+    enum Category: String, CaseIterable, Identifiable, Codable {
+        case technique, fitness, injury, goal, preference, other
+        var id: String { rawValue }
+        var label: String { rawValue.capitalized }
+        var symbol: String {
+            switch self {
+            case .technique: "figure.tennis"
+            case .fitness: "bolt.heart"
+            case .injury: "bandage"
+            case .goal: "flag"
+            case .preference: "slider.horizontal.3"
+            case .other: "note.text"
+            }
+        }
+    }
+
+    init(playerID: UUID, text: String, category: Category, source: String = "player", sessionID: UUID? = nil) {
+        self.playerID = playerID
+        self.text = text
+        self.categoryRaw = category.rawValue
+        self.source = source
+        self.sessionID = sessionID
+    }
+
+    var category: Category {
+        get { Category(rawValue: categoryRaw) ?? .other }
+        set { categoryRaw = newValue.rawValue }
+    }
+    var addedByCoach: Bool { source == "coach" }
+}

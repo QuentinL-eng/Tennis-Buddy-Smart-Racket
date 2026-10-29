@@ -30,9 +30,13 @@ public struct LiveState: Sendable {
 /// (the racket in impact mode) it analyses the windows the racket sends instead, and shows the racket's own
 /// orientation live. All processing runs on a private serial queue; callbacks arrive on the main queue.
 public final class RacketEngine: @unchecked Sendable {
-    public var calibration: Calibration = .default { didSet { queue.async { self._calibration = self.calibration } } }
-    public var profile = RacketProfile() { didSet { queue.async { self.analyzer.profile = self.profile } } }
-    public var impactModel = ImpactModel() { didSet { queue.async { self.analyzer.model = self.impactModel } } }
+    public var calibration: Calibration = .default {
+        didSet { queue.async { self._calibration = self.calibration; self.pushShotConfig() } }
+    }
+    public var profile = RacketProfile() { didSet { queue.async { self.analyzer.profile = self.profile; self.pushShotConfig() } } }
+    public var impactModel = ImpactModel() {
+        didSet { queue.async { self.analyzer.model = self.impactModel; self.pushShotConfig() } }
+    }
     /// Calibration mode: detect gentle impacts (ball drops) with no swing.
     public var calibrationMode = false { didSet { queue.async { self._calibrationMode = self.calibrationMode } } }
 
@@ -59,6 +63,11 @@ public final class RacketEngine: @unchecked Sendable {
     private var stillSamples: [IMUSample] = []
 
     private weak var source: SampleSource?
+    /// A racket that computes shots itself, and the config generation it was last sent (all on `queue`).
+    private weak var summarySource: ShotSummarySource?
+    private var configGen: UInt8 = 0
+    /// Windows whose shot already came from the racket's summary.
+    private var summarized: Set<WindowKey> = []
 
     public init() {}
 
@@ -76,6 +85,31 @@ public final class RacketEngine: @unchecked Sendable {
             impacts.onImpactWindow = { [weak self] window in self?.queue.async { self?.process(window) } }
             impacts.onPose = { [weak self] pose in self?.queue.async { self?.process(pose) } }
         }
+        let summaries = source as? ShotSummarySource
+        summaries?.onShotSummary = { [weak self] s in self?.queue.async { self?.process(s) } }
+        queue.async {
+            self.summarySource = summaries
+            self.summarized.removeAll()
+            self.pushShotConfig()
+        }
+    }
+
+    /// Sends the racket what it needs to compute shots exactly as `analyzer` would. Each change gets a new
+    /// generation, and summaries from an older one are ignored (their windows are analysed here instead).
+    private func pushShotConfig() {
+        guard let s = summarySource else { return }
+        configGen = configGen == 255 ? 1 : configGen + 1
+        s.setShotConfig(RacketProtocol.shotConfigPayload(gen: configGen, calibration: sourceCalibration ?? _calibration,
+                                                         profile: analyzer.profile, model: analyzer.model))
+    }
+
+    private func process(_ summary: RacketProtocol.ShotSummary) {
+        guard !_calibrationMode, summary.gen == configGen else { return }
+        let key = WindowKey(boot: summary.boot, seq: summary.seq)
+        guard summarized.insert(key).inserted else { return }
+        if summarized.count > 512 { summarized.removeAll() }
+        let shot = summary.metrics(receivedAt: Date())
+        DispatchQueue.main.async { self.onShot?(shot) }
     }
 
     public func detach() {
@@ -85,7 +119,9 @@ public final class RacketEngine: @unchecked Sendable {
             impacts.onImpactWindow = nil
             impacts.onPose = nil
         }
+        (source as? ShotSummarySource)?.onShotSummary = nil
         source = nil
+        queue.async { self.summarySource = nil }
     }
 
     public func recenter() { queue.async { self.filter.recenter() } }
@@ -179,7 +215,14 @@ public final class RacketEngine: @unchecked Sendable {
 
     /// `frames` are racket-frame samples with the orientation after each; `center` is roughly the impact.
     private func analyzeImpact(_ frames: [(IMUSample, simd_quatf)], near center: Int) {
-        guard frames.count > 3 else { return }
+        guard let shot = Self.shot(frames: frames, near: center, analyzer: analyzer, calibrationMode: _calibrationMode,
+                                   date: Date()) else { return }
+        DispatchQueue.main.async { self.onShot?(shot) }
+    }
+
+    static func shot(frames: [(IMUSample, simd_quatf)], near center: Int, analyzer: ShotAnalyzer,
+                     calibrationMode: Bool, date: Date) -> ShotMetrics? {
+        guard frames.count > 3 else { return nil }
         // Refine: largest high-g jump within ±6 samples.
         var best = center, bestJump: Float = 0
         for k in max(3, center - 6)...max(3, min(frames.count - 1, center + 6)) {
@@ -191,26 +234,36 @@ public final class RacketEngine: @unchecked Sendable {
         let lo = max(0, i0 - 700), hi = min(frames.count, i0 + 150)
         let window = frames[lo..<hi].map(\.0)
         let q = frames[max(i0 - 3, 0)].1
-        let shot = analyzer.analyze(window: window, impact: i0 - lo, orientation: q, date: Date(),
-                                    calibrationMode: _calibrationMode)
-        DispatchQueue.main.async { self.onShot?(shot) }
+        return analyzer.analyze(window: window, impact: i0 - lo, orientation: q, date: date,
+                                calibrationMode: calibrationMode)
     }
 
     // MARK: - Impact mode
 
     /// The racket's orientation (sensor axes → world) turned into racket axes → world.
-    private func racketOrientation(_ sensorToWorld: simd_quatf, _ cal: Calibration) -> simd_quatf {
+    static func racketOrientation(_ sensorToWorld: simd_quatf, _ cal: Calibration) -> simd_quatf {
         // mpuToRacket maps sensor vectors to racket vectors; its transpose takes racket vectors back to sensor ones.
         simd_normalize(sensorToWorld * simd_quatf(cal.mpuToRacket.transpose))
     }
 
     private func process(_ window: ImpactWindow) {
         onRaw?(window.samples)
+        // The racket already sent this shot; the window is only for the recording.
+        if summarized.remove(window.key) != nil { return }
         let cal = sourceCalibration ?? _calibration
+        lastShotTime = window.samples[min(window.impactIndex, window.samples.count - 1)].time
+        guard let shot = Self.shot(window: window, calibration: cal, analyzer: analyzer,
+                                   calibrationMode: _calibrationMode, date: Date()) else { return }
+        DispatchQueue.main.async { self.onShot?(shot) }
+    }
+
+    /// The shot in one impact window: the same path the racket's firmware/src/shot.cpp follows.
+    static func shot(window: ImpactWindow, calibration cal: Calibration, analyzer: ShotAnalyzer,
+                     calibrationMode: Bool, date: Date) -> ShotMetrics? {
         // Integrate from the racket's orientation at the window's start, so the shot sees the same geometry it
         // would have from the full stream.
         var f = MahonyFilter()
-        f.q = racketOrientation(window.startOrientation, cal)
+        f.q = Self.racketOrientation(window.startOrientation, cal)
         f.initialized = true
         var frames: [(IMUSample, simd_quatf)] = []
         frames.reserveCapacity(window.samples.count)
@@ -222,12 +275,12 @@ public final class RacketEngine: @unchecked Sendable {
             f.update(gyro: s.gyro, accel: s.accel, dt: dt)
             frames.append((s, f.q))
         }
-        lastShotTime = window.samples[min(window.impactIndex, window.samples.count - 1)].time
-        analyzeImpact(frames, near: window.impactIndex + 2)
+        return shot(frames: frames, near: window.impactIndex + 2, analyzer: analyzer, calibrationMode: calibrationMode,
+                    date: date)
     }
 
     private func process(_ pose: RacketProtocol.Pose) {
-        filter.q = racketOrientation(pose.orientation, sourceCalibration ?? _calibration)
+        filter.q = Self.racketOrientation(pose.orientation, sourceCalibration ?? _calibration)
         filter.initialized = true
         let state = LiveState(orientation: filter.displayOrientation, gyroDps: pose.gyroDps, highG: pose.highG,
                               // The racket keeps sampling at 1 kHz; only the hits' windows come over the air.

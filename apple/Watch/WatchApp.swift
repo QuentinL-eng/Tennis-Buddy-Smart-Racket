@@ -24,6 +24,8 @@ final class WatchModel: NSObject, WCSessionDelegate {
     var sessionActive = false
     var sessionID: UUID?
     var sharedScore: ScoreTracker?
+    /// The match scored on the iPhone itself (not the shared Together match).
+    var localScore: ScoreTracker?
     var sharedScoreActive = false
     var sharedMatchID: UUID?
     var sharedRevision = 0
@@ -148,6 +150,8 @@ final class WatchModel: NSObject, WCSessionDelegate {
         } else if message["type"] as? String == "session", let active = message["active"] as? Bool {
             if let id = (message["sessionID"] as? String).flatMap(UUID.init(uuidString:)) { sessionID = id }
             setSessionActive(active)
+        } else if message["type"] as? String == "localScore", let data = message["score"] as? Data {
+            localScore = data.isEmpty ? nil : try? JSONDecoder().decode(ScoreTracker.self, from: data)
         } else if message["type"] as? String == "sharedScore", let data = message["score"] as? Data {
             sharedScore = try? JSONDecoder().decode(ScoreTracker.self, from: data)
             sharedScoreActive = message["active"] as? Bool ?? false
@@ -169,11 +173,13 @@ final class WatchModel: NSObject, WCSessionDelegate {
         let recordID = (ctx["sessionID"] as? String).flatMap(UUID.init(uuidString:))
         let score = (ctx["sharedScore"] as? Data).flatMap { try? JSONDecoder().decode(ScoreTracker.self, from: $0) }
         let scoreActive = ctx["sharedScoreActive"] as? Bool ?? false
+        let local = (ctx["localScore"] as? Data).flatMap { $0.isEmpty ? nil : try? JSONDecoder().decode(ScoreTracker.self, from: $0) }
         let matchID = (ctx["sharedMatchID"] as? String).flatMap(UUID.init(uuidString:))
         let revision = ctx["sharedRevision"] as? Int ?? 0
         Task { @MainActor in
             if let recordID { self.sessionID = recordID }
             self.sharedScore = score; self.sharedScoreActive = scoreActive
+            self.localScore = local
             self.sharedMatchID = matchID; self.sharedRevision = revision
             if let active { self.setSessionActive(active) }
             if let drill { self.updateDrill(drill) }
@@ -306,16 +312,16 @@ struct PointsPage: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Text(model.sharedScore?.score.pointText ?? "\(model.pointsWon) – \(model.pointsLost)")
+            Text((model.sharedScore ?? model.localScore)?.score.pointText ?? "\(model.pointsWon) – \(model.pointsLost)")
                 .font(.system(size: 38, weight: .bold, design: .rounded)).monospacedDigit()
             HStack(spacing: 8) {
                 PointButton(title: "Won", symbol: "checkmark", color: WatchPalette.green) { model.logPoint(won: true) }
                 PointButton(title: "Lost", symbol: "xmark", color: WatchPalette.red) { model.logPoint(won: false) }
             }
-            .disabled(!(model.sessionActive || model.sharedScoreActive) || (model.sharedScoreActive && !model.phoneReachable) || model.commandInFlight || model.sharedScore?.score.winner != nil || (model.sharedScore != nil && !model.sharedScoreActive))
-            .opacity(model.sessionActive || model.sharedScoreActive ? 1 : 0.4)
+            .disabled(!(model.sessionActive || model.sharedScoreActive || model.localScore != nil) || (model.sharedScoreActive && !model.phoneReachable) || model.commandInFlight || model.sharedScore?.score.winner != nil || (model.sharedScore != nil && !model.sharedScoreActive))
+            .opacity(model.sessionActive || model.sharedScoreActive || model.localScore != nil ? 1 : 0.4)
             if let error = model.commandError { Text(error).font(.caption2).foregroundStyle(.red) }
-            if let score = model.sharedScore { Text(score.setsText).font(.caption.monospacedDigit()) }
+            if let score = model.sharedScore ?? model.localScore { Text(score.setsText).font(.caption.monospacedDigit()) }
             Text(model.sharedScore != nil ? "Shared score · open Together on iPhone" : "Log each point").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
         }
     }

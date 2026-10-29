@@ -85,8 +85,8 @@ static void micTask(void *) {
           TBShot shot = {seq++, (uint8_t)r.sweet, r.off_pct, r.confidence, (uint8_t)min(255, peak / 128)};
           impacts++;
           xQueueSend(outQueue, &shot, 0);
-          Serial.printf("SHOT %s off=%u%% conf=%u%% p=%.2f peak=%d inference=%luus\n", r.sweet ? "SWEET" : "off-centre",
-                        r.off_pct, r.confidence, r.p_sweet, peak, (unsigned long)dt);
+          Serial.printf("SHOT %s off=%u%% dist=%.2fcm conf=unavailable peak=%d inference=%luus\n", r.sweet ? "SWEET" : "off-centre",
+                        r.off_pct, r.distance_cm, peak, (unsigned long)dt);
           if (captureCollect) printClip(clip, captured, triggerAt);
         }
         continue;
@@ -114,6 +114,11 @@ static void micTask(void *) {
 }
 
 bool micBegin(QueueHandle_t out) {
+  if (!ss_self_test()) {
+    Serial.println("RIDGE SELF-TEST FAILED: microphone classification disabled");
+    return false;
+  }
+  Serial.println("RIDGE SELF-TEST PASS (8 reviewed clips)");
   outQueue = out;
   startedAt = millis();
   i2s_config_t cfg = {};

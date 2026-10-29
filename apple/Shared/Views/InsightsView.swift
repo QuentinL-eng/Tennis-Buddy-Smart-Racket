@@ -249,7 +249,7 @@ struct InsightsView: View {
             HStack {
                 Label("Coach", systemImage: "sparkles").font(.headline)
                 Spacer()
-                Text("Ask questions, plan drills").font(.caption).foregroundStyle(.secondary)
+                Text("Ask, test what-ifs, plan drills").font(.caption).foregroundStyle(.secondary)
                 Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }
             .padding(16)
@@ -275,6 +275,8 @@ struct CoachScreen: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                toolRow("What if", "slider.horizontal.3", "Test a technique change on your swing") { WhatIfView() }
+                toolRow("Memory", "brain", "What the coach remembers about you") { MemoryView() }
                 if let latest = sessions.last(where: { $0.summary.count > 0 }) { coachChat(latest) }
                 museSettings
             }
@@ -283,13 +285,29 @@ struct CoachScreen: View {
         .navigationTitle("Coach")
     }
 
-        private func coachChat(_ session: SessionRecord) -> some View {
+    private func toolRow<D: View>(_ title: String, _ symbol: String, _ detail: String,
+                                  @ViewBuilder destination: @escaping () -> D) -> some View {
+        NavigationLink(destination: destination) {
+            HStack {
+                Label(title, systemImage: symbol).font(.headline)
+                Spacer()
+                Text(detail).font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.trailing)
+                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+            }
+            .padding(16)
+            .background(.background.secondary, in: .rect(cornerRadius: 18))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func coachChat(_ session: SessionRecord) -> some View {
         GroupBox {
             VStack(alignment: .leading, spacing: 12) {
                 Text("Ask about your latest session").font(.subheadline).foregroundStyle(.secondary)
-                ForEach(Array(chat.enumerated()), id: \.offset) { _, item in
+                ForEach(Array(chat.enumerated()), id: \.offset) { index, item in
                     Text(item.q).font(.subheadline.weight(.semibold))
                     Text(item.a).textSelection(.enabled)
+                    if index == chat.count - 1 { RememberedNotes() }
                     Divider()
                 }
                 HStack {
@@ -299,9 +317,12 @@ struct CoachScreen: View {
                     Button("Ask", systemImage: "paperplane.fill") { ask(session) }
                         .disabled(question.isEmpty || coach.isWorking)
                 }
-                HStack {
-                    ForEach(["What's my weakest stroke?", "Am I getting tired?", "What if I swing 5% slower?"], id: \.self) { s in
-                        Button(s) { question = s; ask(session) }.buttonStyle(.bordered).font(.caption)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack {
+                        ForEach(["What's my weakest stroke?", "Am I getting tired?", "Show my last 5 off-center hits",
+                                 "Is the racket working right?", "What if I swing 5% slower?"], id: \.self) { s in
+                            Button(s) { question = s; ask(session) }.buttonStyle(.bordered).font(.caption)
+                        }
                     }
                 }
                 Text("What-if results estimate speed and spin using assumed incoming ball speeds. Ball flight and landing are not modeled.")
@@ -352,7 +373,7 @@ struct CoachScreen: View {
                 Toggle("Use Muse online", isOn: $coach.museEnabled)
                     .disabled(!coach.museAvailable || coach.isWorking)
                 Text(coach.museAvailable
-                     ? "Muse sends your question and the shot statistics it asks for to Meta. Health data and session notes are excluded."
+                     ? "Muse sends your question and the shot data, racket readings and coach notes it asks for to Meta. Health data and session notes are excluded; turn off coach notes under Memory."
                      : "Sign in under Account to use the online coach. Until then the built-in coach answers offline.")
                     .font(.caption).foregroundStyle(.secondary)
                 if let reason = coach.lastFallbackReason {

@@ -50,6 +50,9 @@ final class AppModel {
                          samplesPerSecond: 0)
     var lastShot: ShotMetrics?
     var shotFlashID = UUID()
+    /// The last few seconds of live readings (~30 per second), for the coach's `read_live_sensors` tool.
+    @ObservationIgnored private(set) var liveHistory: [(date: Date, state: LiveState)] = []
+    static let liveHistorySeconds: TimeInterval = 5
 
     // MARK: Session
     var signedInPlayerName: String?
@@ -67,6 +70,28 @@ final class AppModel {
     static let calibrationKey = "calibration.lsm6dsv320x"
     var calibration: Calibration { didSet { save(calibration, key: Self.calibrationKey); engine.calibration = calibration } }
     var profile: RacketProfile { didSet { save(profile, key: "profile"); engine.profile = profile } }
+    // MARK: Score
+    /// The match being scored, nil when none is running. Kept across launches.
+    var match: ScoreTracker? { didSet { saveOrRemove(match, key: "match"); onMatchChangeForWatch?(match) } }
+    /// Recorded tap directions for the wide and narrow sides of the handle; nil until the taps are calibrated.
+    var tapCalibration: TapCalibration? { didSet { saveOrRemove(tapCalibration, key: "tapCalibration") } }
+    /// The recorded tap calibration, or a guess from the racket calibration until there is one.
+    var effectiveTapCalibration: TapCalibration { tapCalibration ?? .fromRacket(calibration) }
+    /// What the last handle tap did, for the on-screen confirmation.
+    var lastTapFeedback: TapFeedback?
+    /// Set by the tap calibration sheet: taps go there instead of the score.
+    var onCalibrationTap: ((RacketProtocol.TapGesture) -> Void)?
+    var onMatchChangeForWatch: ((ScoreTracker?) -> Void)?
+    private let announcer = ScoreAnnouncer()
+
+    struct TapFeedback: Equatable {
+        var id = UUID()
+        var date = Date()
+        var text: String
+        /// False when the tap wasn't a score command.
+        var recognized: Bool
+    }
+
     /// Everyone who hits with this racket. Sessions are tagged with the player active when they start.
     var players: [PlayerProfile] { didSet { save(players, key: "players"); applyActivePlayer() } }
     var activePlayerID: UUID { didSet { UserDefaults.standard.set(activePlayerID.uuidString, forKey: "activePlayerID"); applyActivePlayer() } }
@@ -100,6 +125,7 @@ final class AppModel {
             self.isConnected = state == .connected
         }
         ble.onStatus = { [weak self] status in self?.racketStatus = status }
+        ble.onTap = { [weak self] tap in self?.handleTap(tap) }
         ble.onFirmwareUpdateSupport = { [weak self] supported in self?.racketSupportsFirmwareUpdate = supported }
         ble.onFirmwareUpdate = { [weak self] state in
             self?.firmwareUpdate = state
@@ -150,12 +176,14 @@ final class AppModel {
         players = initialPlayers
         activePlayerID = UserDefaults.standard.string(forKey: "activePlayerID").flatMap(UUID.init) ?? initialPlayers[0].id
         impactModel = Self.load(key: Self.impactModelKey) ?? ImpactModel()
+        match = Self.load(key: "match")
+        tapCalibration = Self.load(key: "tapCalibration")
         profile.rightHanded = players.first { $0.id == activePlayerID }?.rightHanded ?? true
         engine.calibration = calibration
         engine.profile = profile
         engine.impactModel = impactModel
 
-        engine.onLive = { [weak self] state in self?.live = state }
+        engine.onLive = { [weak self] state in self?.receiveLive(state) }
         engine.onShot = { [weak self] shot in self?.handle(shot) }
         let recorder = recorder
         engine.onRaw = { batch in recorder.append(batch) }
@@ -199,6 +227,15 @@ final class AppModel {
     }
 
     func recenter() { engine.recenter() }
+
+    private func receiveLive(_ state: LiveState) {
+        live = state
+        let now = Date()
+        liveHistory.append((now, state))
+        if let first = liveHistory.firstIndex(where: { now.timeIntervalSince($0.date) <= Self.liveHistorySeconds }), first > 0 {
+            liveHistory.removeFirst(first)
+        }
+    }
 
     /// Firmware 1.5+ finds hits on the racket and sends only the samples around each one, which keeps the link
     /// light and shots quick. Calibration and a manual raw recording need the full stream instead.
@@ -347,10 +384,88 @@ final class AppModel {
         onSessionChangeForWatch?(false)
     }
 
+    /// A point from the Watch or the on-screen buttons. Goes to the match score when one is running.
     func logPoint(won: Bool) {
-        guard let session = activeSession else { return }
-        if won { session.pointsWon += 1 } else { session.pointsLost += 1 }
+        if match != nil {
+            award(won ? .me : .opponent)
+        } else {
+            countSessionPoint(won ? .me : .opponent, by: 1)
+        }
     }
+
+    // MARK: - Score
+
+    func startMatch(rules: MatchRules) {
+        match = ScoreTracker(rules: rules)
+        lastTapFeedback = nil
+        announcer.say("New match. Double tap a wide side when you win a point, single tap a narrow side when you lose one.")
+    }
+
+    func endMatch() {
+        match = nil
+        lastTapFeedback = nil
+    }
+
+    func award(_ p: Player) {
+        guard var m = match else { return }
+        guard m.score.winner == nil else {
+            announcer.say("The match is over. Triple tap to undo the last point.")
+            return
+        }
+        let event = m.award(p)
+        match = m
+        countSessionPoint(p, by: 1)
+        announcer.say(m.score.announcement(for: event))
+    }
+
+    func undoPoint() {
+        guard var m = match, let undone = m.undo() else {
+            announcer.say("Nothing to undo.")
+            return
+        }
+        match = m
+        countSessionPoint(undone, by: -1)
+        announcer.say("Point removed. " + m.score.announcement(for: .point))
+    }
+
+    /// Mirrors points into the session record, so History shows them even without a match.
+    private func countSessionPoint(_ p: Player, by delta: Int) {
+        guard let session = activeSession else { return }
+        if p == .me { session.pointsWon = max(0, session.pointsWon + delta) }
+        else { session.pointsLost = max(0, session.pointsLost + delta) }
+    }
+
+    /// Handle taps: double tap on a wide side = point won, single tap on a narrow side = point lost,
+    /// triple tap = undo.
+    private func handleTap(_ tap: RacketProtocol.TapGesture) {
+        if let calibrate = onCalibrationTap {
+            calibrate(tap)
+            return
+        }
+        guard match != nil else { return }
+        let cal = effectiveTapCalibration
+        // Until the taps are calibrated the sides are a guess, so any side counts.
+        let side = cal.isCalibrated ? cal.classify(tap.direction)?.side : nil
+        guard let command = ScoreCommand.from(count: tap.count, side: side) else {
+            let what = tap.count == 1 ? "Single tap" : "Double tap"
+            lastTapFeedback = TapFeedback(text: "\(what) on \(side.map { $0.label.lowercased() } ?? "an unclear side") — not a score tap",
+                                          recognized: false)
+            announcer.say("Didn't catch that.")
+            return
+        }
+        switch command {
+        case .won:
+            award(.me)
+            lastTapFeedback = TapFeedback(text: "Double tap, wide side: point to you", recognized: true)
+        case .lost:
+            award(.opponent)
+            lastTapFeedback = TapFeedback(text: "Single tap, narrow side: point to your opponent", recognized: true)
+        case .undo:
+            undoPoint()
+            lastTapFeedback = TapFeedback(text: "Triple tap: last point undone", recognized: true)
+        }
+    }
+
 
     /// Heart rate and calories from the Watch workout, which may arrive just after the session ends.
     func recordHealth(averageHeartRate: Double, calories: Double, sessionID: UUID? = nil) {
@@ -410,13 +525,45 @@ final class AppModel {
     /// so test data is captured without touching the Recorder toggle.
     @ObservationIgnored private var autoRecording = false
     @ObservationIgnored private var shotLog: FileHandle?
+    @ObservationIgnored private var linkAtStart: (stats: RacketBLE.LinkStats, date: Date)?
+
+    /// Written next to each racket recording as `<name>.link.json`: what the link and sensors were set to, and how
+    /// much of the stream arrived, so a recording's gaps and clipping can be explained afterwards.
+    private struct LinkLog: Encodable {
+        var firmware: String?
+        var gyro4000dps: Bool?
+        var highGRange: UInt8?
+        var impactMode: Bool?
+        var racketDroppedPackets: UInt16?
+        var seconds: Double
+        var link: RacketBLE.LinkStats
+    }
+
+    private func startRecorder(in dir: URL, name: String) -> Bool {
+        guard (try? recorder.start(in: dir, name: name)) != nil else { return false }
+        linkAtStart = sourceKind == .racket ? (ble.linkStats(), Date()) : nil
+        return true
+    }
+
+    private func stopRecorder() {
+        let url = recorder.stop()
+        guard let url, let start = linkAtStart else { return }
+        linkAtStart = nil
+        let s = racketStatus
+        let log = LinkLog(firmware: s?.firmwareVersion, gyro4000dps: s?.gyro4000, highGRange: s?.h3lisRange,
+                          impactMode: s?.impactMode, racketDroppedPackets: s?.droppedPackets,
+                          seconds: Date().timeIntervalSince(start.date), link: ble.linkStats() - start.stats)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try? encoder.encode(log).write(to: url.deletingPathExtension().appendingPathExtension("link.json"))
+    }
 
     private func beginAutoRecording(session: SessionRecord) {
         let name = "session-" + session.startDate.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
             .replacingOccurrences(of: ":", with: "") + "-" + sourceKind.rawValue
         let dir = Self.recordingsDirectory
         if !recorder.isRecording {
-            if (try? recorder.start(in: dir, name: name)) != nil { autoRecording = true; isRecording = true }
+            if startRecorder(in: dir, name: name) { autoRecording = true; isRecording = true }
         }
         let url = dir.appendingPathComponent(name).appendingPathExtension("shots.jsonl")
         FileManager.default.createFile(atPath: url.path, contents: nil)
@@ -424,7 +571,7 @@ final class AppModel {
     }
 
     private func endAutoRecording() {
-        if autoRecording { recorder.stop(); isRecording = false; autoRecording = false }
+        if autoRecording { stopRecorder(); isRecording = false; autoRecording = false }
         try? shotLog?.close()
         shotLog = nil
         refreshRecordings()
@@ -441,13 +588,13 @@ final class AppModel {
 
     func toggleRecording() {
         if recorder.isRecording {
-            recorder.stop()
+            stopRecorder()
             isRecording = false
             refreshRecordings()
         } else {
             let name = "session-" + Date().formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
                 .replacingOccurrences(of: ":", with: "")
-            try? recorder.start(in: Self.recordingsDirectory, name: name)
+            _ = startRecorder(in: Self.recordingsDirectory, name: name)
             isRecording = recorder.isRecording
         }
         updateStreamMode()
@@ -470,6 +617,10 @@ final class AppModel {
     }
 
     // MARK: - Persistence helpers
+
+    private func saveOrRemove<T: Encodable>(_ value: T?, key: String) {
+        if let value { save(value, key: key) } else { UserDefaults.standard.removeObject(forKey: key) }
+    }
 
     private func save<T: Encodable>(_ value: T, key: String) {
         if let data = try? JSONEncoder().encode(value) { UserDefaults.standard.set(data, forKey: key) }

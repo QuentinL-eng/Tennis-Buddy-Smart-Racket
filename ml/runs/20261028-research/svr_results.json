@@ -1,0 +1,18 @@
+[
+  {
+    "features": "current156",
+    "C": 1,
+    "epsilon_cm": 0.5,
+    "max_dual_constraint_error": 2.7196023211217835e-11,
+    "mae_cm": 2.114938937432634,
+    "n": 274,
+    "accuracy": 0.6386861313868614,
+    "balanced_accuracy": 0.5675479696564034,
+    "sweet_recall": 0.23148148148148148,
+    "off_centre_recall": 0.9036144578313253,
+    "tp": 25,
+    "tn": 150,
+    "fp": 16,
+    "fn": 83
+  }
+]
