@@ -70,8 +70,12 @@ public struct ShotAnalyzer: Sendable {
         } else if peakGyro < 9 {
             type = .volley
         } else {
-            let ccw = omegaW.z > 0
-            type = (ccw == profile.rightHanded) ? .forehand : .backhand
+            if profile.forehandBodySign != 0 {
+                type = wPre.y * profile.forehandBodySign > 0 ? .forehand : .backhand
+            } else {
+                let ccw = omegaW.z > 0
+                type = (ccw == profile.rightHanded) ? .forehand : .backhand
+            }
         }
 
         // ---- Impact location ----
@@ -107,7 +111,7 @@ public struct ShotAnalyzer: Sendable {
         var impactY = min(14, ringNorm * model.longitudinalGain)
         if abs(jolt) < model.joltDeadband { impactY *= 0.3 } else if jolt > 0 { impactY = -impactY }
 
-        let features = ImpactFeatures(rollRatio: rollRatio, ringNorm: ringNorm, jolt: jolt, impulse: impulse)
+        let features = ImpactFeatures(rollRatio: rollRatio, ringNorm: ringNorm, jolt: jolt, impulse: impulse, spinAxisY: wPre.y)
         let distance = (impactX * impactX + impactY * impactY).squareRoot()
 
         // ---- Ball speed ----

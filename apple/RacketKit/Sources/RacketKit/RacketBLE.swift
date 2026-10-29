@@ -76,6 +76,7 @@ public final class RacketBLE: NSObject, SampleSource, ImpactSource, @unchecked S
 
     // Firmware update (all on `queue`).
     private var otaControl: CBCharacteristic?
+    private var tapSubscribeRetries = 0
     private var otaData: CBCharacteristic?
     private var otaImage: FirmwareImage?
     private var otaSent = 0
@@ -409,6 +410,7 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
             case statusUUID: peripheral.setNotifyValue(true, for: c); peripheral.readValue(for: c)
             case shotUUID: peripheral.setNotifyValue(true, for: c)
             case tapUUID:
+                tapSubscribeRetries = 0
                 peripheral.setNotifyValue(true, for: c)
                 if c.properties.contains(.write) { otaControl = c }
             case controlUUID:
@@ -463,6 +465,17 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
     public func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic,
                            error: Error?) {
         guard characteristic.uuid == otaControlUUID, let error else { return }
+        // On tap firmware 0006 is the notify-only tap characteristic, not an update channel. The racket can
+        // answer a subscribe with "insufficient resources" while its BLE buffers are busy streaming, so retry.
+        if characteristic !== otaControl {
+            tapSubscribeRetries += 1
+            guard tapSubscribeRetries <= 10 else { return }
+            queue.asyncAfter(deadline: .now() + 0.5) { [weak self, weak peripheral] in
+                guard let self, let peripheral, self.peripheral === peripheral else { return }
+                peripheral.setNotifyValue(true, for: characteristic)
+            }
+            return
+        }
         let failure = FirmwareUpdateState.failed("Couldn't subscribe to the racket's update replies: \(error.localizedDescription)")
         if otaImage != nil { endUpdate(failure) } else { reportUpdate(failure) }
     }

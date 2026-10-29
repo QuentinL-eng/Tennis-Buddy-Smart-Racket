@@ -40,12 +40,16 @@ public struct ImpactFeatures: Codable, Sendable, Equatable {
     public var jolt: Float
     /// Size of the swing-axis rotation jump, rad/s (impact strength proxy).
     public var impulse: Float
+    /// Racket-frame rotation about the across-face axis just before contact, rad/s. Its sign tells forehand from
+    /// backhand without the orientation estimate. Optional so older saved shots still decode.
+    public var spinAxisY: Float?
 
-    public init(rollRatio: Float, ringNorm: Float, jolt: Float, impulse: Float) {
+    public init(rollRatio: Float, ringNorm: Float, jolt: Float, impulse: Float, spinAxisY: Float? = nil) {
         self.rollRatio = rollRatio
         self.ringNorm = ringNorm
         self.jolt = jolt
         self.impulse = impulse
+        self.spinAxisY = spinAxisY
     }
 }
 

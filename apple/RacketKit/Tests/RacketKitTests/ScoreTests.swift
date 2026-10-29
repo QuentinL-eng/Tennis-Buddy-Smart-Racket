@@ -118,7 +118,8 @@ final class TapSideTests: XCTestCase {
         XCTAssertEqual(ScoreCommand.from(count: 4, side: .wide), .undo)
         XCTAssertNil(ScoreCommand.from(count: 1, side: .wide))
         XCTAssertNil(ScoreCommand.from(count: 2, side: .narrow))
-        XCTAssertNil(ScoreCommand.from(count: 2, side: nil))
+        XCTAssertEqual(ScoreCommand.from(count: 2, side: nil), .won)
+        XCTAssertEqual(ScoreCommand.from(count: 1, side: nil), .lost)
     }
 
     func testFitIgnoresSignAndNoise() throws {
