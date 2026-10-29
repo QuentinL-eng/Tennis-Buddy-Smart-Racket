@@ -59,6 +59,7 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $tab) {
             Tab("Live", systemImage: "figure.tennis", value: "live") { NavigationStack { LiveView() } }
+            Tab("Score", systemImage: "trophy", value: "score") { NavigationStack { ScoreView() } }
             Tab("Together", systemImage: "person.2", value: "together") { NavigationStack { SharedSessionView() } }
             Tab("History", systemImage: "clock.arrow.circlepath", value: "history") { HistoryView() }
             Tab("Insights", systemImage: "sparkles", value: "insights") { NavigationStack { InsightsView() } }

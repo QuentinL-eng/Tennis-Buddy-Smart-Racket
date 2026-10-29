@@ -14,7 +14,7 @@ struct ScoreView: View {
         ScrollView {
             VStack(spacing: 16) {
                 if let match = model.match {
-                    scoreboard(match)
+                    if match.score.rules.simpleCount { tapZones(match) } else { scoreboard(match) }
                     pointButtons(match)
                     tapFeedback
                 } else {
@@ -47,13 +47,14 @@ struct ScoreView: View {
 
     private func scoreboard(_ match: ScoreTracker) -> some View {
         let s = match.score
+        let simple = s.rules.simpleCount
         return VStack(spacing: 12) {
             Grid(horizontalSpacing: 14, verticalSpacing: 10) {
                 GridRow {
                     Text("").gridColumnAlignment(.leading)
                     ForEach(s.sets.indices, id: \.self) { i in Text("Set \(i + 1)") }
                     if s.winner == nil {
-                        Text(s.isMatchTiebreak ? "" : "Games")
+                        if !simple { Text(s.isMatchTiebreak ? "" : "Games") }
                         Text(s.isTiebreak ? "Tiebreak" : "Points")
                     }
                 }
@@ -73,7 +74,9 @@ struct ScoreView: View {
                                 .foregroundStyle(set[p] > set[p.other] ? .primary : .secondary)
                         }
                         if s.winner == nil {
-                            Text(s.isMatchTiebreak ? "" : "\(s.games[p])").font(.title2.monospacedDigit().bold())
+                            if !simple {
+                                Text(s.isMatchTiebreak ? "" : "\(s.games[p])").font(.title2.monospacedDigit().bold())
+                            }
                             Text(s.pointCall(p))
                                 .font(.system(size: 34, weight: .bold, design: .rounded).monospacedDigit())
                                 .foregroundStyle(Color.accentColor)
@@ -83,13 +86,34 @@ struct ScoreView: View {
                 }
             }
             .animation(.snappy, value: s)
-            Text(s.winner == nil ? s.pointText : (s.winner == .me ? "You won the match" : "Your opponent won the match"))
+            Text(simple ? "Tap a side to add a point" : s.winner == nil ? s.pointText : (s.winner == .me ? "You won the match" : "Your opponent won the match"))
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
         }
         .padding(18)
         .frame(maxWidth: .infinity)
         .background(.background.secondary, in: .rect(cornerRadius: 20))
+    }
+
+    /// Big tap targets: tap the left half for your point, the right half for your opponent's.
+    private func tapZones(_ match: ScoreTracker) -> some View {
+        HStack(spacing: 10) {
+            ForEach(Player.allCases, id: \.self) { p in
+                Button { model.award(p) } label: {
+                    VStack(spacing: 4) {
+                        Text(p == .me ? "You" : "Opponent").font(.subheadline.weight(.medium))
+                        Text("\(match.score.points[p])")
+                            .font(.system(size: 64, weight: .bold, design: .rounded).monospacedDigit())
+                            .contentTransition(.numericText())
+                        Text("Tap +1").font(.caption).foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 130)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(p == .me ? .green : .red)
+            }
+        }
+        .animation(.snappy, value: match.score)
     }
 
     private func pointButtons(_ match: ScoreTracker) -> some View {
@@ -134,14 +158,21 @@ struct ScoreView: View {
         VStack(spacing: 14) {
             Image(systemName: "trophy").font(.system(size: 48)).foregroundStyle(Color.accentColor)
             Text("Keep score with the racket").font(.title2.bold())
-            Picker("Format", selection: $rules.setsToWin) {
-                Text("Best of 3 sets").tag(2)
-                Text("One set").tag(1)
+            Picker("Scoring", selection: $rules.simpleCount) {
+                Text("Tennis scoring").tag(false)
+                Text("Just count points").tag(true)
             }
             .pickerStyle(.segmented)
-            Toggle("No-ad scoring", isOn: $rules.noAd)
-            if rules.setsToWin > 1 {
-                Toggle("Match tiebreak instead of a third set", isOn: $rules.matchTiebreak)
+            if !rules.simpleCount {
+                Picker("Format", selection: $rules.setsToWin) {
+                    Text("Best of 3 sets").tag(2)
+                    Text("One set").tag(1)
+                }
+                .pickerStyle(.segmented)
+                Toggle("No-ad scoring", isOn: $rules.noAd)
+                if rules.setsToWin > 1 {
+                    Toggle("Match tiebreak instead of a third set", isOn: $rules.matchTiebreak)
+                }
             }
             Button {
                 withAnimation(.snappy) { model.startMatch(rules: rules) }

@@ -16,10 +16,12 @@ final class WatchBridge: NSObject, WCSessionDelegate {
         guard WCSession.isSupported() else { return }
         WCSession.default.delegate = self
         WCSession.default.activate()
+        sendLocalScore(model.match)
 
         model.onShotForWatch = { [weak self] shot in self?.send(shot: shot) }
         model.onSessionChangeForWatch = { [weak self] active in self?.sendSessionState(active: active) }
         model.onDrillChangeForWatch = { [weak self] drill in self?.send(drill: drill) }
+        model.onMatchChangeForWatch = { [weak self] match in self?.sendLocalScore(match) }
     }
 
     private func send(shot: ShotMetrics) {
@@ -41,6 +43,18 @@ final class WatchBridge: NSObject, WCSessionDelegate {
         try? WCSession.default.updateApplicationContext(ctx)
         if WCSession.default.isReachable {
             WCSession.default.sendMessage(["type": "drill", "drill": data], replyHandler: nil)
+        }
+    }
+
+    /// The match scored on this iPhone (buttons or racket taps), so the Watch shows the same score.
+    func sendLocalScore(_ match: ScoreTracker?) {
+        guard WCSession.default.activationState == .activated else { return }
+        let data = match.flatMap { try? JSONEncoder().encode($0) } ?? Data()
+        var ctx = WCSession.default.applicationContext
+        ctx["localScore"] = data
+        try? WCSession.default.updateApplicationContext(ctx)
+        if WCSession.default.isReachable {
+            WCSession.default.sendMessage(["type": "localScore", "score": data], replyHandler: nil)
         }
     }
 

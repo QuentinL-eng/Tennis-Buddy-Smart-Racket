@@ -11,6 +11,9 @@ struct RacketView: View {
         Form {
             Section("Your racket") {
                 NavigationLink { RacketSkinView() } label: { Label("Racket skins", systemImage: "paintpalette") }
+                #if os(iOS)
+                NavigationLink { GlassesView() } label: { Label("Glasses", systemImage: "eyeglasses") }
+                #endif
                 NavigationLink { AccountView() } label: { Label("Account", systemImage: "person.crop.circle") }
             }
 
@@ -72,6 +75,24 @@ struct RacketView: View {
                     Picker("Plays", selection: $model.players[index].rightHanded) {
                         Text("Right-handed").tag(true)
                         Text("Left-handed").tag(false)
+                    }
+                    LabeledContent("Forehand") {
+                        Text(model.players[index].forehandBodySign == nil ? "Not taught" : "Taught")
+                            .foregroundStyle(.secondary)
+                    }
+                    if model.teachingForehand {
+                        Text(model.teachMessage).font(.footnote).foregroundStyle(.secondary)
+                        Button("Cancel teaching", role: .cancel) { model.cancelTeachingForehand() }
+                    } else {
+                        Button(model.players[index].forehandBodySign == nil ? "Teach forehand" : "Re-teach forehand",
+                               systemImage: "figure.tennis") { model.beginTeachingForehand() }
+                            .disabled(model.isSessionActive)
+                        if model.players[index].forehandBodySign != nil {
+                            Button("Forget forehand", role: .destructive) { model.clearTaughtForehand() }
+                        }
+                        if !model.teachMessage.isEmpty {
+                            Text(model.teachMessage).font(.footnote).foregroundStyle(.secondary)
+                        }
                     }
                     LabeledContent("Height") {
                         HStack {
