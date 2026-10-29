@@ -22,6 +22,14 @@ public struct ShotAnalyzer: Sendable {
     public var profile: RacketProfile
     public var model: ImpactModel
 
+    // Shot-type tuning from a labeled session (data/room-2026-10-29: 22 hits, light, indoors). Volleys turned the
+    // racket 62–84° in the 350 ms before contact, groundstrokes and serves 102–149°. Fitted on that one session.
+    static let swingSpan: Double = 0.35          // fits in the racket's 384 ms impact window
+    static let volleyMaxSwingDeg: Float = 93
+    static let serveMaxVertical: Float = -0.1
+    /// Speed of the ball coming in, for the ball-speed estimate. Unknown without tracking it, so the estimate is
+    /// the speed the racket gives a still ball; rally balls arrive with pace this leaves out.
+    static let incomingBallMs: Float = 0
     public init(profile: RacketProfile, model: ImpactModel) {
         self.profile = profile
         self.model = model
@@ -43,11 +51,12 @@ public struct ShotAnalyzer: Sendable {
         let wPre = mean((i0 - 10)..<(i0 - 2)) { $0.gyro }
         let wPost = mean((i0 + 12)..<(i0 + 30)) { $0.gyro }
         let dW = wPost - wPre
-        let peakGyro = window[max(0, i0 - 300)..<i0].map { simd_length($0.gyro) }.max() ?? 0
+        let swingDeg = Self.swingAngleDeg(window, before: i0)
 
-        // Racket speed at the sweet spot.
+        // Racket speed at the sweet spot. Rotation about the shaft (x) only spins the head in place, so only the
+        // rotation across it moves the sweet spot; on some hits it is nearly half of |ω|.
         let omega = simd_length(wPre)
-        let vRacket = omega * profile.effectiveRadiusM          // m/s
+        let vRacket = simd_length(SIMD2(wPre.y, wPre.z)) * profile.effectiveRadiusM   // m/s
 
         // World-frame geometry at contact.
         let up = SIMD3<Float>(0, 0, 1)
@@ -61,21 +70,26 @@ public struct ShotAnalyzer: Sendable {
         let faceAngle = asin(max(-1, min(1, simd_dot(hitNormal, up)))) * 180 / .pi
         let pathAngle = asin(max(-1, min(1, simd_dot(vDir, up)))) * 180 / .pi
 
-        // Shot type.
+        // Shot type. A volley is a short swing. Turning about the vertical the forehand way (counter-clockwise from
+        // above for a right-hander) is a forehand; the backhand way is a backhand, unless the forehand face hit the
+        // ball: then the racket came over the top, which is a serve. Telling the faces apart needs the player's
+        // forehand sign (taught, or learned by AppModel); until then serves need the tip up at contact.
         let type: ShotType
+        let forehandTurn = (omegaW.z > 0) == profile.rightHanded
+        // Share of the rotation about the vertical, forehand way positive. Serves were -0.21 to -0.82; a forehand
+        // can be near 0 (+0.06 in the labeled session), so only a clear reverse turn counts as a serve.
+        let forehandVertical = (omega > 1e-3 ? omegaW.z / omega : 0) * (profile.rightHanded ? 1 : -1)
         if calibrationMode {
             type = .calibration
+        } else if swingDeg < Self.volleyMaxSwingDeg {
+            type = .volley
+        } else if profile.forehandBodySign != 0 {
+            let forehandFace = wPre.y * profile.forehandBodySign > 0
+            type = !forehandFace ? .backhand : (forehandVertical < Self.serveMaxVertical ? .serve : .forehand)
         } else if simd_dot(tipW, up) > 0.5 && omega > 8 {
             type = .serve
-        } else if peakGyro < 9 {
-            type = .volley
         } else {
-            if profile.forehandBodySign != 0 {
-                type = wPre.y * profile.forehandBodySign > 0 ? .forehand : .backhand
-            } else {
-                let ccw = omegaW.z > 0
-                type = (ccw == profile.rightHanded) ? .forehand : .backhand
-            }
+            type = forehandTurn ? .forehand : .backhand
         }
 
         // ---- Impact location ----
@@ -111,13 +125,14 @@ public struct ShotAnalyzer: Sendable {
         var impactY = min(14, ringNorm * model.longitudinalGain)
         if abs(jolt) < model.joltDeadband { impactY *= 0.3 } else if jolt > 0 { impactY = -impactY }
 
-        let features = ImpactFeatures(rollRatio: rollRatio, ringNorm: ringNorm, jolt: jolt, impulse: impulse, spinAxisY: wPre.y)
+        var features = ImpactFeatures(rollRatio: rollRatio, ringNorm: ringNorm, jolt: jolt, impulse: impulse, spinAxisY: wPre.y)
+        features.verticalSpin = forehandVertical
+        features.swingDeg = swingDeg
         let distance = (impactX * impactX + impactY * impactY).squareRoot()
 
         // ---- Ball speed ----
         let e = model.acorCenter * max(0.55, 1 - 0.035 * distance)
-        let vIn: Float = type == .serve ? 0 : (type == .volley ? 15 : 12)
-        let vBall = calibrationMode ? 0 : e * vIn + (1 + e) * vRacket
+        let vBall = calibrationMode ? 0 : e * Self.incomingBallMs + (1 + e) * vRacket
 
         // ---- Spin: brushing speed along the strings ----
         let along = vDir - simd_dot(vDir, hitNormal) * hitNormal
@@ -141,5 +156,20 @@ public struct ShotAnalyzer: Sendable {
             peakG: Double(peakG),
             gyroSaturated: saturated,
             features: features)
+    }
+
+    /// Degrees the racket turned in the `swingSpan` before sample `i0`. Uses sample times, so gaps in a raw stream
+    /// that lost packets count for their real length (up to 60 ms each).
+    static func swingAngleDeg(_ w: [IMUSample], before i0: Int) -> Float {
+        guard i0 > 0, i0 < w.count else { return 0 }
+        let start = w[i0].time - swingSpan
+        var angle: Float = 0
+        var k = i0 - 1
+        while k > 0, w[k - 1].time > start {
+            let dt = Float(min(w[k].time - w[k - 1].time, 0.06))
+            angle += (simd_length(w[k].gyro) + simd_length(w[k - 1].gyro)) / 2 * dt
+            k -= 1
+        }
+        return angle * 180 / .pi
     }
 }
