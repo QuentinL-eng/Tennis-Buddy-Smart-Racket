@@ -44,3 +44,6 @@ marketing/*.mp4
 marketing/*.mp3
 backend/supabase/.temp/
 *.bak
+
+# Licensed song for RevealSong: supplied by the owner, not redistributable in this public repo
+video/public/audio/keep-it-movin.mp3
