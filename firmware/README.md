@@ -37,3 +37,35 @@ Checklist:
 - **NOT FOUND:** check SDA = D4, SCL = D5, 3V3, GND. The LSM6DSV320X must be at 0x6A (SDO to GND, CS to 3V3).
 - **Power button** cuts the battery, so the battery only charges while switched ON.
 - **Antenna:** plug the U.FL antenna in before testing range; without it, range is a few cm.
+
+## Shots, windows and the backlog (firmware 1.6)
+
+With an app that knows it (`TB_STREAM_IMPACTS_ACKED`, protocol in `include/protocol.h`), each hit goes out as:
+
+1. `TBHit` the moment it is detected.
+2. `TBShotSummary` (80 bytes): the whole shot, computed on the racket by `src/shot.cpp`, a port of the app's
+   `ShotAnalyzer` that uses the calibration and profile the app sends (`TB_CMD_SHOT_CONFIG`). The app shows the shot
+   from this alone.
+3. The 448-sample window, as backlog: 56 `TBWindowChunkAcked` that the app acks (`TB_CMD_WINDOW_ACK`). Missing
+   chunks are re-requested (`TB_CMD_WINDOW_RESEND`), and unacked windows go again after 5 s.
+
+`src/backlog.cpp` holds up to 6 windows in RAM. When they are all taken (slow link), or no phone is connected and the
+racket has been still for 3 s, windows are written to the unused `spiffs` partition (1.375 MB, 117 windows) and
+sent oldest first once the link is free, across reboots. Erasing flash stalls the CPU for tens of ms, so it only
+happens while the racket is idle; writes go one 256-byte page per loop pass. Once an app has asked for this mode,
+the racket also captures windows with no phone connected (flag kept in NVS).
+
+The status line ends with the backlog counters (`acked`, `resent`, flash `waiting` / `spilled` / `lost`), `shot max`
+(µs per summary) and free heap.
+
+Apps from before 1.6 still get plain impact mode: windows sent once, no summaries.
+
+## Host tests
+
+```bash
+clang++ -std=c++17 -fsanitize=address,undefined -Iinclude -Isrc -o /tmp/backlog_test tools/backlog_test/backlog_test.cpp src/backlog.cpp && /tmp/backlog_test
+```
+
+`tools/backlog_test` runs the backlog against a fake flash that, like the real one, can only clear bits between
+erases. The shot analyzer is checked against the Swift one by RacketKit's `ShotParityTests` (`swift test` in
+`apple/RacketKit`), which builds `tools/shot_parity` itself.
