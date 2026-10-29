@@ -33,6 +33,23 @@ final class FrameProcessor: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     /// into the 4.17 ms frame budget.
     var onDetections: ((UInt64, [BallDetection]) -> Void)?
 
+    private let loggerLock = NSLock()
+    private var sessionLogger: SessionLogger?
+
+    /// The recording session, if one is active. Read once per frame.
+    var logger: SessionLogger? {
+        get {
+            loggerLock.lock()
+            defer { loggerLock.unlock() }
+            return sessionLogger
+        }
+        set {
+            loggerLock.lock()
+            sessionLogger = newValue
+            loggerLock.unlock()
+        }
+    }
+
     private var capturedWidth = 0
     private var capturedHeight = 0
     private var pixelFormatWarning: String?
@@ -98,6 +115,7 @@ final class FrameProcessor: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
         // The presentation timestamp is the capture time. The callback time is
         // useless for the estimator: it carries scheduling jitter.
         let tCapture = CaptureClock.nanoseconds(from: CMSampleBufferGetPresentationTimeStamp(sampleBuffer))
+        logger?.appendVideo(sampleBuffer)
 
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else {
             stats.recordFrame(tNs: tCapture)
@@ -110,6 +128,8 @@ final class FrameProcessor: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
     /// synthetic `CVPixelBuffer` through exactly the code the phone runs.
     func process(pixelBuffer: CVPixelBuffer, tCapture: UInt64) {
         stats.recordFrame(tNs: tCapture)
+        let log = logger
+        log?.logFrame(tCapture)
 
         if let request = takeSnapshotRequest() {
             deliver(pixelBuffer, to: request)
@@ -169,6 +189,7 @@ final class FrameProcessor: NSObject, AVCaptureVideoDataOutputSampleBufferDelega
             stats.recordDetection(detection)
         }
         onDetections?(tCapture, detections)
+        log?.logDetections(tCapture, detections)
 
         // The detections are value types, so nothing here points into the pixel
         // buffer after the unlock below.
@@ -289,6 +310,11 @@ final class CameraController: NSObject, ObservableObject {
     @Published private(set) var snapshotNote = ""
     @Published private(set) var listening = false
 
+    @Published private(set) var sessionActive = false
+    @Published private(set) var sessionNote = ""
+    @Published private(set) var racket = RacketLink.Snapshot()
+    @Published var recordVideo = true
+
     @Published var detectorEnabled = true {
         didSet { applySettings() }
     }
@@ -305,6 +331,7 @@ final class CameraController: NSObject, ObservableObject {
     private let tracker = FlightTracker()
     private let trackerQueue = DispatchQueue(label: "tennisrobot.flight", qos: .userInitiated)
     private let motion = CMMotionManager()
+    private let racketLink = RacketLink()
     private let inputsLock = NSLock()
     private var inputs = TrackerInputs()
 
@@ -336,6 +363,10 @@ final class CameraController: NSObject, ObservableObject {
         ]
         output.setSampleBufferDelegate(processor, queue: videoQueue)
 
+        racketLink.onRecord = { [weak processor] t, kind, data in
+            processor?.logger?.logRacket(tNs: t, kind: kind, payload: data)
+        }
+
         startUITimer()
     }
 
@@ -350,6 +381,7 @@ final class CameraController: NSObject, ObservableObject {
         trackerQueue.async { [weak self] in self?.tracker.reset() }
         flight = nil
         startMotion()
+        racketLink.start()
         // The Task captures no state, only the answer, so it stays Sendable
         // without an isolation escape hatch on the controller.
         Task {
@@ -365,7 +397,71 @@ final class CameraController: NSObject, ObservableObject {
         }
     }
 
+    // MARK: Recording session
+
+    /// Begin logging frames, ball detections, racket packets and (optionally) the 240 fps video.
+    func startSession() {
+        guard isRunning, !sessionActive else { return }
+        let size = processor.capturedSize
+        var info: [String: Any] = [
+            "device": Self.deviceModel(),
+            "os": UIDevice.current.systemVersion,
+            "width": size.width,
+            "height": size.height,
+            "fps_requested": format.requestedFPS,
+            "fps_actual": format.actualFPS,
+            "rotation_angle": Self.rotationAngle(),
+            "thermal_at_start": thermalText,
+            "detector_enabled": detectorEnabled,
+            "racket_state_at_start": racket.state,
+        ]
+        if let fx = currentInputs.model?.fx { info["fx_px"] = fx }
+        guard let logger = SessionLogger(info: info, recordVideo: recordVideo) else {
+            sessionNote = "Could not create the session folder."
+            return
+        }
+        // The racket's last known settings go in first so the offline converter knows the ranges.
+        if let status = racketLink.latestStatus {
+            logger.logRacket(tNs: CaptureClock.nowNs, kind: .status, payload: status)
+        }
+        processor.logger = logger
+        sessionActive = true
+        sessionNote = "recording \(logger.name)"
+    }
+
+    func endSession() {
+        guard sessionActive, let logger = processor.logger else { return }
+        processor.logger = nil
+        sessionActive = false
+        let snapshot = processor.stats.snapshot()
+        let link = racketLink.snapshot()
+        sessionNote = "saving \(logger.name)…"
+        logger.finish(extra: [
+            "dropped_frames_total": snapshot.droppedFrames,
+            "racket_imu_packets": link.imuPackets,
+            "racket_lost_packets": link.lostPackets,
+            "thermal_at_stop": thermalText,
+        ]) { [weak self] summary in
+            DispatchQueue.main.async { self?.sessionNote = "\(logger.name): \(summary)" }
+        }
+    }
+
+    /// A timestamped note, e.g. a clap or a racket knock in view of the camera at the start.
+    func markEvent() {
+        processor.logger?.mark("mark")
+    }
+
+    private static func deviceModel() -> String {
+        var system = utsname()
+        uname(&system)
+        return withUnsafeBytes(of: &system.machine) { raw in
+            String(decoding: raw.prefix { $0 != 0 }, as: UTF8.self)
+        }
+    }
+
     func stop() {
+        endSession()
+        racketLink.stop()
         UIApplication.shared.isIdleTimerDisabled = false
         motion.stopDeviceMotionUpdates()
         trackerQueue.async { [weak self] in self?.tracker.reset() }
@@ -703,6 +799,7 @@ final class CameraController: NSObject, ObservableObject {
         uiTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
             guard let self else { return }
             self.stats = self.processor.stats.snapshot()
+            self.racket = self.racketLink.snapshot()
             self.updateThermal()
             if self.isRunning, let warning = self.processor.formatWarning, self.detail != warning {
                 self.detail = warning

@@ -30,15 +30,21 @@ def featurize(clips):
 
 
 def load_real(folder):
-    """labels.csv: file,dist_cm  (file is a raw little-endian int16 clip of 512 samples)."""
-    rows = [l.strip().split(",") for l in open(os.path.join(folder, "labels.csv")) if l.strip()]
+    """Load legacy or extended clips; the current model uses the first 512 samples."""
+    with open(os.path.join(folder, "labels.csv")) as fh:
+        rows = [l.strip().split(",") for l in fh if l.strip()]
     rows = [r for r in rows if r[0] != "file"]
     clips, dist = [], []
+    extended = 0
     for name, d in rows:
         c = np.fromfile(os.path.join(folder, name), dtype="<i2")
-        if c.size == N:
-            clips.append(c)
-            dist.append(float(d))
+        if c.size < N:
+            raise ValueError(f"{name}: expected at least {N} samples, got {c.size}")
+        extended += c.size > N
+        clips.append(c[:N])
+        dist.append(float(d))
+    if extended:
+        print(f"{extended} extended clips: current model uses only the first {N} samples; decay tails remain on disk.")
     return np.array(clips, dtype=np.int16), np.array(dist, dtype=np.float32)
 
 

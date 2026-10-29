@@ -14,10 +14,22 @@ DerivedData/
 # Python
 __pycache__/
 .venv/
-# Model weights (the app downloads Llama from Hugging Face on first load)
+# Local model experiments (not used by the app coach)
 models/
 *.safetensors
 *.gguf
 .build/
 .swiftpm/
 __pycache__/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Capture junk: sync-tool conflict copies and raw session recordings
+*.sync-conflict-*
+data/sessions/
+
+# Local online-service configuration
+apple/Shared/Resources/BackendConfig.plist

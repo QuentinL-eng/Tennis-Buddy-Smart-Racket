@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0206F179548AB95E6893A790 /* CameraModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA8DBF6610E3EFB9E3C035C9 /* CameraModel.swift */; };
+		14FFCF1F81E31526212D4D88 /* SessionLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A5607104107EAE1702D7888 /* SessionLogger.swift */; };
 		177D000EFBBD5F718E4AB2CB /* CaptureStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D5C6B5967BB6FDA632CC679 /* CaptureStats.swift */; };
 		20FBA3E55582E422CAF01A72 /* ObservationPacketTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FABF1BC4293EC7868DCA1A57 /* ObservationPacketTests.swift */; };
 		33B8E807A663B6A2449ED4AA /* ObservationPacket.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB4994D0A178A348901E7DFC /* ObservationPacket.swift */; };
@@ -16,11 +17,13 @@
 		6A1A11553087BF832CFA286E /* BallDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6484C2A3A2BC8D4B85E932 /* BallDetector.swift */; };
 		7DA06ACA55D1F9FDF4AEC415 /* TennisCameraApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96B1CEB528AB67D572D4D995 /* TennisCameraApp.swift */; };
 		8A65C741A2EF80AAC9B7F814 /* FlightModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124A334C2FA1E0E873CBCE12 /* FlightModel.swift */; };
+		AF29ED314C5AB3A00579855C /* RacketLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD4E52844CA0ED2F02F5D9B /* RacketLink.swift */; };
 		BE24EAAA99F95CD7FBA07654 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F1384D79BBB443F74154DC2 /* ContentView.swift */; };
 		BFA0C167905AC2F4C4563407 /* FlightTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A7A3008DDE93F7085DD184 /* FlightTracker.swift */; };
 		CB2F6E20E00CC06CF7785333 /* CapturePipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0AB569471F1CECD2A18174 /* CapturePipelineTests.swift */; };
 		DEA1D78B4D390FD9B5B2F665 /* FlightTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 850B800F8E2C41F2036D5FF8 /* FlightTrackerTests.swift */; };
 		EB229A9911ADFBF184EE0729 /* BallDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B3ED4973412CFA5151DD0BB /* BallDetectorTests.swift */; };
+		F4C4E46D6870A25C39B5F3A8 /* SessionLoggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C851DAAA16481FC933615F91 /* SessionLoggerTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,6 +38,7 @@
 
 /* Begin PBXFileReference section */
 		124A334C2FA1E0E873CBCE12 /* FlightModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightModel.swift; sourceTree = "<group>"; };
+		1A5607104107EAE1702D7888 /* SessionLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLogger.swift; sourceTree = "<group>"; };
 		27A7A3008DDE93F7085DD184 /* FlightTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlightTracker.swift; sourceTree = "<group>"; };
 		3EE98A4B454F2E8BEE358096 /* TennisCameraTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = TennisCameraTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4F1384D79BBB443F74154DC2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -48,6 +52,8 @@
 		9790D5183C16083C27AB735E /* TennisCamera.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TennisCamera.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9C6484C2A3A2BC8D4B85E932 /* BallDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BallDetector.swift; sourceTree = "<group>"; };
 		BA8DBF6610E3EFB9E3C035C9 /* CameraModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraModel.swift; sourceTree = "<group>"; };
+		BCD4E52844CA0ED2F02F5D9B /* RacketLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RacketLink.swift; sourceTree = "<group>"; };
+		C851DAAA16481FC933615F91 /* SessionLoggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionLoggerTests.swift; sourceTree = "<group>"; };
 		DB4994D0A178A348901E7DFC /* ObservationPacket.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationPacket.swift; sourceTree = "<group>"; };
 		F7DEEA50BE258F9362757CFE /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		FABF1BC4293EC7868DCA1A57 /* ObservationPacketTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObservationPacketTests.swift; sourceTree = "<group>"; };
@@ -85,6 +91,8 @@
 				F7DEEA50BE258F9362757CFE /* Info.plist */,
 				DB4994D0A178A348901E7DFC /* ObservationPacket.swift */,
 				8F47F0ECD61F0688D764350A /* ObservationServer.swift */,
+				BCD4E52844CA0ED2F02F5D9B /* RacketLink.swift */,
+				1A5607104107EAE1702D7888 /* SessionLogger.swift */,
 				96B1CEB528AB67D572D4D995 /* TennisCameraApp.swift */,
 			);
 			path = Sources;
@@ -97,6 +105,7 @@
 				5E0AB569471F1CECD2A18174 /* CapturePipelineTests.swift */,
 				850B800F8E2C41F2036D5FF8 /* FlightTrackerTests.swift */,
 				FABF1BC4293EC7868DCA1A57 /* ObservationPacketTests.swift */,
+				C851DAAA16481FC933615F91 /* SessionLoggerTests.swift */,
 			);
 			path = Tests;
 			sourceTree = "<group>";
@@ -190,6 +199,8 @@
 				BFA0C167905AC2F4C4563407 /* FlightTracker.swift in Sources */,
 				33B8E807A663B6A2449ED4AA /* ObservationPacket.swift in Sources */,
 				3BFDD861615EB7A8A243B4F9 /* ObservationServer.swift in Sources */,
+				AF29ED314C5AB3A00579855C /* RacketLink.swift in Sources */,
+				14FFCF1F81E31526212D4D88 /* SessionLogger.swift in Sources */,
 				7DA06ACA55D1F9FDF4AEC415 /* TennisCameraApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -202,6 +213,7 @@
 				CB2F6E20E00CC06CF7785333 /* CapturePipelineTests.swift in Sources */,
 				DEA1D78B4D390FD9B5B2F665 /* FlightTrackerTests.swift in Sources */,
 				20FBA3E55582E422CAF01A72 /* ObservationPacketTests.swift in Sources */,
+				F4C4E46D6870A25C39B5F3A8 /* SessionLoggerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

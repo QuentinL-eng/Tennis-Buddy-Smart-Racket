@@ -6,7 +6,7 @@ import simd
 public struct Calibration: Codable, Sendable, Equatable {
     /// Rows are the racket x, y, z axes expressed in MPU6050 sensor coordinates.
     public var mpuToRacket: simd_float3x3
-    /// Same for the H3LIS331 (snapped to a signed axis permutation; its gravity reading is coarse).
+    /// Same for the high-g accelerometer (the H3LIS331 on the original board; the LSM6DSV320X's high-g channel now).
     public var h3lisToRacket: simd_float3x3
     public var gyroBias: SIMD3<Float>
     public var h3lisBias: SIMD3<Float>
@@ -47,9 +47,12 @@ public struct Calibration: Codable, Sendable, Equatable {
     }
 
     /// Builds a calibration from two still poses: tip pointing straight up, then lying flat face-up.
+    /// The LSM6DSV320X's high-g accelerometer shares the low-g one's axes (same die), so both use the rotation
+    /// fitted from the precise low-g reading. Gravity is only about 10 high-g counts at the 200 g range, so fitting
+    /// from it could pick the wrong axis or sign and corrupt every impact feature.
     public static func from(tipUp: PoseReading, faceUp: PoseReading) -> Calibration {
         let mpu = rotation(up1: tipUp.accel, up2: faceUp.accel)
-        let h3 = snapToAxes(rotation(up1: tipUp.highG, up2: faceUp.highG))
+        let h3 = mpu
         // H3LIS zero-g offset: average reading minus the gravity it should see (+1 g on racket z when face up).
         let expectedFaceUp = h3.transpose * SIMD3<Float>(0, 0, 1)
         let restMagnitude = (simd_length(tipUp.accel) + simd_length(faceUp.accel)) / 2
@@ -69,21 +72,6 @@ public struct Calibration: Codable, Sendable, Equatable {
         let y = simd_cross(z, x)
         return simd_float3x3(rows: [x, y, z])
     }
-
-    static func snapToAxes(_ m: simd_float3x3) -> simd_float3x3 {
-        var used = Set<Int>()
-        var rows: [SIMD3<Float>] = []
-        for r in 0..<3 {
-            let row = SIMD3(m[0][r], m[1][r], m[2][r])
-            let order = (0..<3).sorted { abs(row[$0]) > abs(row[$1]) }
-            let axis = order.first { !used.contains($0) } ?? order[0]
-            used.insert(axis)
-            var v = SIMD3<Float>(repeating: 0)
-            v[axis] = row[axis] >= 0 ? 1 : -1
-            rows.append(v)
-        }
-        return simd_float3x3(rows: rows)
-    }
 }
 
 extension simd_float3x3: @retroactive Codable {
@@ -100,6 +88,21 @@ extension simd_float3x3: @retroactive Codable {
     }
 }
 
+/// A person who hits with the racket. One racket can have many players.
+public struct PlayerProfile: Codable, Sendable, Equatable, Identifiable {
+    public var id = UUID()
+    public var name: String
+    public var rightHanded: Bool = true
+    /// Height in meters. Optional so it can stay blank.
+    public var heightM: Float?
+
+    public init(name: String, rightHanded: Bool = true, heightM: Float? = nil) {
+        self.name = name
+        self.rightHanded = rightHanded
+        self.heightM = heightM
+    }
+}
+
 /// Physical racket constants used by the shot physics. Edit after the ME measures the racket.
 public struct RacketProfile: Codable, Sendable, Equatable {
     public var name: String = "Yonex VCore 98"
@@ -112,6 +115,7 @@ public struct RacketProfile: Codable, Sendable, Equatable {
     public var imuFromButtM: Float = 0.039
     /// Effective rotation radius for swing speed (shoulder to sweet spot), tuned against slow-mo video.
     public var effectiveRadiusM: Float = 1.15
+    /// Handedness of the active player. The app copies it from `PlayerProfile` when the player changes.
     public var rightHanded: Bool = true
 
     public init() {}

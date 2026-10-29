@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Insights F Metric Explorer</title>
+
+</head>
+<body>
+
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+button{font-family:inherit}
+</style>
+
+<div style="width:390px;height:1090px;box-sizing:border-box;background:#0B0C09;color:#F3F5EC;font-family:Inter,-apple-system,system-ui,sans-serif;display:flex;flex-direction:column;font-variant-numeric:tabular-nums">
+
+<div style="flex:1;padding:64px 16px 24px;display:flex;flex-direction:column;gap:20px">
+
+<!-- Header -->
+<div style="display:flex;align-items:center;justify-content:space-between">
+<h1 style="margin:0;font-size:34px;font-weight:700;letter-spacing:-0.5px">Insights</h1>
+<button style="height:44px;padding:0 14px;border-radius:22px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#F3F5EC;font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px">Last 30 days
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#A9AE9A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+</div>
+
+<!-- Shot type -->
+<div style="display:flex;gap:8px;overflow-x:auto;margin:0 -16px;padding:0 16px">
+<button style="flex:none;height:44px;padding:0 18px;border-radius:22px;border:0;background:#D5F23F;color:#0B0C09;font-size:15px;font-weight:600">All</button>
+<button style="flex:none;height:44px;padding:0 18px;border-radius:22px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#F3F5EC;font-size:15px">Forehand</button>
+<button style="flex:none;height:44px;padding:0 18px;border-radius:22px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#F3F5EC;font-size:15px">Backhand</button>
+<button style="flex:none;height:44px;padding:0 18px;border-radius:22px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#F3F5EC;font-size:15px">Serve</button>
+<button style="flex:none;height:44px;padding:0 18px;border-radius:22px;border:1px solid rgba(255,255,255,0.14);background:transparent;color:#F3F5EC;font-size:15px">Volley</button>
+</div>
+
+<!-- Metric tabs -->
+<div style="display:flex;gap:22px;overflow-x:auto;margin:0 -16px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,0.08)">
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid #D5F23F;background:transparent;color:#F3F5EC;font-size:15px;font-weight:600">Ball speed</button>
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid transparent;background:transparent;color:#A9AE9A;font-size:15px">Swing speed</button>
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid transparent;background:transparent;color:#A9AE9A;font-size:15px">Spin</button>
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid transparent;background:transparent;color:#A9AE9A;font-size:15px">Face</button>
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid transparent;background:transparent;color:#A9AE9A;font-size:15px">Path</button>
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid transparent;background:transparent;color:#A9AE9A;font-size:15px">Contact</button>
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid transparent;background:transparent;color:#A9AE9A;font-size:15px">Shots</button>
+<button style="flex:none;height:44px;padding:0;border:0;border-bottom:3px solid transparent;background:transparent;color:#A9AE9A;font-size:15px">Heart rate</button>
+</div>
+
+<!-- Big number -->
+<section style="display:flex;flex-direction:column;gap:8px">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:56px;line-height:1;font-weight:700;letter-spacing:-2px">58</span><span style="font-size:18px;font-weight:600;color:#A9AE9A">mph avg</span>
+<span style="margin-left:auto;padding:4px 10px;border-radius:12px;background:rgba(94,220,138,0.14);color:#5EDC8A;font-size:14px;font-weight:600">▲ 2 mph</span></div>
+<div style="font-size:14px;color:#A9AE9A">Top 74 mph · Low 41 mph · vs previous 30 days</div>
+</section>
+
+<!-- Range chart -->
+<section style="background:#171913;border-radius:22px;padding:16px 12px 12px;display:flex;flex-direction:column;gap:6px">
+<svg width="100%" viewBox="0 0 350 210" role="img" aria-label="Ball speed range per session. Each bar shows the lowest to highest shot, the dot is the average. The average rose from 54 to 59 mph, peaking at 62.">
+<g stroke="rgba(255,255,255,0.10)"><line x1="34" y1="10" x2="344" y2="10"/><line x1="34" y1="50" x2="344" y2="50"/><line x1="34" y1="90" x2="344" y2="90"/><line x1="34" y1="130" x2="344" y2="130"/><line x1="34" y1="170" x2="344" y2="170"/></g>
+<g font-size="11" fill="#A9AE9A" font-family="Inter,system-ui,sans-serif"><text x="0" y="14">80</text><text x="0" y="54">70</text><text x="0" y="94">60</text><text x="0" y="134">50</text><text x="0" y="174">40</text></g>
+<g stroke-linecap="round" stroke-width="16">
+<line x1="62" y1="154" x2="62" y2="66" stroke="#D5F23F" stroke-opacity="0.28"/>
+<line x1="118" y1="150" x2="118" y2="58" stroke="#D5F23F" stroke-opacity="0.28"/>
+<line x1="174" y1="162" x2="174" y2="74" stroke="#D5F23F" stroke-opacity="0.28"/>
+<line x1="230" y1="146" x2="230" y2="50" stroke="#D5F23F" stroke-opacity="0.28"/>
+<line x1="286" y1="130" x2="286" y2="26" stroke="#D5F23F" stroke-opacity="0.28"/>
+<line x1="334" y1="142" x2="334" y2="50" stroke="#D5F23F" stroke-opacity="0.5"/>
+</g>
+<g fill="#D5F23F"><circle cx="62" cy="114" r="6"/><circle cx="118" cy="106" r="6"/><circle cx="174" cy="118" r="6"/><circle cx="230" cy="90" r="6"/><circle cx="286" cy="74" r="6"/><circle cx="334" cy="86" r="7"/></g>
+<g font-size="11" fill="#A9AE9A" font-family="Inter,system-ui,sans-serif" text-anchor="middle"><text x="62" y="198">Oct 2</text><text x="118" y="198">Oct 9</text><text x="174" y="198">Oct 14</text><text x="230" y="198">Oct 19</text><text x="286" y="198">Oct 24</text><text x="334" y="198">Oct 27</text></g>
+</svg>
+<div style="font-size:12px;color:#A9AE9A;padding:0 4px">Bars show each session's slowest to fastest shot. Dots are the average.</div>
+</section>
+
+<!-- By stroke -->
+<section style="display:flex;flex-direction:column;gap:12px">
+<h3 style="margin:0;font-size:22px;font-weight:700">By stroke</h3>
+<div style="background:#171913;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:14px">
+<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:15px"><span>Serve</span><span style="font-weight:600">68 mph</span></div><div style="height:8px;border-radius:4px;background:#2A2E20"><div style="width:92%;height:8px;border-radius:4px;background:#D5F23F"></div></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:15px"><span>Forehand</span><span style="font-weight:600">61 mph</span></div><div style="height:8px;border-radius:4px;background:#2A2E20"><div style="width:82%;height:8px;border-radius:4px;background:#D5F23F"></div></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:15px"><span>Backhand</span><span style="font-weight:600">54 mph</span></div><div style="height:8px;border-radius:4px;background:#2A2E20"><div style="width:73%;height:8px;border-radius:4px;background:#D5F23F"></div></div></div>
+<div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-size:15px"><span>Volley</span><span style="font-weight:600">47 mph</span></div><div style="height:8px;border-radius:4px;background:#2A2E20"><div style="width:64%;height:8px;border-radius:4px;background:#D5F23F"></div></div></div>
+</div>
+</section>
+
+<!-- Sessions -->
+<section style="display:flex;flex-direction:column;gap:12px">
+<h3 style="margin:0;font-size:22px;font-weight:700">Sessions</h3>
+<div style="background:#171913;border-radius:18px;padding:0 16px;display:flex;flex-direction:column">
+<button style="min-height:64px;border:0;border-bottom:1px solid rgba(255,255,255,0.08);background:transparent;color:#F3F5EC;padding:0;display:flex;align-items:center;gap:12px;text-align:left"><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Tuesday, Oct 27</span><span style="font-size:13px;color:#A9AE9A">186 shots · 58 min</span></span><span style="text-align:right;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">59 mph</span><span style="font-size:13px;color:#A9AE9A">top 70</span></span></button>
+<button style="min-height:64px;border:0;border-bottom:1px solid rgba(255,255,255,0.08);background:transparent;color:#F3F5EC;padding:0;display:flex;align-items:center;gap:12px;text-align:left"><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Saturday, Oct 24</span><span style="font-size:13px;color:#A9AE9A">214 shots · 1h 12m</span></span><span style="text-align:right;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">62 mph</span><span style="font-size:13px;color:#A9AE9A">top 74</span></span></button>
+<button style="min-height:64px;border:0;background:transparent;color:#F3F5EC;padding:0;display:flex;align-items:center;gap:12px;text-align:left"><span style="flex:1;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">Monday, Oct 19</span><span style="font-size:13px;color:#A9AE9A">203 shots · 1h 05m</span></span><span style="text-align:right;display:flex;flex-direction:column;gap:2px"><span style="font-size:16px;font-weight:600">58 mph</span><span style="font-size:13px;color:#A9AE9A">top 70</span></span></button>
+</div>
+</section>
+
+<!-- Coach -->
+<button style="min-height:64px;border:0;border-radius:18px;background:#171913;color:#F3F5EC;padding:0 16px;display:flex;align-items:center;gap:12px;text-align:left;font-size:16px;font-weight:600">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="#D5F23F" aria-hidden="true"><path d="M12 2l2.2 6.3L21 10.5l-6.8 2.2L12 20l-2.2-7.3L3 10.5l6.8-2.2z"/></svg>
+<span style="flex:1;display:flex;flex-direction:column"><span>Ask coach about ball speed</span><span style="font-size:13px;font-weight:400;color:#A9AE9A">Plain-language answers and drills</span></span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A9AE9A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+</button>
+
+</div>
+
+<!-- Tab bar -->
+<nav style="height:84px;box-sizing:border-box;padding:8px 8px 0;background:#121410;border-top:1px solid rgba(255,255,255,0.08);display:flex;justify-content:space-around;font-size:11px;color:#A9AE9A">
+<div style="width:64px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A9AE9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><path d="M12 8v7M8 11l4 1 4-3M9 22l3-7 3 7"/></svg>Live</div>
+<div style="width:64px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A9AE9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.5c3 0 6 1.5 6 5"/></svg>Together</div>
+<div style="width:64px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A9AE9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>History</div>
+<div style="width:64px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#D5F23F;font-weight:600"><svg width="26" height="26" viewBox="0 0 24 24" fill="#D5F23F" aria-hidden="true"><path d="M12 2l2.2 6.3L21 10.5l-6.8 2.2L12 20l-2.2-7.3L3 10.5l6.8-2.2z"/></svg>Insights</div>
+<div style="width:64px;display:flex;flex-direction:column;align-items:center;gap:4px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#A9AE9A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M7.5 7.5a6.4 6.4 0 0 0 0 9M16.5 7.5a6.4 6.4 0 0 1 0 9M4.5 4.5a10.6 10.6 0 0 0 0 15M19.5 4.5a10.6 10.6 0 0 1 0 15"/></svg>Racket</div>
+</nav>
+
+</div>
+
+
+</body>
+</html>

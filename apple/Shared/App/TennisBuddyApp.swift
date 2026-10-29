@@ -6,40 +6,38 @@ import SwiftUI
 struct TennisBuddyApp: App {
     @State private var model = AppModel()
     @State private var coach = CoachModel()
+    @State private var account = AccountModel()
+    @Environment(\.scenePhase) private var scenePhase
     let container: ModelContainer = SyncedStore.makeContainer()
     #if os(iOS)
     @State private var watchBridge = WatchBridge()
     #endif
-
-    init() {
-        // `--coach-selftest`: load Llama, coach a sample session, print the result, quit. Used to verify the model.
-        if CommandLine.arguments.contains("--coach-selftest") {
-            Task { @MainActor in
-                let coach = CoachModel()
-                let start = Date()
-                await coach.loadLlama()
-                print("Llama state: \(coach.state) after \(Int(Date().timeIntervalSince(start)))s")
-                let session = SessionRecord()
-                session.endDate = session.startDate.addingTimeInterval(1500)
-                session.shotRecords = CoachSelfTest.sampleShots().map { ShotRecord(metrics: $0) }
-                let t = Date()
-                print(await coach.summarize(session))
-                print("Generated in \(String(format: "%.1f", Date().timeIntervalSince(t)))s with \(coach.engineName)")
-                exit(0)
-            }
-        }
-    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
                 .environment(coach)
+                .environment(account)
+                .task { await account.observeAuthentication() }
+                .onChange(of: account.displayName) { _, value in model.signedInPlayerName = value }
+                .onChange(of: account.isSignedIn) { _, value in coach.setSignedIn(value) }
+                .task(id: scenePhase) {
+                    guard scenePhase == .active else { return }
+                    while !Task.isCancelled {
+                        await account.syncPendingStats(in: container.mainContext)
+                        do { try await Task.sleep(for: .seconds(5)) } catch { return }
+                    }
+                }
                 .tint(.accentColor)
                 .onAppear {
                     model.modelContext = container.mainContext
+                    model.signedInPlayerName = account.displayName
+                    coach.connect(to: model)
+                    coach.useTransport { await account.museTransport() }
+                    coach.setSignedIn(account.isSignedIn)
                     #if os(iOS)
-                    watchBridge.connect(to: model)
+                    watchBridge.connect(to: model, account: account)
                     #endif
                 }
         }
@@ -61,6 +59,7 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $tab) {
             Tab("Live", systemImage: "figure.tennis", value: "live") { NavigationStack { LiveView() } }
+            Tab("Together", systemImage: "person.2", value: "together") { NavigationStack { SharedSessionView() } }
             Tab("History", systemImage: "clock.arrow.circlepath", value: "history") { HistoryView() }
             Tab("Insights", systemImage: "sparkles", value: "insights") { NavigationStack { InsightsView() } }
             Tab("Racket", systemImage: "sensor.tag.radiowaves.forward", value: "racket") { NavigationStack { RacketView() } }

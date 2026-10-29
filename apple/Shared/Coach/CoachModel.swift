@@ -1,8 +1,9 @@
 import Foundation
 import Observation
 import RacketKit
+import SwiftData
 
-/// Builds the facts the coach talks about. Shared by the template coach and Llama.
+/// Builds the facts the coach talks about. Shared by the template coach and Muse.
 struct SessionDigest: Codable {
     struct Stroke: Codable {
         var type: String
@@ -68,7 +69,8 @@ struct SessionDigest: Codable {
     }
 }
 
-/// Something that can turn stats into words: Llama on device, or the built-in template fallback.
+/// Something that can turn stats into words: Muse or the built-in template fallback.
+@MainActor
 protocol CoachEngine {
     var name: String { get }
     func summarize(_ digest: SessionDigest) async throws -> String
@@ -119,7 +121,7 @@ enum CoachPrompts {
     }
 }
 
-/// Deterministic coach used when Llama isn't loaded, so the feature always works.
+/// Deterministic offline coach, available without an API key or network connection.
 struct TemplateCoach: CoachEngine {
     let name = "Built-in coach"
 
@@ -169,45 +171,65 @@ struct TemplateCoach: CoachEngine {
 @MainActor
 @Observable
 final class CoachModel {
-    enum ModelState: Equatable { case notLoaded, downloading(Double), loading, ready, failed(String) }
-
-    var state: ModelState = .notLoaded
-    var engineName: String { llama?.name ?? TemplateCoach().name }
     var isWorking = false
-    private var llama: CoachEngine?
+    private(set) var lastEngineName: String?
+    private(set) var lastFallbackReason: String?
+    /// Online coaching is available while signed in (the server holds the Muse key).
+    private(set) var museAvailable = false
+    var engineName: String { lastEngineName ?? (museEnabled && museAvailable ? "Muse Spark · online" : fallback.name) }
+    var museEnabled: Bool {
+        didSet { UserDefaults.standard.set(museEnabled, forKey: "coach.museEnabled"); lastEngineName = nil }
+    }
+    @ObservationIgnored private weak var app: AppModel?
     private let fallback = TemplateCoach()
-    private var engine: CoachEngine { llama ?? fallback }
+    @ObservationIgnored private var transportProvider: @MainActor () async -> MuseTransport?
 
-    func loadLlama() async {
-        guard llama == nil, state != .loading else { return }
-        state = .loading
-        do {
-            llama = try await LlamaLoader.load { [weak self] progress in
-                Task { @MainActor in self?.state = .downloading(progress) }
-            }
-            state = .ready
-        } catch {
-            state = .failed(error.localizedDescription)
-        }
+    init(transportProvider: @escaping @MainActor () async -> MuseTransport? = { nil }) {
+        self.transportProvider = transportProvider
+        museEnabled = UserDefaults.standard.object(forKey: "coach.museEnabled") as? Bool ?? true
     }
 
+    func connect(to app: AppModel) { self.app = app }
+    func useTransport(_ provider: @escaping @MainActor () async -> MuseTransport?) { transportProvider = provider }
+    func setSignedIn(_ signedIn: Bool) { museAvailable = signedIn }
+
     func summarize(_ session: SessionRecord) async -> String {
-        await run { try await $0.summarize(SessionDigest(session: session)) }
+        let digest = SessionDigest(session: session)
+        return await run(session: session) { try await $0.summarize(digest) }
     }
 
     func answer(_ q: String, session: SessionRecord) async -> String {
-        await run { try await $0.answer(q, digest: SessionDigest(session: session)) }
+        let digest = SessionDigest(session: session)
+        return await run(session: session) { try await $0.answer(q, digest: digest) }
     }
 
     func drill(_ session: SessionRecord) async -> String {
-        await run { try await $0.drill(SessionDigest(session: session)) }
+        let digest = SessionDigest(session: session)
+        return await run(session: session) { try await $0.drill(digest) }
     }
 
-    private func run(_ body: (CoachEngine) async throws -> String) async -> String {
+    private func run(session: SessionRecord, _ body: (CoachEngine) async throws -> String) async -> String {
+        guard !isWorking else { return "The coach is already answering. Please try again shortly." }
         isWorking = true
+        lastFallbackReason = nil
         defer { isWorking = false }
-        do { return try await body(engine) } catch {
-            return (try? await body(fallback)) ?? "The coach is unavailable right now."
+        if museEnabled, museAvailable, let transport = await transportProvider() {
+            let app = self.app
+            let tools = CoachTools(current: session, app: app) {
+                guard let context = app?.modelContext else { return [session] }
+                return try context.fetch(FetchDescriptor<SessionRecord>(sortBy: [SortDescriptor(\.startDate)]))
+            }
+            let muse = MuseCoach(client: transport, tools: tools)
+            do {
+                let text = try await body(muse)
+                lastEngineName = muse.name
+                return text
+            } catch {
+                if Task.isCancelled { return "Coaching cancelled." }
+                lastFallbackReason = error.localizedDescription
+            }
         }
+        lastEngineName = fallback.name
+        return (try? await body(fallback)) ?? "The coach is unavailable right now."
     }
 }

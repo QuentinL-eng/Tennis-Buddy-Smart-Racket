@@ -12,6 +12,10 @@ bool micBegin(QueueHandle_t out);
 void micSetCollect(bool on);
 bool micCollecting();
 
+// micros() when the mic last triggered on an impact (0 before the first). impact.cpp uses it to catch hits the
+// motion rule misses. Set when the trigger sample is processed, a few ms after the sound.
+uint32_t micLastTriggerUs();
+
 // Stats for the 1 Hz serial status line.
 uint32_t micImpactCount();
 

@@ -1,7 +1,9 @@
 // Tennis Buddy racket firmware.
 //
-// Reads the LSM6DSV320X (gyro + low-g accel + high-g accel, on a STEVAL-MKI251A) at 1 kHz and streams
-// samples over BLE. All analysis happens in the apps. Wiring and protocol: docs/PLAN.md.
+// Reads the LSM6DSV320X (gyro + low-g accel + high-g accel, on a STEVAL-MKI251A) at 1 kHz. In raw mode every
+// sample is streamed over BLE; in impact mode (TB_CMD_STREAM_MODE) the racket detects hits itself (impact.cpp)
+// and sends only the samples around each one, which the apps analyse. The sweet-spot model (mic.cpp) and
+// handle-tap gestures (tap.cpp) run here in both modes. Wiring and protocol: docs/PLAN.md.
 // The BLE format predates this IMU (MPU6050 + H3LIS331DL), so samples are converted to those units.
 //
 // Serial monitor (115200) prints a status line every second for bench bring-up.
@@ -9,8 +11,11 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <NimBLEDevice.h>
+#include "nimble/porting/nimble/include/os/os_mbuf.h"
 #include "protocol.h"
 #include "mic.h"
+#include "tap.h"
+#include "impact.h"
 
 // ---- Pins (XIAO ESP32C3) ----
 // As built (see docs/WIRING.md): IMU on D4/D5, mic on D1-D3.
@@ -25,16 +30,46 @@ static const uint8_t LSM_WHO_AM_I = 0x0F, LSM_CTRL1 = 0x10, LSM_CTRL2 = 0x11, LS
                      LSM_CTRL6 = 0x15, LSM_CTRL8 = 0x17, LSM_OUTX_L_G = 0x22, LSM_OUTX_L_A_HG = 0x34,
                      LSM_CTRL1_XL_HG = 0x4E;
 // Native scales at the full scales set in setupIMU().
-static const float LSM_G_DPS_PER_LSB = 0.070f;    // ±2000 dps
+static const float LSM_G_DPS_PER_LSB = 0.070f;    // ±2000 dps (0.140 at ±4000 dps)
 static const float LSM_HG_MG_PER_LSB = 10.417f;   // ±320 g
 // Wire units (protocol.h): gyro 16.4 LSB/dps; low-g accel 2048 LSB/g, which the LSM's ±16 g (0.488 mg/LSB)
 // already matches; high-g as H3LIS counts << 4 at the app-selected range.
 static const float WIRE_G_LSB_PER_DPS = 16.4f;
+// At ±4000 dps the native LSB doubles and the wire LSB halves (8.2 LSB/dps, TB_FLAG_GYRO_4000), so
+// native -> wire is the same factor in both ranges.
+static const float LSM_TO_WIRE_GYRO = LSM_G_DPS_PER_LSB * WIRE_G_LSB_PER_DPS;
+static const uint8_t CTRL1_ACCEL = 0x0A;               // accel high-performance, 1.92 kHz
+static const uint8_t CTRL6_GYRO_2000 = 0x04, CTRL6_GYRO_4000 = 0x05;
+
+// ---- Handle taps (tap.cpp detects single jolts; the sampler groups them into gestures) ----
+static const int32_t TAP_TRIG_MG = 400;          // jolt above the resting |a| that counts as a tap
+static const int TAP_MAX_LEN = 25;               // samples (ms) a tap's jolt may last
+static const uint32_t TAP_REFRACTORY_MS = 100;   // short enough for a quick double tap
+static const uint32_t TAP_GAP_MS = 450;          // a tap this soon after the previous one joins its gesture
+static const int32_t TAP_MAX_JOLT_MG = 12000;    // near the ±16 g rail: a ball impact, not a tap
+static const float TAP_MAX_GYRO_DPS = 150.0f;    // rotation this fast means a swing is under way
+static const uint32_t TAP_SWING_HOLD_MS = 300;   // ... and taps are ignored until it has been calm this long
+static const int TAP_MAX_COUNT = 5;
+
+struct TapEvent {
+  TBTap tap;
+  int32_t jolt_mg;      // strongest tap, for the serial log
+  uint32_t detect_us;   // time tapPush() took on the completing sample
+};
 
 // ---- State ----
 static bool imuOk = false;
 static volatile bool streaming = true;   // stream whenever a client subscribes
 static volatile uint8_t h3Range = 1;     // 0 = 100 g, 1 = 200 g, 3 = 400 g
+static volatile bool gyro4000Wanted = false;   // requested by the app (TB_CMD_GYRO_RANGE)
+static volatile bool gyro4000 = false;         // what the IMU is set to; changed by the sampler between packets
+static volatile uint32_t imuResets = 0;        // times the watchdog found the IMU had lost its settings
+static volatile uint8_t streamMode = TB_STREAM_RAW;
+
+// NimBLE buffers (of the 32 set in platformio.ini) kept free for the stack's own replies. Notifying until
+// the pool is empty makes notify() fail silently and leaves nothing to answer the phone's requests.
+static const int BLE_BUFFER_RESERVE = 6;
+static uint32_t sentPackets = 0;
 
 static volatile uint16_t droppedPackets = 0;
 static volatile uint32_t samplesRead = 0, i2cErrors = 0;
@@ -42,8 +77,19 @@ static TBSample lastSample = {};
 
 static QueueHandle_t packetQueue;
 static NimBLEServer *server;
-static NimBLECharacteristic *imuChar, *statusChar, *shotChar;
-static QueueHandle_t shotQueue;
+static NimBLECharacteristic *imuChar, *statusChar, *shotChar, *tapChar;
+static QueueHandle_t shotQueue, tapQueue;
+static NimBLECharacteristic *hitChar, *windowChar, *poseChar;
+
+// Impact mode: hits go out at once through hitQueue; the sampler fills `window` when one completes and the loop
+// sends it chunk by chunk. A window completed while the previous one is still going out is dropped.
+static QueueHandle_t hitQueue;
+static ImpactWindow window;
+static volatile bool windowBusy = false;
+static int windowNext = 0;
+static volatile uint32_t impactStepMaxUs = 0;
+static const uint32_t POSE_INTERVAL_MS = 33;
+static volatile uint32_t tapGestures = 0, tapsRejected = 0;
 static bool micOk = false;
 
 // ---- I2C helpers ----
@@ -70,16 +116,16 @@ static uint8_t readReg(uint8_t addr, uint8_t reg) {
 }
 
 // ---- Sensor setup ----
-static bool setupIMU() {
+static bool setupIMU(bool wideGyro) {
   uint8_t who = readReg(LSM_ADDR, LSM_WHO_AM_I);
   Serial.printf("LSM6DSV320X WHO_AM_I = 0x%02X (expect 0x%02X)\n", who, LSM_ID);
   if (who != LSM_ID) return false;
   bool ok = writeReg(LSM_ADDR, LSM_CTRL3, 0x01);        // software reset
   delay(10);
   ok &= writeReg(LSM_ADDR, LSM_CTRL3, 0x44);            // BDU + register auto-increment
-  ok &= writeReg(LSM_ADDR, LSM_CTRL6, 0x04);            // gyro ±2000 dps
+  ok &= writeReg(LSM_ADDR, LSM_CTRL6, wideGyro ? CTRL6_GYRO_4000 : CTRL6_GYRO_2000);
   ok &= writeReg(LSM_ADDR, LSM_CTRL8, 0x03);            // accel ±16 g
-  ok &= writeReg(LSM_ADDR, LSM_CTRL1, 0x0A);            // accel high-performance, 1.92 kHz
+  ok &= writeReg(LSM_ADDR, LSM_CTRL1, CTRL1_ACCEL);
   ok &= writeReg(LSM_ADDR, LSM_CTRL2, 0x0A);            // gyro high-performance, 1.92 kHz
   ok &= writeReg(LSM_ADDR, LSM_CTRL1_XL_HG, 0xAC);      // high-g: output regs on, 1.92 kHz, ±320 g
   return ok;
@@ -94,22 +140,82 @@ static int16_t toH3Wire(int16_t raw) {
   return (int16_t)(counts * 16);
 }
 
+// Runs once per sample on the low-g accel (raw ±16 g LSBs) and the fastest gyro axis. Single taps from
+// tap.cpp are accepted only when the racket is calm, then grouped: the gesture is queued once no further tap
+// has arrived for TAP_GAP_MS.
+static void tapStep(const int16_t *a, float gyroDps, uint32_t t_us) {
+  static uint32_t lastFastMs = 0, lastTapMs = 0;
+  static uint8_t count = 0;
+  static TapEvent ev = {};
+  static uint16_t seq = 0;
+  const uint32_t now = t_us / 1000;
+  if (gyroDps > TAP_MAX_GYRO_DPS) lastFastMs = now;
+
+  TapResult r;
+  uint32_t t0 = micros();
+  // LSM ±16 g: 0.488 mg/LSB = 61/125.
+  if (tapPush(a[0] * 61 / 125, a[1] * 61 / 125, a[2] * 61 / 125, t_us, r)) {
+    uint32_t dt = micros() - t0;
+    if (now - lastFastMs < TAP_SWING_HOLD_MS || r.jolt_mg > TAP_MAX_JOLT_MG) {
+      tapsRejected++;
+    } else {
+      if (count == 0 || r.jolt_mg > ev.jolt_mg) {
+        ev.tap.strength = r.strength;
+        ev.tap.zone = r.zone;
+        ev.tap.confidence = r.confidence;
+        float n = sqrtf((float)r.dir_mg[0] * r.dir_mg[0] + (float)r.dir_mg[1] * r.dir_mg[1] +
+                        (float)r.dir_mg[2] * r.dir_mg[2]);
+        for (int k = 0; k < 3; k++) ev.tap.dir[k] = n > 0 ? (int8_t)lroundf(127.0f * r.dir_mg[k] / n) : 0;
+        ev.jolt_mg = r.jolt_mg;
+        ev.detect_us = dt;
+      }
+      if (count < TAP_MAX_COUNT) count++;
+      lastTapMs = now;
+    }
+  }
+  if (count > 0 && now - lastTapMs > TAP_GAP_MS) {
+    ev.tap.seq = seq++;
+    ev.tap.count = count;
+    xQueueSend(tapQueue, &ev, 0);
+    tapGestures++;
+    count = 0;
+  }
+}
+
 // ---- 1 kHz sampling task ----
 static void samplerTask(void *) {
   TBPacket pkt = {};
   uint16_t seq = 0;
   uint8_t n = 0;
   uint8_t buf[24];   // 0x22..0x39: gyro, accel, OIS (unused), high-g accel; little-endian
+  uint32_t sinceCheck = 0;
   TickType_t last = xTaskGetTickCount();
 
   for (;;) {
     vTaskDelayUntil(&last, pdMS_TO_TICKS(1));
 
+    // Gyro range changes only between packets, so every packet's samples share one scale.
+    if (imuOk && n == 0 && gyro4000Wanted != gyro4000 &&
+        writeReg(LSM_ADDR, LSM_CTRL6, gyro4000Wanted ? CTRL6_GYRO_4000 : CTRL6_GYRO_2000)) {
+      gyro4000 = gyro4000Wanted;
+    }
+    // Watchdog: a brownout (e.g. a loose supply wire during a fast spin) resets the IMU to power-down,
+    // after which it reads all zeros. Check the settings once a second and restore them.
+    if (imuOk && ++sinceCheck >= 1000) {
+      sinceCheck = 0;
+      uint8_t c1 = readReg(LSM_ADDR, LSM_CTRL1), c6 = readReg(LSM_ADDR, LSM_CTRL6);
+      if (c1 != CTRL1_ACCEL || c6 != (gyro4000 ? CTRL6_GYRO_4000 : CTRL6_GYRO_2000)) {
+        imuResets++;
+        Serial.printf("IMU lost its settings (CTRL1 0x%02X CTRL6 0x%02X): reconfiguring\n", c1, c6);
+        setupIMU(gyro4000);
+      }
+    }
+
     TBSample s = {};
     uint32_t t = micros();
     if (imuOk && readRegs(LSM_ADDR, LSM_OUTX_L_G, buf, sizeof(buf))) {
       auto le = [&](int i) { return (int16_t)(buf[i + 1] << 8 | buf[i]); };
-      const float g = LSM_G_DPS_PER_LSB * WIRE_G_LSB_PER_DPS;
+      const float g = LSM_TO_WIRE_GYRO;
       s.gx = clamp16(le(0) * g);
       s.gy = clamp16(le(2) * g);
       s.gz = clamp16(le(4) * g);
@@ -120,13 +226,42 @@ static void samplerTask(void *) {
       s.hx = toH3Wire(le(hg));
       s.hy = toH3Wire(le(hg + 2));
       s.hz = toH3Wire(le(hg + 4));
+      const int16_t a[3] = {s.ax, s.ay, s.az};
+      int16_t gmax = max(max(abs(le(0)), abs(le(2))), abs(le(4)));
+      const float dpsPerLsb = LSM_G_DPS_PER_LSB * (gyro4000 ? 2 : 1);
+      tapStep(a, gmax * dpsPerLsb, t);
+
+      // Impact detection runs in both modes (it also feeds the serial log); windows are only claimed when
+      // someone in impact mode will receive them. Window gyro is always at 8.2 LSB/dps.
+      ImpactInput in;
+      in.wire = s;
+      in.t_us = t;
+      int16_t *wireGyro[3] = {&in.wire.gx, &in.wire.gy, &in.wire.gz};
+      for (int k = 0; k < 3; k++) {
+        float dps = le(2 * k) * dpsPerLsb;
+        *wireGyro[k] = clamp16(dps * WIRE_G_LSB_PER_DPS / 2);
+        in.gyro[k] = dps * (float)DEG_TO_RAD;
+        in.accel[k] = le(6 + 2 * k) / 2048.0f;
+        in.highG[k] = le(hg + 2 * k) * LSM_HG_MG_PER_LSB / 1000.0f;
+      }
+      bool wanted = streamMode == TB_STREAM_IMPACTS && server->getConnectedCount() > 0;
+      TBHit hit;
+      uint32_t s0 = micros();
+      int r = impactStep(in, micLastTriggerUs(), &hit, windowBusy ? nullptr : &window);
+      uint32_t took = micros() - s0;
+      if (took > impactStepMaxUs) impactStepMaxUs = took;
+      if (r & IMPACT_HIT) xQueueSend(hitQueue, &hit, 0);
+      if ((r & IMPACT_WINDOW) && wanted) {
+        windowNext = 0;
+        windowBusy = true;
+      }
     } else if (imuOk) {
       i2cErrors++;
     }
     lastSample = s;
     samplesRead++;
 
-    if (!streaming || server->getConnectedCount() == 0) {
+    if (!streaming || streamMode != TB_STREAM_RAW || server->getConnectedCount() == 0) {
       n = 0;
       continue;
     }
@@ -135,7 +270,8 @@ static void samplerTask(void *) {
     if (n == TB_SAMPLES_PER_PACKET) {
       pkt.seq = seq++;
       pkt.count = n;
-      pkt.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | TB_FLAG_STREAMING;
+      pkt.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | TB_FLAG_STREAMING |
+                  (gyro4000 ? TB_FLAG_GYRO_4000 : 0);
       if (xQueueSend(packetQueue, &pkt, 0) != pdTRUE) droppedPackets++;
       n = 0;
     }
@@ -148,6 +284,9 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     Serial.println("BLE: connected");
     // 15-30 ms interval: the fastest iOS accepts; several packets go out per interval.
     s->updateConnParams(desc->conn_handle, 12, 24, 0, 400);
+    // A 152-byte packet should travel in one link-layer PDU, at 2 Mbit/s when the phone allows it.
+    ble_gap_set_data_len(desc->conn_handle, 251, 2120);
+    ble_gap_set_prefered_le_phy(desc->conn_handle, BLE_GAP_LE_PHY_2M_MASK, BLE_GAP_LE_PHY_2M_MASK, 0);
     // Keep advertising so a second device (Mac + iPhone) can join; otherwise whoever reconnects first
     // after a reboot locks everyone else out.
     if (s->getConnectedCount() < 3) NimBLEDevice::startAdvertising();
@@ -155,7 +294,12 @@ class ServerCallbacks : public NimBLEServerCallbacks {
   void onDisconnect(NimBLEServer *) override {
     Serial.println("BLE: disconnected, advertising again");
     NimBLEDevice::startAdvertising();
-    if (NimBLEDevice::getServer()->getConnectedCount() == 0) xQueueReset(packetQueue);
+    if (NimBLEDevice::getServer()->getConnectedCount() == 0) {
+      xQueueReset(packetQueue);
+      gyro4000Wanted = false;   // the next app may not know about the ±4000 dps units
+      streamMode = TB_STREAM_RAW;   // ... or about impact mode
+      windowBusy = false;
+    }
   }
 };
 
@@ -171,6 +315,15 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
           h3Range = v[1];
         }
         break;
+      case TB_CMD_GYRO_RANGE:
+        if (v.size() >= 2 && (v[1] == 0 || v[1] == 1)) gyro4000Wanted = v[1] == 1;
+        break;
+      case TB_CMD_STREAM_MODE:
+        if (v.size() >= 2 && (v[1] == TB_STREAM_RAW || v[1] == TB_STREAM_IMPACTS)) {
+          streamMode = v[1];
+          if (streamMode == TB_STREAM_RAW) windowBusy = false;
+        }
+        break;
     }
   }
 };
@@ -180,14 +333,20 @@ static TBStatus makeStatus() {
   st.battery_mv = PIN_VBAT >= 0 ? (uint16_t)(analogReadMilliVolts(PIN_VBAT) * 2) : 0;
   st.fw_major = TB_FW_MAJOR;
   st.fw_minor = TB_FW_MINOR;
-  st.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | (streaming ? TB_FLAG_STREAMING : 0);
+  st.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | (streaming ? TB_FLAG_STREAMING : 0) |
+             (gyro4000 ? TB_FLAG_GYRO_4000 : 0) | (streamMode == TB_STREAM_IMPACTS ? TB_FLAG_IMPACT_MODE : 0);
   st.h3lis_range = h3Range;
   st.dropped = droppedPackets;
   return st;
 }
 
 static void setupBLE() {
-  NimBLEDevice::init(TB_DEVICE_NAME);
+  // Two rackets in one room must be tellable apart: suffix the name with the last MAC bytes.
+  uint8_t mac[6] = {0};
+  esp_read_mac(mac, ESP_MAC_BT);
+  char bleName[24];
+  snprintf(bleName, sizeof(bleName), TB_DEVICE_NAME " %02X%02X", mac[4], mac[5]);
+  NimBLEDevice::init(bleName);
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
   NimBLEDevice::setMTU(185);
 
@@ -197,6 +356,10 @@ static void setupBLE() {
   imuChar = svc->createCharacteristic(TB_IMU_UUID, NIMBLE_PROPERTY::NOTIFY);
   statusChar = svc->createCharacteristic(TB_STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
   shotChar = svc->createCharacteristic(TB_SHOT_UUID, NIMBLE_PROPERTY::NOTIFY);
+  tapChar = svc->createCharacteristic(TB_TAP_UUID, NIMBLE_PROPERTY::NOTIFY);
+  hitChar = svc->createCharacteristic(TB_HIT_UUID, NIMBLE_PROPERTY::NOTIFY);
+  windowChar = svc->createCharacteristic(TB_WINDOW_UUID, NIMBLE_PROPERTY::NOTIFY);
+  poseChar = svc->createCharacteristic(TB_POSE_UUID, NIMBLE_PROPERTY::NOTIFY);
   NimBLECharacteristic *control =
       svc->createCharacteristic(TB_CONTROL_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
   control->setCallbacks(new ControlCallbacks());
@@ -209,7 +372,7 @@ static void setupBLE() {
   adv->addServiceUUID(TB_SERVICE_UUID);
   adv->setScanResponse(true);
   adv->start();
-  Serial.println("BLE: advertising as \"" TB_DEVICE_NAME "\"");
+  Serial.printf("BLE: advertising as \"%s\"\n", bleName);
 }
 
 void setup() {
@@ -221,7 +384,7 @@ void setup() {
   Wire.setClock(400000);
   // The IMU may not be ready right after power-up: retry a few times.
   for (int attempt = 0; attempt < 10 && !imuOk; attempt++) {
-    imuOk = setupIMU();
+    imuOk = setupIMU(gyro4000);
     if (!imuOk) delay(100);
   }
   Serial.printf("LSM6DSV320X: %s\n", imuOk ? "OK" : "NOT FOUND");
@@ -232,6 +395,13 @@ void setup() {
   shotQueue = xQueueCreate(8, sizeof(TBShot));
   micOk = micBegin(shotQueue);
   Serial.printf("INMP441 mic + sweet-spot model: %s\n", micOk ? "OK" : "FAILED to start I2S");
+  tapQueue = xQueueCreate(8, sizeof(TapEvent));
+  hitQueue = xQueueCreate(8, sizeof(TBHit));
+  impactReset();
+  tapInit();
+  tapConfigure(TAP_TRIG_MG, TAP_MAX_LEN, TAP_REFRACTORY_MS);
+  Serial.printf("Handle taps: trigger %ld mg, gestures up to %d taps %lu ms apart\n", (long)TAP_TRIG_MG,
+                TAP_MAX_COUNT, (unsigned long)TAP_GAP_MS);
   Serial.println("Send 'c' over serial to toggle clip dump for training data (tools/collect_clips.py)");
   setupBLE();
   xTaskCreate(samplerTask, "sampler", 4096, nullptr, configMAX_PRIORITIES - 2, nullptr);
@@ -245,25 +415,89 @@ void loop() {
       Serial.printf("collect mode %s\n", micCollecting() ? "ON" : "OFF");
     }
   }
+  const bool impactMode = streamMode == TB_STREAM_IMPACTS && server->getConnectedCount() > 0;
+  // Hits go out first: they are what makes the phone react.
+  TBHit hit;
+  while (xQueueReceive(hitQueue, &hit, 0) == pdTRUE) {
+    if (impactMode) {
+      hitChar->setValue((uint8_t *)&hit, sizeof(hit));
+      hitChar->notify();
+    }
+    Serial.printf("HIT #%u %s jump %u g swing %u dps\n", hit.seq, hit.source == TB_HIT_MIC ? "mic" : "motion",
+                  hit.jump_g, hit.swing_dps);
+  }
   // Sweet-spot verdicts from the on-device model.
   TBShot shot;
   while (xQueueReceive(shotQueue, &shot, 0) == pdTRUE) {
     shotChar->setValue((uint8_t *)&shot, sizeof(shot));
     if (server->getConnectedCount() > 0) shotChar->notify();
   }
-
-  // Send queued packets as notifications.
-  TBPacket pkt;
-  while (xQueueReceive(packetQueue, &pkt, pdMS_TO_TICKS(2)) == pdTRUE) {
-    imuChar->setValue((uint8_t *)&pkt, sizeof(pkt));
-    imuChar->notify();
+  // Handle-tap gestures.
+  TapEvent tap;
+  while (xQueueReceive(tapQueue, &tap, 0) == pdTRUE) {
+    tapChar->setValue((uint8_t *)&tap.tap, sizeof(tap.tap));
+    if (server->getConnectedCount() > 0) tapChar->notify();
+    Serial.printf("TAP x%u strength %u (jolt %ld mg) dir %+.2f %+.2f %+.2f zone %s detect %luus\n",
+                  tap.tap.count, tap.tap.strength, (long)tap.jolt_mg, tap.tap.dir[0] / 127.0f,
+                  tap.tap.dir[1] / 127.0f, tap.tap.dir[2] / 127.0f, TAP_ZONE_NAMES[tap.tap.zone],
+                  (unsigned long)tap.detect_us);
   }
 
-  static uint32_t lastStatus = 0, lastSamples = 0, lastRetry = 0;
+  // Impact mode: live orientation, then the current hit's window while NimBLE has buffers to spare.
+  static uint32_t lastPose = 0;
+  if (impactMode && millis() - lastPose >= POSE_INTERVAL_MS) {
+    lastPose = millis();
+    float q[4];
+    impactOrientation(q);
+    TBSample ls = lastSample;
+    float gs = gyro4000 ? WIRE_G_LSB_PER_DPS / 2 : WIRE_G_LSB_PER_DPS;
+    float h3Scale = (h3Range == 0) ? 0.049f : (h3Range == 1) ? 0.098f : 0.195f;
+    float gyroDps = sqrtf((float)ls.gx * ls.gx + (float)ls.gy * ls.gy + (float)ls.gz * ls.gz) / gs;
+    float hx = (ls.hx >> 4) * h3Scale, hy = (ls.hy >> 4) * h3Scale, hz = (ls.hz >> 4) * h3Scale;
+    float highG = sqrtf(hx * hx + hy * hy + hz * hz);
+    TBPose pose;
+    for (int k = 0; k < 4; k++) pose.q[k] = impactQuatWire(q[k]);
+    pose.gyro_dps = (uint16_t)min(gyroDps, 65535.0f);
+    pose.high_g = (uint8_t)min(highG, 255.0f);
+    pose.flags = makeStatus().flags;
+    poseChar->setValue((uint8_t *)&pose, sizeof(pose));
+    poseChar->notify();
+  }
+  while (windowBusy && os_msys_num_free() > BLE_BUFFER_RESERVE) {
+    TBWindowChunk chunk;
+    chunk.seq = window.seq;
+    chunk.index = (uint8_t)windowNext;
+    chunk.total = TB_WINDOW_CHUNKS;
+    chunk.impact = window.impact;
+    for (int k = 0; k < 4; k++) chunk.q0[k] = window.q0[k];
+    chunk.t0_us = window.chunkT0[windowNext];
+    chunk.count = TB_SAMPLES_PER_PACKET;
+    chunk.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | TB_FLAG_GYRO_4000;
+    memcpy(chunk.s, &window.s[windowNext * TB_SAMPLES_PER_PACKET], sizeof(chunk.s));
+    windowChar->setValue((uint8_t *)&chunk, sizeof(chunk));
+    windowChar->notify();
+    if (++windowNext >= TB_WINDOW_CHUNKS) windowBusy = false;
+  }
+
+  // Send queued packets as notifications.
+  // Send queued packets while NimBLE has buffers to spare. When the link can't keep up, packets wait in
+  // the queue and the sampler counts any that overflow it as dropped.
+  TBPacket pkt;
+  if (os_msys_num_free() <= BLE_BUFFER_RESERVE) {
+    vTaskDelay(1);
+  } else {
+    while (os_msys_num_free() > BLE_BUFFER_RESERVE && xQueueReceive(packetQueue, &pkt, pdMS_TO_TICKS(2)) == pdTRUE) {
+      imuChar->setValue((uint8_t *)&pkt, sizeof(pkt));
+      imuChar->notify();
+      sentPackets++;
+    }
+  }
+
+  static uint32_t lastStatus = 0, lastSamples = 0, lastSent = 0, lastRetry = 0;
   uint32_t now = millis();
   if (!imuOk && now - lastRetry > 2000) {
     lastRetry = now;
-    imuOk = setupIMU();
+    imuOk = setupIMU(gyro4000);
   }
   if (now - lastStatus >= 1000) {
     TBStatus st = makeStatus();
@@ -272,17 +506,25 @@ void loop() {
 
     uint32_t rate = samplesRead - lastSamples;
     lastSamples = samplesRead;
+    uint32_t sentRate = sentPackets - lastSent;
+    lastSent = sentPackets;
     lastStatus = now;
     TBSample s = lastSample;
+    float gs = gyro4000 ? WIRE_G_LSB_PER_DPS / 2 : WIRE_G_LSB_PER_DPS;
     float h3Scale = (h3Range == 0) ? 0.049f : (h3Range == 1) ? 0.098f : 0.195f;
     MicLevel mic = micLevel();
     Serial.printf(
         "rate %4lu Hz | a[g] %6.2f %6.2f %6.2f  g[dps] %7.1f %7.1f %7.1f | high-g a[g] %6.1f %6.1f %6.1f | "
-        "mic floor %4d peak %5d trig %5d hits %lu | BLE %s, dropped %u, i2c err %lu | bat %u mV\n",
-        (unsigned long)rate, s.ax / 2048.0f, s.ay / 2048.0f, s.az / 2048.0f, s.gx / 16.4f, s.gy / 16.4f,
-        s.gz / 16.4f, (s.hx >> 4) * h3Scale, (s.hy >> 4) * h3Scale, (s.hz >> 4) * h3Scale, mic.floor, mic.peak,
-        mic.trigger, (unsigned long)micImpactCount(),
-        server->getConnectedCount() ? (server->getConnectedCount() > 1 ? "connected x2+" : "connected") : "advertising", droppedPackets, (unsigned long)i2cErrors,
-        st.battery_mv);
+        "mic floor %4d peak %5d trig %5d hits %lu | taps %lu (rejected %lu) jolt %4ld/%ld mg | BLE %s, "
+        "sent %lu pkt/s, dropped %u, bufs free %d, itvl %.1f ms, i2c err %lu, gyro ±%d dps, imu resets %lu | "
+        "%s mode, hits %lu, windows dropped %lu, detect max %lu us | bat %u mV\n",
+        (unsigned long)rate, s.ax / 2048.0f, s.ay / 2048.0f, s.az / 2048.0f, s.gx / gs, s.gy / gs,
+        s.gz / gs, (s.hx >> 4) * h3Scale, (s.hy >> 4) * h3Scale, (s.hz >> 4) * h3Scale, mic.floor, mic.peak,
+        mic.trigger, (unsigned long)micImpactCount(), (unsigned long)tapGestures, (unsigned long)tapsRejected,
+        (long)tapPeakDeviation(), (long)TAP_TRIG_MG,
+        server->getConnectedCount() ? (server->getConnectedCount() > 1 ? "connected x2+" : "connected") : "advertising", (unsigned long)sentRate, droppedPackets, os_msys_num_free(), server->getConnectedCount() ? server->getPeerInfo(0).getConnInterval() * 1.25f : 0.0f, (unsigned long)i2cErrors, gyro4000 ? 4000 : 2000, (unsigned long)imuResets,
+        streamMode == TB_STREAM_IMPACTS ? "impact" : "raw", (unsigned long)impactHits(),
+        (unsigned long)impactWindowsDropped(), (unsigned long)impactStepMaxUs, st.battery_mv);
+    impactStepMaxUs = 0;
   }
 }

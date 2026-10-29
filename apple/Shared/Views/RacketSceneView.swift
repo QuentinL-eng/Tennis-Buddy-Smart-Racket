@@ -9,16 +9,19 @@ final class RacketScene {
     let scene = SCNScene()
     let racket = SCNNode()
     private let impactDot: SCNNode
+    private var paint: [(SCNMaterial, Bool, Any?)] = []
 
     init() {
         scene.background.contents = nil
         let frameMat = SCNMaterial()
         frameMat.diffuse.contents = PlatformColor(red: 0.05, green: 0.12, blue: 0.08, alpha: 1)
+        frameMat.name = "tennis racquet"
         frameMat.metalness.contents = 0.6
         frameMat.roughness.contents = 0.3
         frameMat.lightingModel = .physicallyBased
         let accentMat = SCNMaterial()
         accentMat.diffuse.contents = PlatformColor(red: 0.84, green: 0.95, blue: 0.25, alpha: 1)
+        accentMat.name = "dark"
         accentMat.lightingModel = .physicallyBased
         let gripMat = SCNMaterial()
         gripMat.diffuse.contents = PlatformColor(white: 0.22, alpha: 1)
@@ -89,6 +92,15 @@ final class RacketScene {
         model.position = SCNVector3(-0.3, 0, 0)       // rotate about a point near the grip
         racket.addChildNode(model)
         scene.rootNode.addChildNode(racket)
+        var seen = Set<ObjectIdentifier>()
+        model.enumerateChildNodes { node, _ in
+            for material in node.geometry?.materials ?? [] {
+                guard seen.insert(ObjectIdentifier(material)).inserted else { continue }
+                if ["tennis racquet", "dark", "grip"].contains(material.name) {
+                    paint.append((material, material.name != "tennis racquet", material.diffuse.contents))
+                }
+            }
+        }
 
         let camera = SCNNode()
         camera.camera = SCNCamera()
@@ -127,6 +139,12 @@ final class RacketScene {
         return container
     }
 
+    func applySkin(enabled: Bool, main: String, secondary: String) {
+        for (material, isSecondary, original) in paint {
+            material.diffuse.contents = enabled ? PlatformColor(RacketSkin.color(isSecondary ? secondary : main)) : original
+        }
+    }
+
     /// World (z-up) racket orientation → SceneKit (y-up).
     func update(_ q: simd_quatf) {
         let zUpToYUp = simd_quatf(angle: -.pi / 2, axis: SIMD3(1, 0, 0))
@@ -148,6 +166,9 @@ final class RacketScene {
 struct RacketSceneView: View {
     @Environment(AppModel.self) private var model
     @State private var racketScene = RacketScene()
+    @AppStorage("skin.enabled") private var skinEnabled = false
+    @AppStorage("skin.main") private var mainColor = RacketSkin.defaultMain
+    @AppStorage("skin.secondary") private var secondaryColor = RacketSkin.defaultSecondary
 
     var body: some View {
         SceneView(scene: racketScene.scene, options: [.rendersContinuously])
@@ -156,7 +177,13 @@ struct RacketSceneView: View {
             .onChange(of: model.shotFlashID) { _, _ in
                 if let shot = model.lastShot { racketScene.showImpact(shot) }
             }
-            .onAppear { racketScene.update(model.live.orientation) }
+            .onAppear { racketScene.update(model.live.orientation); applySkin() }
+            .onChange(of: skinEnabled) { _, _ in applySkin() }
+            .onChange(of: mainColor) { _, _ in applySkin() }
+            .onChange(of: secondaryColor) { _, _ in applySkin() }
+    }
+    private func applySkin() {
+        racketScene.applySkin(enabled: skinEnabled, main: mainColor, secondary: secondaryColor)
     }
 }
 

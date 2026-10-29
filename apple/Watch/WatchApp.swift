@@ -22,6 +22,13 @@ struct TennisBuddyWatchApp: App {
 @Observable
 final class WatchModel: NSObject, WCSessionDelegate {
     var sessionActive = false
+    var sessionID: UUID?
+    var sharedScore: ScoreTracker?
+    var sharedScoreActive = false
+    var sharedMatchID: UUID?
+    var sharedRevision = 0
+    var commandInFlight = false
+    var commandError: String?
     var lastShot: ShotMetrics?
     var summary: ShotSummary?
     var pointsWon = 0
@@ -29,10 +36,15 @@ final class WatchModel: NSObject, WCSessionDelegate {
     var phoneReachable = false
     var units = UnitSystem(metric: false)
     var drill: Drill?
+    /// When the current session began, for the elapsed timer on the session page.
+    var sessionStart: Date?
     let workout = WorkoutManager()
 
     override init() {
         super.init()
+        workout.onFinished = { [weak self] id, average, calories in
+            self?.sendHealth(id: id, average: average, calories: calories)
+        }
         if WCSession.isSupported() {
             WCSession.default.delegate = self
             WCSession.default.activate()
@@ -40,23 +52,35 @@ final class WatchModel: NSObject, WCSessionDelegate {
     }
 
     func toggleSession() {
-        if sessionActive { sendHealth() }
-        send(["cmd": sessionActive ? "stop" : "start"])
-        setSessionActive(!sessionActive)
+        let wasActive = sessionActive
+        if !wasActive { sessionID = UUID() }
+        send(["cmd": wasActive ? "stop" : "start", "sessionID": sessionID?.uuidString ?? ""])
+        setSessionActive(!wasActive)
         WKInterfaceDevice.current().play(sessionActive ? .start : .stop)
     }
 
     /// Keeps the Tennis workout (heart rate, calories, Apple Health) in step with the racket session.
     func setSessionActive(_ active: Bool) {
-        guard active != sessionActive || active != workout.isRunning else { return }
-        if active && !sessionActive { pointsWon = 0; pointsLost = 0; lastShot = nil; summary = nil }
+        guard active != sessionActive else {
+            if active { workout.setActive(true, recordID: sessionID) }
+            return
+        }
+        if active && !sessionActive {
+            pointsWon = 0; pointsLost = 0; lastShot = nil; summary = nil
+            sessionStart = Date()
+        }
+        if !active { sessionStart = nil }
         if !active && sessionActive && workout.isRunning { sendHealth() }
         sessionActive = active
-        Task { active ? await workout.start() : await workout.stop() }
+        workout.setActive(active, recordID: sessionID)
     }
 
-    private func sendHealth() {
-        send(["cmd": "health", "avgHR": workout.averageHeartRate, "kcal": workout.activeCalories])
+    private func sendHealth(id: UUID? = nil, average: Double? = nil, calories: Double? = nil) {
+        guard let recordID = id ?? sessionID else { return }
+        let message: [String: Any] = ["cmd": "health", "sessionID": recordID.uuidString,
+            "avgHR": average ?? workout.averageHeartRate, "kcal": calories ?? workout.activeCalories]
+        // Queued delivery survives a temporarily unreachable iPhone; the record ID prevents misattribution.
+        if WCSession.default.activationState == .activated { WCSession.default.transferUserInfo(message) }
     }
 
     /// New drill or progress from the iPhone: tap per counted shot, a celebration when it's done.
@@ -79,17 +103,37 @@ final class WatchModel: NSObject, WCSessionDelegate {
     }
 
     func logPoint(won: Bool) {
-        if won { pointsWon += 1 } else { pointsLost += 1 }
-        send(["cmd": "point", "won": won])
+        guard !commandInFlight else { return }
+        if sharedScore != nil && !sharedScoreActive { return }
+        if !sharedScoreActive {
+            if won { pointsWon += 1 } else { pointsLost += 1 }
+        }
+        send(["cmd": sharedScoreActive ? "sharedPoint" : "point", "won": won,
+              "matchID": sharedMatchID?.uuidString ?? "", "revision": sharedRevision])
         WKInterfaceDevice.current().play(.click)
     }
 
     private func send(_ message: [String: Any]) {
-        guard WCSession.default.activationState == .activated, WCSession.default.isReachable else { return }
+        guard WCSession.default.activationState == .activated, WCSession.default.isReachable else {
+            commandError = "Open Tennis Buddee on your iPhone to sync."
+            return
+        }
+        commandInFlight = true; commandError = nil
         WCSession.default.sendMessage(message, replyHandler: { reply in
-            if let active = reply["sessionActive"] as? Bool {
-                Task { @MainActor in self.setSessionActive(active) }
+            let error = reply["error"] as? String
+            Task { @MainActor in
+                self.commandInFlight = false
+                self.commandError = error?.isEmpty == false ? error : nil
             }
+            if let active = reply["sessionActive"] as? Bool {
+                let id = (reply["sessionID"] as? String).flatMap(UUID.init(uuidString:))
+                Task { @MainActor in
+                    if let id { self.sessionID = id }
+                    self.setSessionActive(active)
+                }
+            }
+        }, errorHandler: { error in
+            Task { @MainActor in self.commandInFlight = false; self.commandError = error.localizedDescription }
         })
     }
 
@@ -102,7 +146,13 @@ final class WatchModel: NSObject, WCSessionDelegate {
             // Crisp tap for a sweet-spot hit, a "retry" buzz for a mishit.
             WKInterfaceDevice.current().play(shot.isSweetSpot ? .success : .retry)
         } else if message["type"] as? String == "session", let active = message["active"] as? Bool {
+            if let id = (message["sessionID"] as? String).flatMap(UUID.init(uuidString:)) { sessionID = id }
             setSessionActive(active)
+        } else if message["type"] as? String == "sharedScore", let data = message["score"] as? Data {
+            sharedScore = try? JSONDecoder().decode(ScoreTracker.self, from: data)
+            sharedScoreActive = message["active"] as? Bool ?? false
+            sharedMatchID = (message["matchID"] as? String).flatMap(UUID.init(uuidString:))
+            sharedRevision = message["revision"] as? Int ?? 0
         } else if message["type"] as? String == "drill", let data = message["drill"] as? Data {
             updateDrill(data)
         }
@@ -116,7 +166,15 @@ final class WatchModel: NSObject, WCSessionDelegate {
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext ctx: [String: Any]) {
         let active = ctx["sessionActive"] as? Bool
         let drill = ctx["drill"] as? Data
+        let recordID = (ctx["sessionID"] as? String).flatMap(UUID.init(uuidString:))
+        let score = (ctx["sharedScore"] as? Data).flatMap { try? JSONDecoder().decode(ScoreTracker.self, from: $0) }
+        let scoreActive = ctx["sharedScoreActive"] as? Bool ?? false
+        let matchID = (ctx["sharedMatchID"] as? String).flatMap(UUID.init(uuidString:))
+        let revision = ctx["sharedRevision"] as? Int ?? 0
         Task { @MainActor in
+            if let recordID { self.sessionID = recordID }
+            self.sharedScore = score; self.sharedScoreActive = scoreActive
+            self.sharedMatchID = matchID; self.sharedRevision = revision
             if let active { self.setSessionActive(active) }
             if let drill { self.updateDrill(drill) }
         }
@@ -148,28 +206,46 @@ struct WatchRootView: View {
     }
 }
 
+
+/// Colors from the Figma Watch mockup.
+enum WatchPalette {
+    static let green = Color(red: 0.188, green: 0.820, blue: 0.345) // #30D158
+    static let red = Color(red: 1.0, green: 0.271, blue: 0.231) // #FF453B
+    static let orange = Color(red: 1.0, green: 0.620, blue: 0.039) // #FF9E0A
+    static let secondary = Color(red: 0.600, green: 0.600, blue: 0.631) // #9999A1
+    static let ringTrack = Color.white.opacity(0.18)
+    static let sweetSpotBackground = Color(red: 0.059, green: 0.251, blue: 0.122) // #0F401F
+    static let mishitBackground = Color(red: 0.302, green: 0.071, blue: 0.071) // #4D1212
+}
+
 struct LastShotPage: View {
     @Environment(WatchModel.self) private var model
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 3) {
             if let shot = model.lastShot {
                 HStack {
-                    Image(systemName: shot.type.symbol)
-                    Text(shot.type.label).font(.headline)
+                    HStack(spacing: 5) {
+                        Image(systemName: shot.type.symbol).font(.system(size: 13, weight: .semibold))
+                        Text(shot.type.label).font(.system(size: 15, weight: .semibold))
+                    }
                     Spacer()
-                    Circle().fill(shot.isSweetSpot ? .green : .red).frame(width: 10, height: 10)
+                    Circle().fill(shot.isSweetSpot ? WatchPalette.green : WatchPalette.red).frame(width: 10, height: 10)
                 }
                 Text(model.units.speedValue(shot.ballSpeedKmh))
-                    .font(.system(size: 46, weight: .bold, design: .rounded)).monospacedDigit()
-                Text("\(model.units.speedUnit) · \(Int(shot.spinRPM)) rpm").font(.caption).foregroundStyle(.secondary)
+                    .font(.system(size: 52, weight: .bold, design: .rounded)).monospacedDigit()
+                Text("\(model.units.speedUnit) · \(Int(shot.spinRPM)) rpm")
+                    .font(.system(size: 12)).foregroundStyle(WatchPalette.secondary)
                 if let s = model.summary {
                     Text("\(s.count) shots · \(Int(s.sweetSpotPercent))% sweet spot")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
                 }
                 if model.workout.heartRate > 0 {
-                    Label("\(Int(model.workout.heartRate)) bpm", systemImage: "heart.fill")
-                        .font(.caption2).foregroundStyle(.red)
+                    HStack(spacing: 3) {
+                        Image(systemName: "heart").font(.system(size: 10))
+                        Text("\(Int(model.workout.heartRate)) bpm")
+                    }
+                    .font(.system(size: 11)).foregroundStyle(WatchPalette.red)
                 }
             } else {
                 Image(systemName: "figure.tennis").font(.largeTitle).foregroundStyle(Color.accentColor)
@@ -178,9 +254,13 @@ struct LastShotPage: View {
             }
         }
         .padding(.horizontal, 4)
-        .containerBackground(
-            (model.lastShot?.isSweetSpot ?? true ? Color.green : Color.red).opacity(model.lastShot == nil ? 0 : 0.25)
-                .gradient, for: .tabView)
+        .containerBackground(background, for: .tabView)
+    }
+
+    /// Solid green after a sweet-spot hit, deep red after a mishit.
+    private var background: Color {
+        guard let shot = model.lastShot else { return .black }
+        return shot.isSweetSpot ? WatchPalette.sweetSpotBackground : WatchPalette.mishitBackground
     }
 }
 
@@ -190,32 +270,32 @@ struct DrillPage: View {
 
     var body: some View {
         if let drill = model.drill {
-            VStack(spacing: 6) {
-                Text(drill.title).font(.headline).lineLimit(1).minimumScaleFactor(0.7)
+            VStack(spacing: 4) {
+                Text(drill.title).font(.system(size: 14, weight: .semibold)).lineLimit(1).minimumScaleFactor(0.7)
                 ZStack {
-                    Circle().stroke(.quaternary, lineWidth: 8)
+                    Circle().stroke(WatchPalette.ringTrack, lineWidth: 8)
                     Circle().trim(from: 0, to: drill.progress)
                         .stroke(Color.accentColor, style: StrokeStyle(lineWidth: 8, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                         .animation(.snappy, value: drill.completed)
                     VStack(spacing: 0) {
                         if drill.isDone {
-                            Image(systemName: "checkmark").font(.title.bold()).foregroundStyle(.green)
-                            Text("Done!").font(.caption)
+                            Image(systemName: "checkmark").font(.title.bold()).foregroundStyle(WatchPalette.green)
+                            Text("Done!").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
                         } else {
                             Text("\(drill.remaining)").font(.system(size: 34, weight: .bold, design: .rounded))
                                 .monospacedDigit()
-                            Text("to go").font(.caption2).foregroundStyle(.secondary)
+                            Text("to go").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
                         }
                     }
                 }
                 .frame(width: 92, height: 92)
-                Text(drill.goal).font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
-                    .lineLimit(2)
-                Button(drill.isDone ? "Close" : "Stop drill", role: drill.isDone ? nil : .destructive) {
-                    model.cancelDrill()
-                }
-                .font(.caption)
+                Text(drill.goal).font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
+                    .multilineTextAlignment(.center).lineLimit(2)
+                Button(drill.isDone ? "Close" : "Stop drill") { model.cancelDrill() }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(drill.isDone ? Color.accentColor : WatchPalette.red)
             }
         }
     }
@@ -226,17 +306,39 @@ struct PointsPage: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("\(model.pointsWon) – \(model.pointsLost)")
-                .font(.system(size: 34, weight: .bold, design: .rounded)).monospacedDigit()
-            HStack {
-                Button { model.logPoint(won: true) } label: { Label("Won", systemImage: "checkmark") }
-                    .tint(.green)
-                Button { model.logPoint(won: false) } label: { Label("Lost", systemImage: "xmark") }
-                    .tint(.red)
+            Text(model.sharedScore?.score.pointText ?? "\(model.pointsWon) – \(model.pointsLost)")
+                .font(.system(size: 38, weight: .bold, design: .rounded)).monospacedDigit()
+            HStack(spacing: 8) {
+                PointButton(title: "Won", symbol: "checkmark", color: WatchPalette.green) { model.logPoint(won: true) }
+                PointButton(title: "Lost", symbol: "xmark", color: WatchPalette.red) { model.logPoint(won: false) }
             }
-            .disabled(!model.sessionActive)
-            Text("Log each point").font(.caption2).foregroundStyle(.secondary)
+            .disabled(!(model.sessionActive || model.sharedScoreActive) || (model.sharedScoreActive && !model.phoneReachable) || model.commandInFlight || model.sharedScore?.score.winner != nil || (model.sharedScore != nil && !model.sharedScoreActive))
+            .opacity(model.sessionActive || model.sharedScoreActive ? 1 : 0.4)
+            if let error = model.commandError { Text(error).font(.caption2).foregroundStyle(.red) }
+            if let score = model.sharedScore { Text(score.setsText).font(.caption.monospacedDigit()) }
+            Text(model.sharedScore != nil ? "Shared score · open Together on iPhone" : "Log each point").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
         }
+    }
+}
+
+/// A tinted tile with an icon over its label, as in the mockup's Won / Lost buttons.
+private struct PointButton: View {
+    let title: String
+    let symbol: String
+    let color: Color
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: symbol).font(.system(size: 16, weight: .semibold))
+                Text(title).font(.system(size: 14, weight: .semibold))
+            }
+            .foregroundStyle(color)
+            .frame(width: 80, height: 64)
+            .background(color.opacity(0.28), in: .rect(cornerRadius: 22))
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -245,23 +347,48 @@ struct SessionPage: View {
 
     var body: some View {
         VStack(spacing: 10) {
+            if model.sessionActive {
+                if let start = model.sessionStart {
+                    Text(start, style: .timer)
+                        .font(.system(size: 30, weight: .bold, design: .rounded)).monospacedDigit()
+                }
+            } else {
+                Image(systemName: "tennis.racket").font(.system(size: 34)).foregroundStyle(Color.accentColor)
+            }
             Button {
                 model.toggleSession()
             } label: {
-                Label(model.sessionActive ? "End" : "Start", systemImage: model.sessionActive ? "stop.fill" : "play.fill")
-                    .font(.headline)
-            }
-            .tint(model.sessionActive ? .red : .accentColor)
-            .foregroundStyle(model.sessionActive ? .white : .black)
-            if model.workout.isRunning {
-                HStack {
-                    Label("\(Int(model.workout.heartRate))", systemImage: "heart.fill").foregroundStyle(.red)
-                    Label("\(Int(model.workout.activeCalories)) kcal", systemImage: "flame.fill").foregroundStyle(.orange)
+                HStack(spacing: 6) {
+                    Image(systemName: model.sessionActive ? "stop.fill" : "play.fill").font(.system(size: 14))
+                    Text(model.sessionActive ? "End" : "Start").font(.system(size: 17, weight: .semibold))
                 }
-                .font(.caption)
+                .foregroundStyle(model.sessionActive ? .white : .black)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 12)
+                .background(model.sessionActive ? WatchPalette.red : Color.accentColor, in: .capsule)
             }
-            Text(model.phoneReachable ? "iPhone connected" : "Open Tennis Buddy on your iPhone")
-                .font(.caption2).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            .buttonStyle(.plain)
+            if model.workout.isRunning {
+                HStack(spacing: 10) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "heart")
+                        Text("\(Int(model.workout.heartRate))")
+                    }
+                    .foregroundStyle(WatchPalette.red)
+                    HStack(spacing: 3) {
+                        Image(systemName: "flame")
+                        Text("\(Int(model.workout.activeCalories)) kcal")
+                    }
+                    .foregroundStyle(WatchPalette.orange)
+                }
+                .font(.system(size: 12.5, weight: .medium))
+            }
+            if model.workout.isTransitioning { ProgressView() }
+            if let status = model.workout.statusMessage {
+                Text(status).font(.caption2).multilineTextAlignment(.center)
+            }
+            Text(model.phoneReachable ? "iPhone connected" : "Open Tennis Buddee on your iPhone")
+                .font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary).multilineTextAlignment(.center)
         }
     }
 }

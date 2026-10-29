@@ -82,6 +82,7 @@ enum GLBLoader {
             m.lightingModel = .physicallyBased
             guard let index, index < materials.count else { return m }
             let spec = materials[index]
+            m.name = spec["name"] as? String
             m.isDoubleSided = spec["doubleSided"] as? Bool ?? false
             let pbr = spec["pbrMetallicRoughness"] as? [String: Any] ?? [:]
             if let tex = (pbr["baseColorTexture"] as? [String: Any])?["index"] as? Int, let img = image(forTexture: tex) {
@@ -123,9 +124,26 @@ enum GLBLoader {
                     }))
                 }
                 guard let idx = prim["indices"] as? Int else { continue }
-                let element = SCNGeometryElement(indices: indices(idx), primitiveType: .triangles)
-                let geometry = SCNGeometry(sources: sources, elements: [element])
-                geometry.materials = [material(prim["material"] as? Int)]
+                let all = indices(idx)
+                let base = material(prim["material"] as? Int)
+                let geometry: SCNGeometry
+                if base.name == "tennis racquet" {
+                    // Split the handle off (butt is at z ≈ 4.4, grip ends near z ≈ 2) so it can take the secondary skin colour.
+                    var frame: [UInt32] = [], grip: [UInt32] = []
+                    for t in stride(from: 0, to: all.count - 2, by: 3) {
+                        let z = (p[Int(all[t]) * 3 + 2] + p[Int(all[t + 1]) * 3 + 2] + p[Int(all[t + 2]) * 3 + 2]) / 3
+                        if z > 2.0 { grip += all[t...t + 2] } else { frame += all[t...t + 2] }
+                    }
+                    geometry = SCNGeometry(sources: sources, elements: [
+                        SCNGeometryElement(indices: frame, primitiveType: .triangles),
+                        SCNGeometryElement(indices: grip, primitiveType: .triangles)])
+                    let gripMaterial = base.copy() as! SCNMaterial
+                    gripMaterial.name = "grip"
+                    geometry.materials = [base, gripMaterial]
+                } else {
+                    geometry = SCNGeometry(sources: sources, elements: [SCNGeometryElement(indices: all, primitiveType: .triangles)])
+                    geometry.materials = [base]
+                }
                 root.addChildNode(SCNNode(geometry: geometry))
             }
         }

@@ -115,7 +115,10 @@ struct LiveView: View {
             .foregroundStyle(model.isSessionActive ? .white : .black)
             .controlSize(.large)
 
-            if model.isSessionActive {
+            if let session = model.activeSession {
+                TextField("Session name", text: Binding(get: { session.title }, set: { session.title = String($0.prefix(120)) }))
+                    .textFieldStyle(.roundedBorder)
+                    .accessibilityLabel("Session name")
                 let summary = ShotSummary(model.sessionShots)
                 HStack(spacing: 10) {
                     StatTile(label: "Shots", value: "\(summary.count)")
