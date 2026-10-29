@@ -88,7 +88,7 @@ struct TBShot {
   uint16_t seq;         // counts impacts since boot
   uint8_t sweet;        // 1 = sweet spot, 0 = off-center
   uint8_t off_pct;      // 0 if sweet; else 33..100, distance toward the frame (100 = at the frame)
-  uint8_t confidence;   // 50..100 (%), confidence in the sweet/not-sweet call
+  uint8_t confidence;   // 0 = unavailable (ridge); legacy classifier used 50..100 percent
   uint8_t level;        // impact loudness, 0..255 (255 = full scale; ~255 means the mic clipped)
 };
 // One handle-tap gesture (firmware/src/tap.cpp), sent once the taps stop: a single, double or triple tap.

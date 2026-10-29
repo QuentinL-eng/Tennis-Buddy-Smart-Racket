@@ -394,7 +394,7 @@ void setup() {
   packetQueue = xQueueCreate(48, sizeof(TBPacket));
   shotQueue = xQueueCreate(8, sizeof(TBShot));
   micOk = micBegin(shotQueue);
-  Serial.printf("INMP441 mic + sweet-spot model: %s\n", micOk ? "OK" : "FAILED to start I2S");
+  Serial.printf("INMP441 mic + ridge distance model (156 features): %s\n", micOk ? "OK" : "FAILED to start I2S");
   tapQueue = xQueueCreate(8, sizeof(TapEvent));
   hitQueue = xQueueCreate(8, sizeof(TBHit));
   impactReset();

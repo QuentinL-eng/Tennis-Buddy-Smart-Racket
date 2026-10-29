@@ -1,42 +1,47 @@
-#!/usr/bin/env python3
-"""Checks that the C++ firmware code (compiled for this computer) matches the Python reference.
-
-    python3 ml/test_parity.py
-"""
+"""Compile the active ridge model on a host and compare all reviewed clips to Python."""
+import csv
+import json
 import os
+from pathlib import Path
+import shutil
 import subprocess
-import sys
 import tempfile
-
 import numpy as np
+from compare_models import audio_features
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, HERE)
-from features import N_FEATURES, extract  # noqa: E402
-from synth import make_dataset  # noqa: E402
-from train import forward_q, sigmoid  # noqa: E402
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def main():
-    exe = os.path.join(tempfile.mkdtemp(), "parity")
-    subprocess.run(["c++", "-O2", "-std=c++17", "-o", exe, os.path.join(HERE, "c_parity_main.cpp"),
-                    os.path.join(HERE, "..", "firmware", "src", "sweetspot.cpp")], check=True)
-    clips, _ = make_dataset(200, seed=5)
-    out = subprocess.run([exe], input=clips.astype("<i2").tobytes(), capture_output=True, check=True).stdout
-    rows = np.array([[float(v) for v in l.split()] for l in out.decode().splitlines()])
-
-    m = np.load(os.path.join(HERE, "model.npz"))
-    q = [(m[f"w{k}"], float(m[f"s{k}"]), m[f"b{k}"]) for k in (1, 2, 3)]
-    py_feats = np.stack([extract(c) for c in clips])
-    feat_err = np.abs(rows[:, :N_FEATURES] - py_feats).max(axis=0)
-    py_p = sigmoid(forward_q(q, (py_feats - m["mean"]) / m["std"])[:, 0])
-    p_err = np.abs(rows[:, N_FEATURES] - py_p).max()
-    agree = np.mean((rows[:, N_FEATURES + 1] > 0.5) == (py_p > 0.5))
-    print(f"max feature error {feat_err.max():.2e}   max probability error {p_err:.2e}   decision agreement {agree*100:.1f}%")
-    ok = feat_err.max() < 5e-3 and p_err < 5e-3 and agree > 0.99
-    print("PASS" if ok else "FAIL")
-    sys.exit(0 if ok else 1)
+    compiler = os.environ.get("CXX") or shutil.which("c++") or shutil.which("g++") or shutil.which("clang++")
+    if not compiler:
+        print("BLOCKED: a host C++ compiler is required for firmware/Python parity. No parity pass is claimed.")
+        return 2
+    run = ROOT / "ml/runs/20261028-reviewed-combined"
+    with (run / "manifest.csv").open(newline="") as fh:
+        manifest = list(csv.DictReader(fh))
+    clips = [np.fromfile(run / "dataset" / r["file"], dtype="<i2")[:512] for r in manifest]
+    rng = np.random.default_rng(7)
+    clips += list(rng.integers(-32768, 32768, size=(20, 512), dtype=np.int16))
+    clips += [np.zeros(512, np.int16), np.full(512, 32767, np.int16)]
+    clips = np.stack(clips)
+    expected_features = np.stack([audio_features(c)[1] for c in clips])
+    model = json.loads((ROOT / "ml/runs/20261028-classical-ml/distance_model.json").read_text())
+    expected_distance = np.maximum(0, expected_features @ np.array(model["coefficients"]) + model["intercept"])
+    with tempfile.TemporaryDirectory() as tmp:
+        exe = Path(tmp) / ("parity.exe" if os.name == "nt" else "parity")
+        subprocess.run([compiler, "-O2", "-std=c++17", "-o", str(exe), str(ROOT / "ml/c_parity_main.cpp"), str(ROOT / "firmware/src/sweetspot.cpp")], check=True)
+        output = subprocess.run([str(exe)], input=clips.astype("<i2").tobytes(), capture_output=True, check=True).stdout
+    actual = np.array([[float(v) for v in line.split()] for line in output.decode().splitlines()])
+    assert actual.shape == (len(clips), 160), actual.shape
+    feature_error = float(np.max(np.abs(actual[:, :156] - expected_features)))
+    distance_error = float(np.max(np.abs(actual[:, 156] - expected_distance)))
+    agree = float(np.mean((actual[:, 157] > .5) == (expected_distance <= 4)))
+    passed = feature_error < .0005 and distance_error < .005 and agree == 1
+    print(f"{len(clips)} clips; max feature error {feature_error:.3g}; max distance error {distance_error:.3g} cm; decisions agree {agree:.1%}")
+    print("PASS" if passed else "FAIL")
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
