@@ -59,6 +59,22 @@ final class ImpactWindowTests: XCTestCase {
         let status = try XCTUnwrap(RacketProtocol.decodeStatus(Data([0, 0, 1, 5, 0x17, 1, 0, 0])))
         XCTAssertTrue(status.impactMode)
         XCTAssertEqual(status.firmwareVersion, "1.5")
+        XCTAssertFalse(status.gyro4000)
+    }
+
+    func testStatusReportsGyroRange() throws {
+        let status = try XCTUnwrap(RacketProtocol.decodeStatus(Data([0, 0, 1, 6, 0x0F, 1, 0, 0])))
+        XCTAssertTrue(status.gyro4000)
+        XCTAssertFalse(status.impactMode)
+    }
+
+    func testLinkStatsDifference() {
+        var start = RacketBLE.LinkStats()
+        start.packets = 10; start.packetsAt4000dps = 4; start.lostPackets = 30; start.windows = 2; start.lostWindows = 1
+        var end = start
+        end.packets = 110; end.packetsAt4000dps = 104; end.lostPackets = 330; end.windows = 7; end.lostWindows = 2
+        let d = end - start
+        XCTAssertEqual([d.packets, d.packetsAt4000dps, d.lostPackets, d.windows, d.lostWindows], [100, 100, 300, 5, 1])
     }
 
     func testAssemblesChunksIntoOneWindow() throws {

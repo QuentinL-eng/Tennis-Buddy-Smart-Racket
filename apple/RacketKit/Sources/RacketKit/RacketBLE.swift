@@ -56,6 +56,32 @@ public final class RacketBLE: NSObject, SampleSource, ImpactSource, @unchecked S
     public private(set) var lostPackets = 0
     /// Hits whose window never arrived (the racket was still sending the previous one, or a chunk was lost).
     public private(set) var lostWindows = 0
+    private var link = LinkStats()
+
+    /// Link counters since the app started, for a recording's link log: subtract the value at the start.
+    public struct LinkStats: Codable, Sendable, Equatable {
+        /// Raw-stream packets received, and how many of them had the gyro at ±4000 dps.
+        public var packets = 0
+        public var packetsAt4000dps = 0
+        /// Raw-stream packets missing from the sequence numbers.
+        public var lostPackets = 0
+        public var windows = 0
+        public var lostWindows = 0
+
+        public init() {}
+
+        public static func - (a: LinkStats, b: LinkStats) -> LinkStats {
+            var d = LinkStats()
+            d.packets = a.packets - b.packets
+            d.packetsAt4000dps = a.packetsAt4000dps - b.packetsAt4000dps
+            d.lostPackets = a.lostPackets - b.lostPackets
+            d.windows = a.windows - b.windows
+            d.lostWindows = a.lostWindows - b.lostWindows
+            return d
+        }
+    }
+
+    public func linkStats() -> LinkStats { queue.sync { link } }
 
     private let queue = DispatchQueue(label: "tennisbuddy.ble", qos: .userInitiated)
     private var central: CBCentralManager!
@@ -312,11 +338,13 @@ public final class RacketBLE: NSObject, SampleSource, ImpactSource, @unchecked S
         guard let packet = RacketProtocol.decodePacket(data) else { return }
         if let last = lastSeq {
             let gap = Int(packet.seq &- last) - 1
-            if gap > 0 && gap < 1000 { lostPackets += gap }
+            if gap > 0 && gap < 1000 { lostPackets += gap; link.lostPackets += gap }
         }
         lastSeq = packet.seq
         let t0 = racketTime(packet.t0Micros)
         let wide = packet.flags & RacketProtocol.flagGyro4000 != 0
+        link.packets += 1
+        if wide { link.packetsAt4000dps += 1 }
         IMUSample.gyroSaturation = (wide ? 3990 : 1990) * .pi / 180
         let gyroScale = wide ? RacketProtocol.mpuGyroLSBPerDps / 2 : RacketProtocol.mpuGyroLSBPerDps
         let samples = packet.samples.enumerated().map { k, raw in
@@ -326,13 +354,14 @@ public final class RacketBLE: NSObject, SampleSource, ImpactSource, @unchecked S
     }
 
     private func handleHit(_ hit: RacketProtocol.Hit) {
-        if awaitingWindow != nil { lostWindows += 1 }
+        if awaitingWindow != nil { lostWindows += 1; link.lostWindows += 1 }
         awaitingWindow = hit.seq
     }
 
     private func handleWindowChunk(_ chunk: RacketProtocol.WindowChunk) {
         guard let window = assembler.add(chunk, h3lisRange: h3lisRange, time: racketTime) else { return }
         if awaitingWindow == window.seq { awaitingWindow = nil }
+        link.windows += 1
         IMUSample.gyroSaturation = (gyroWide ? 3990 : 1990) * .pi / 180
         onImpactWindow?(window)
     }

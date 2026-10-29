@@ -114,6 +114,8 @@ public enum RacketProtocol {
         public var h3lisRange: UInt8
         public var droppedPackets: UInt16
         public var impactMode = false
+        /// The gyro is at ±4000 dps (firmware 1.3+ reports it; 1.6+ starts there).
+        public var gyro4000 = false
     }
 
     public enum HitSource: UInt8, Sendable {
@@ -260,7 +262,8 @@ public enum RacketProtocol {
             streaming: b[4] & 4 != 0,
             h3lisRange: b[5],
             droppedPackets: UInt16(b[6]) | UInt16(b[7]) << 8,
-            impactMode: b[4] & flagImpactMode != 0)
+            impactMode: b[4] & flagImpactMode != 0,
+            gyro4000: b[4] & flagGyro4000 != 0)
     }
 
     /// Converts a raw sample to physical units in the sensor frames.

@@ -493,13 +493,45 @@ final class AppModel {
     /// so test data is captured without touching the Recorder toggle.
     @ObservationIgnored private var autoRecording = false
     @ObservationIgnored private var shotLog: FileHandle?
+    @ObservationIgnored private var linkAtStart: (stats: RacketBLE.LinkStats, date: Date)?
+
+    /// Written next to each racket recording as `<name>.link.json`: what the link and sensors were set to, and how
+    /// much of the stream arrived, so a recording's gaps and clipping can be explained afterwards.
+    private struct LinkLog: Encodable {
+        var firmware: String?
+        var gyro4000dps: Bool?
+        var highGRange: UInt8?
+        var impactMode: Bool?
+        var racketDroppedPackets: UInt16?
+        var seconds: Double
+        var link: RacketBLE.LinkStats
+    }
+
+    private func startRecorder(in dir: URL, name: String) -> Bool {
+        guard (try? recorder.start(in: dir, name: name)) != nil else { return false }
+        linkAtStart = sourceKind == .racket ? (ble.linkStats(), Date()) : nil
+        return true
+    }
+
+    private func stopRecorder() {
+        let url = recorder.stop()
+        guard let url, let start = linkAtStart else { return }
+        linkAtStart = nil
+        let s = racketStatus
+        let log = LinkLog(firmware: s?.firmwareVersion, gyro4000dps: s?.gyro4000, highGRange: s?.h3lisRange,
+                          impactMode: s?.impactMode, racketDroppedPackets: s?.droppedPackets,
+                          seconds: Date().timeIntervalSince(start.date), link: ble.linkStats() - start.stats)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        try? encoder.encode(log).write(to: url.deletingPathExtension().appendingPathExtension("link.json"))
+    }
 
     private func beginAutoRecording(session: SessionRecord) {
         let name = "session-" + session.startDate.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
             .replacingOccurrences(of: ":", with: "") + "-" + sourceKind.rawValue
         let dir = Self.recordingsDirectory
         if !recorder.isRecording {
-            if (try? recorder.start(in: dir, name: name)) != nil { autoRecording = true; isRecording = true }
+            if startRecorder(in: dir, name: name) { autoRecording = true; isRecording = true }
         }
         let url = dir.appendingPathComponent(name).appendingPathExtension("shots.jsonl")
         FileManager.default.createFile(atPath: url.path, contents: nil)
@@ -507,7 +539,7 @@ final class AppModel {
     }
 
     private func endAutoRecording() {
-        if autoRecording { recorder.stop(); isRecording = false; autoRecording = false }
+        if autoRecording { stopRecorder(); isRecording = false; autoRecording = false }
         try? shotLog?.close()
         shotLog = nil
         refreshRecordings()
@@ -524,13 +556,13 @@ final class AppModel {
 
     func toggleRecording() {
         if recorder.isRecording {
-            recorder.stop()
+            stopRecorder()
             isRecording = false
             refreshRecordings()
         } else {
             let name = "session-" + Date().formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
                 .replacingOccurrences(of: ":", with: "")
-            try? recorder.start(in: Self.recordingsDirectory, name: name)
+            _ = startRecorder(in: Self.recordingsDirectory, name: name)
             isRecording = recorder.isRecording
         }
         updateStreamMode()
