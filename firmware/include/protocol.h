@@ -31,7 +31,8 @@
 enum : uint8_t {
   TB_CMD_START_STREAM = 0x01,
   TB_CMD_STOP_STREAM  = 0x02,
-  TB_CMD_H3LIS_RANGE  = 0x10,  // second byte: 0 = 100 g, 1 = 200 g, 3 = 400 g
+  TB_CMD_H3LIS_RANGE  = 0x10,  // second byte: 0 = 100 g, 1 = 200 g, 3 = 400 g. Ignored since 1.6 (always 400 g);
+                               // TBStatus.h3lis_range reports the range in use.
   TB_CMD_GYRO_RANGE   = 0x11,  // second byte: 0 = ±2000 dps (16.4 LSB/dps), 1 = ±4000 dps (8.2 LSB/dps).
                                // Firmware 1.3+. Since 1.6 the racket starts at ±4000 dps and returns to it when
                                // the last client disconnects; every packet's TB_FLAG_GYRO_4000 says which.

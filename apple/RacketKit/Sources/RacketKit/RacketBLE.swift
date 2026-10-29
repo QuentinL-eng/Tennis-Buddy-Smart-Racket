@@ -88,7 +88,8 @@ public final class RacketBLE: NSObject, SampleSource, ImpactSource, @unchecked S
     private var peripheral: CBPeripheral?
     private var control: CBCharacteristic?
     private var wantsConnection = false
-    private var h3lisRange: UInt8 = 1
+    /// Wire scale of high-g, from the racket's status: ±400 g on firmware 1.6+, ±200 g by default before.
+    private var h3lisRange: UInt8 = 3
     private var lastSeq: UInt16?
     private var timeBase: (micros: UInt32, wraps: Double)?
     private var lastMicros: UInt32 = 0
@@ -160,13 +161,6 @@ public final class RacketBLE: NSObject, SampleSource, ImpactSource, @unchecked S
         guard let p = peripheral, let c = control, supportsImpactMode else { return }
         let mode: RacketProtocol.StreamMode = wantsRaw ? .raw : .impacts
         p.writeValue(Data([RacketProtocol.Command.streamMode.rawValue, mode.rawValue]), for: c, type: .withResponse)
-    }
-
-    public func setHighGRange(_ code: UInt8) {
-        queue.async {
-            guard let p = self.peripheral, let c = self.control else { return }
-            p.writeValue(Data([RacketProtocol.Command.h3lisRange.rawValue, code]), for: c, type: .withResponse)
-        }
     }
 
     /// Sends a new firmware image to the racket, which verifies it and reboots into it. Progress arrives

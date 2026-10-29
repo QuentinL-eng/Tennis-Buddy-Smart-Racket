@@ -31,7 +31,8 @@ rate 1000 Hz | a[g] -0.06 -0.01 -0.99 ... | high-g a[g] 0.0 0.0 -1.2 | mic floor
 Checklist:
 - **rate ≈ 1000 Hz.** Much lower means I2C trouble: shorten the wires, check pull-ups.
 - **Lying flat and still:** one accel axis reads ≈ ±1.00 g; the gyro reads near 0.
-- **high-g:** sent in the old H3LIS units (±200 g range = ~0.1 g steps), so 1 g at rest shows as ≈ ±1.0–1.3 on one axis.
+- **high-g:** sent in the old H3LIS units, fixed at the ±400 g range since 1.6 (~0.2 g steps; the sensor reads
+  ±320 g), so 1 g at rest shows as ≈ ±1.0–1.4 on one axis.
 - **mic:** `floor` is the background level, `peak` the loudest sample in the last second; a hit fires when it beats `trig`.
 - **NOT FOUND:** check SDA = D4, SCL = D5, 3V3, GND. The LSM6DSV320X must be at 0x6A (SDO to GND, CS to 3V3).
 - **Power button** cuts the battery, so the battery only charges while switched ON.

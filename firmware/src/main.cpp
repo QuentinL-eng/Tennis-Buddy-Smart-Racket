@@ -61,7 +61,9 @@ struct TapEvent {
 // ---- State ----
 static bool imuOk = false;
 static volatile bool streaming = true;   // stream whenever a client subscribes
-static volatile uint8_t h3Range = 1;     // 0 = 100 g, 1 = 200 g, 3 = 400 g
+// High-g goes on the wire as H3LIS 12-bit counts at ±400 g (195 mg/count), so the sensor's whole ±320 g fits.
+// Fixed since 1.6: the coarser step is below the sensor's noise (~0.35 g at rest).
+static const uint8_t h3Range = 3;        // 0 = 100 g, 1 = 200 g, 3 = 400 g
 // ±4000 dps by default: fast swings pass 2000 dps, and every packet flags its units. TB_CMD_GYRO_RANGE can still
 // select ±2000.
 static volatile bool gyro4000Wanted = true;    // requested by the app (TB_CMD_GYRO_RANGE)
@@ -330,11 +332,6 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
     switch ((uint8_t)v[0]) {
       case TB_CMD_START_STREAM: streaming = true; break;
       case TB_CMD_STOP_STREAM: streaming = false; break;
-      case TB_CMD_H3LIS_RANGE:
-        if (v.size() >= 2 && (v[1] == 0 || v[1] == 1 || v[1] == 3)) {
-          h3Range = v[1];
-        }
-        break;
       case TB_CMD_GYRO_RANGE:
         if (v.size() >= 2 && (v[1] == 0 || v[1] == 1)) gyro4000Wanted = v[1] == 1;
         break;

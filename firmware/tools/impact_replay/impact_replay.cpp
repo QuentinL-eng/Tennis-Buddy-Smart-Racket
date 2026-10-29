@@ -46,7 +46,8 @@ static int replayCsv(const char *path) {
     in.wire.ax = i16(v[0] * 2048); in.wire.ay = i16(v[1] * 2048); in.wire.az = i16(v[2] * 2048);
     const float dps = 180 / 3.14159265f;
     in.wire.gx = i16(v[3] * dps * 8.2f); in.wire.gy = i16(v[4] * dps * 8.2f); in.wire.gz = i16(v[5] * dps * 8.2f);
-    in.wire.hx = i16(v[6] / 0.098f * 16); in.wire.hy = i16(v[7] / 0.098f * 16); in.wire.hz = i16(v[8] / 0.098f * 16);
+    // Wire high-g at the ±400 g range the firmware uses since 1.6, so hits above 200 g don't clip here.
+    in.wire.hx = i16(v[6] / 0.195f * 16); in.wire.hy = i16(v[7] / 0.195f * 16); in.wire.hz = i16(v[8] / 0.195f * 16);
     for (int a = 0; a < 3; a++) {
       in.accel[a] = v[a];
       in.gyro[a] = v[3 + a];
