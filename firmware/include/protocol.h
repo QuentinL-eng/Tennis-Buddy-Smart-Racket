@@ -10,11 +10,22 @@
 #define TB_CONTROL_UUID  "7E5B0004-6B1D-4D8E-9C1A-7E5B7E5B0001"
 #define TB_SHOT_UUID     "7E5B0005-6B1D-4D8E-9C1A-7E5B7E5B0001"  // on-device ML verdict, notify
 #define TB_TAP_UUID      "7E5B0006-6B1D-4D8E-9C1A-7E5B7E5B0001"  // handle tap gesture, notify
+// Impact mode (firmware 1.5+): the racket detects hits itself and sends only the samples around each one.
+// 0007 stays unused: legacy OTA firmware used it for image data.
+#define TB_HIT_UUID      "7E5B0008-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBHit, notify, sent the moment a hit is seen
+#define TB_WINDOW_UUID   "7E5B0009-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBWindowChunk, notify, the samples around it
+#define TB_POSE_UUID     "7E5B000A-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBPose, notify, ~30 Hz orientation for live views
 
 #define TB_FW_MAJOR 1
-#define TB_FW_MINOR 3
+#define TB_FW_MINOR 5
 
 #define TB_SAMPLES_PER_PACKET 8
+
+// Impact window: samples before and after the impact sample, sent in TB_SAMPLES_PER_PACKET chunks.
+#define TB_WINDOW_PRE 384
+#define TB_WINDOW_POST 64
+#define TB_WINDOW_SAMPLES (TB_WINDOW_PRE + TB_WINDOW_POST)
+#define TB_WINDOW_CHUNKS (TB_WINDOW_SAMPLES / TB_SAMPLES_PER_PACKET)
 
 // Control commands (first byte written to the control characteristic)
 enum : uint8_t {
@@ -24,6 +35,20 @@ enum : uint8_t {
   TB_CMD_GYRO_RANGE   = 0x11,  // second byte: 0 = ±2000 dps (16.4 LSB/dps), 1 = ±4000 dps (8.2 LSB/dps).
                                // Firmware 1.3+. Back to ±2000 dps when the last client disconnects, so an
                                // app that never sends this keeps the original units.
+  TB_CMD_STREAM_MODE  = 0x12,  // second byte: 0 = raw (every sample on the IMU characteristic), 1 = impacts
+                               // (hit, window and pose characteristics only). Firmware 1.5+. Back to raw when
+                               // the last client disconnects, so an app that never sends this still streams.
+};
+
+enum : uint8_t {
+  TB_STREAM_RAW = 0,
+  TB_STREAM_IMPACTS = 1,
+};
+
+// What found a hit (TBHit.source)
+enum : uint8_t {
+  TB_HIT_MOTION = 1,  // high-g jump during a swing
+  TB_HIT_MIC = 2,     // the mic heard it and a smaller high-g jump confirmed it (blocks, soft volleys)
 };
 
 // Status flags
@@ -32,6 +57,7 @@ enum : uint8_t {
   TB_FLAG_H3LIS_OK = 1 << 1,
   TB_FLAG_STREAMING = 1 << 2,
   TB_FLAG_GYRO_4000 = 1 << 3,  // gyro samples in this packet are 8.2 LSB/dps (±4000 dps), not 16.4
+  TB_FLAG_IMPACT_MODE = 1 << 4,  // status only: the racket is in impact mode (TB_CMD_STREAM_MODE)
 };
 
 #pragma pack(push, 1)
@@ -77,6 +103,35 @@ struct TBTap {
                         // depends on which of two opposite sides was hit, so the app compares |cos| to the
                         // calibrated wide-side and narrow-side axes.
 };
+// Sent the moment a hit is detected, before its window. Quaternions are w, x, y, z x 16384 and rotate sensor
+// axes into the world (z up), from the racket's own orientation filter (firmware/src/impact.cpp).
+struct TBHit {
+  uint16_t seq;         // counts hits since boot; the window with the same seq follows
+  uint32_t t_us;        // micros() of the impact sample
+  uint8_t source;       // TB_HIT_*
+  uint8_t jump_g;       // high-g change over 3 ms at the impact, g (capped at 255)
+  uint16_t swing_dps;   // fastest rotation in the 150 ms before the impact
+  int16_t q[4];         // orientation at the impact
+};
+// One slice of a hit's window. Gyro is always at 8.2 LSB/dps (TB_FLAG_GYRO_4000 set), whatever the range.
+struct TBWindowChunk {
+  uint16_t seq;         // the TBHit this belongs to
+  uint8_t index;        // 0 .. total - 1
+  uint8_t total;        // TB_WINDOW_CHUNKS
+  uint16_t impact;      // index of the impact sample in the whole window
+  int16_t q0[4];        // orientation at the window's first sample (same in every chunk)
+  uint32_t t0_us;       // micros() of this chunk's first sample; samples are 1 ms apart
+  uint8_t count;
+  uint8_t flags;        // TB_FLAG_*
+  TBSample s[TB_SAMPLES_PER_PACKET];
+};
+// Live orientation while in impact mode, ~30 Hz.
+struct TBPose {
+  int16_t q[4];
+  uint16_t gyro_dps;    // |gyro|
+  uint8_t high_g;       // |high-g accel|, g (capped at 255)
+  uint8_t flags;        // TB_FLAG_*
+};
 #pragma pack(pop)
 
 static_assert(sizeof(TBSample) == 18, "sample size");
@@ -84,3 +139,7 @@ static_assert(sizeof(TBPacket) == 152, "packet must fit one 185-byte iOS MTU");
 static_assert(sizeof(TBStatus) == 8, "status size");
 static_assert(sizeof(TBShot) == 6, "shot size");
 static_assert(sizeof(TBTap) == 9, "tap size");
+static_assert(sizeof(TBHit) == 18, "hit size");
+static_assert(sizeof(TBWindowChunk) == 164, "window chunk must fit one 185-byte iOS MTU");
+static_assert(sizeof(TBPose) == 12, "pose size");
+static_assert(TB_WINDOW_SAMPLES % TB_SAMPLES_PER_PACKET == 0, "window must be whole chunks");

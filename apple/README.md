@@ -92,3 +92,10 @@ that were not connected to the current AppModel. RacketKit also excludes backup 
 implementation now retains both tap/wide-gyro support and the firmware-update implementation used by
 AppModel; legacy OTA control and notify-only tap characteristics sharing UUID 0006 are distinguished by
 characteristic write properties. These physical hardware paths still need a racket smoke test.
+
+**Impact mode (firmware 1.5+).** The racket detects hits itself (`firmware/src/impact.cpp`) and sends a hit
+notification (0008), then the 448 ms around the impact as 56 window chunks (0009), plus ~30 Hz orientation (000A)
+for the live view, instead of every sample. `RacketBLE` turns it on whenever the racket offers those
+characteristics; `RacketEngine` analyses each window with the same `ShotAnalyzer`, starting its orientation filter
+from the racket's own estimate at the window start. Calibration and a manual raw recording switch the racket back
+to the full stream (`AppModel.updateStreamMode`). Session auto-recordings then contain the hit windows only.

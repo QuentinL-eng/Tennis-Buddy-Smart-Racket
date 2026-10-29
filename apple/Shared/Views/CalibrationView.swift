@@ -37,7 +37,8 @@ struct CalibrationView: View {
                 ToolbarItem(placement: .cancellationAction) { Button("Close") { finish() } }
             }
         }
-        .onDisappear { stopListening() }
+        .onAppear { model.calibrating = true }
+        .onDisappear { stopListening(); model.calibrating = false }
     }
 
     private var intro: some View {

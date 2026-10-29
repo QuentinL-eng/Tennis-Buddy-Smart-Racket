@@ -2,8 +2,9 @@
 import CoreBluetooth
 import Foundation
 
-/// Connects to the real racket over BLE and streams its samples.
-public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
+/// Connects to the real racket over BLE. Firmware 1.5+ detects hits itself and sends only the samples around each
+/// one (impact mode, `ImpactSource`); older firmware, and calibration or raw recording, stream every sample.
+public final class RacketBLE: NSObject, SampleSource, ImpactSource, @unchecked Sendable {
     public enum State: Equatable, Sendable {
         case poweredOff, unauthorized, idle, scanning, connecting, connected
         public var label: String {
@@ -35,6 +36,8 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
     }
 
     public var onSamples: (([IMUSample]) -> Void)?
+    public var onImpactWindow: ((ImpactWindow) -> Void)?
+    public var onPose: ((RacketProtocol.Pose) -> Void)?
     public var nativeCalibration: Calibration? { nil }
     /// Main-queue callbacks.
     public var onState: ((State) -> Void)?
@@ -51,6 +54,8 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
         didSet { let s = state; DispatchQueue.main.async { self.onState?(s) } }
     }
     public private(set) var lostPackets = 0
+    /// Hits whose window never arrived (the racket was still sending the previous one, or a chunk was lost).
+    public private(set) var lostWindows = 0
 
     private let queue = DispatchQueue(label: "tennisbuddy.ble", qos: .userInitiated)
     private var central: CBCentralManager!
@@ -62,6 +67,12 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
     private var timeBase: (micros: UInt32, wraps: Double)?
     private var lastMicros: UInt32 = 0
     private var wraps: Double = 0
+    /// Impact mode (all on `queue`).
+    private var wantsRaw = false
+    private var supportsImpactMode = false
+    private var assembler = ImpactWindowAssembler()
+    private var awaitingWindow: UInt16?
+    private var gyroWide = false
 
     // Firmware update (all on `queue`).
     private var otaControl: CBCharacteristic?
@@ -81,6 +92,9 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
     private let controlUUID = CBUUID(string: RacketProtocol.controlUUID)
     private let tapUUID = CBUUID(string: RacketProtocol.tapUUID)
     private let shotUUID = CBUUID(string: RacketProtocol.shotUUID)
+    private let hitUUID = CBUUID(string: RacketProtocol.hitUUID)
+    private let windowUUID = CBUUID(string: RacketProtocol.windowUUID)
+    private let poseUUID = CBUUID(string: RacketProtocol.poseUUID)
     private let otaControlUUID = CBUUID(string: RacketProtocol.otaControlUUID)
     private let otaDataUUID = CBUUID(string: RacketProtocol.otaDataUUID)
 
@@ -104,6 +118,21 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
             self.peripheral = nil
             if self.central.state == .poweredOn { self.state = .idle }
         }
+    }
+
+    /// Every sample instead of impact windows: for calibration (still poses, ball drops) and raw recordings.
+    public func setRawStream(_ raw: Bool) {
+        queue.async {
+            guard self.wantsRaw != raw else { return }
+            self.wantsRaw = raw
+            self.sendStreamMode()
+        }
+    }
+
+    private func sendStreamMode() {
+        guard let p = peripheral, let c = control, supportsImpactMode else { return }
+        let mode: RacketProtocol.StreamMode = wantsRaw ? .raw : .impacts
+        p.writeValue(Data([RacketProtocol.Command.streamMode.rawValue, mode.rawValue]), for: c, type: .withResponse)
     }
 
     public func setHighGRange(_ code: UInt8) {
@@ -271,6 +300,13 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
         central.connect(p)
     }
 
+    /// Racket micros → seconds, counting the 32-bit counter's wraps (every ~71 minutes).
+    private func racketTime(_ micros: UInt32) -> Double {
+        if micros < lastMicros, lastMicros - micros > 1_000_000_000 { wraps += 4294.967296 }
+        if micros > lastMicros || lastMicros - micros > 1_000_000_000 { lastMicros = micros }
+        return Double(micros) / 1e6 + wraps
+    }
+
     private func handleIMU(_ data: Data) {
         guard let packet = RacketProtocol.decodePacket(data) else { return }
         if let last = lastSeq {
@@ -278,9 +314,7 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
             if gap > 0 && gap < 1000 { lostPackets += gap }
         }
         lastSeq = packet.seq
-        if packet.t0Micros < lastMicros, lastMicros - packet.t0Micros > 1_000_000_000 { wraps += 4294.967296 }
-        lastMicros = packet.t0Micros
-        let t0 = Double(packet.t0Micros) / 1e6 + wraps
+        let t0 = racketTime(packet.t0Micros)
         let wide = packet.flags & RacketProtocol.flagGyro4000 != 0
         IMUSample.gyroSaturation = (wide ? 3990 : 1990) * .pi / 180
         let gyroScale = wide ? RacketProtocol.mpuGyroLSBPerDps / 2 : RacketProtocol.mpuGyroLSBPerDps
@@ -288,6 +322,18 @@ public final class RacketBLE: NSObject, SampleSource, @unchecked Sendable {
             RacketProtocol.convert(raw, time: t0 + Double(k) * 0.001, h3lisRange: h3lisRange, gyroLSBPerDps: gyroScale)
         }
         onSamples?(samples)
+    }
+
+    private func handleHit(_ hit: RacketProtocol.Hit) {
+        if awaitingWindow != nil { lostWindows += 1 }
+        awaitingWindow = hit.seq
+    }
+
+    private func handleWindowChunk(_ chunk: RacketProtocol.WindowChunk) {
+        guard let window = assembler.add(chunk, h3lisRange: h3lisRange, time: racketTime) else { return }
+        if awaitingWindow == window.seq { awaitingWindow = nil }
+        IMUSample.gyroSaturation = (gyroWide ? 3990 : 1990) * .pi / 180
+        onImpactWindow?(window)
     }
 }
 
@@ -321,6 +367,9 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
     public func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         pairedID = peripheral.identifier
         lastSeq = nil
+        supportsImpactMode = false
+        assembler = ImpactWindowAssembler()
+        awaitingWindow = nil
         // The racket may have rebooted (its clock restarts at 0): start timestamps fresh.
         lastMicros = 0
         wraps = 0
@@ -349,8 +398,8 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
         guard let s = peripheral.services?.first(where: { $0.uuid == service }) else { return }
-        peripheral.discoverCharacteristics([imuUUID, statusUUID, controlUUID, shotUUID, otaControlUUID, otaDataUUID],
-                                           for: s)
+        peripheral.discoverCharacteristics([imuUUID, statusUUID, controlUUID, shotUUID, otaControlUUID, otaDataUUID,
+                                            hitUUID, windowUUID, poseUUID], for: s)
     }
 
     public func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
@@ -367,9 +416,13 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
                 peripheral.writeValue(Data([RacketProtocol.Command.startStream.rawValue]), for: c, type: .withResponse)
                 peripheral.writeValue(Data([RacketProtocol.Command.gyroRange.rawValue, 1]), for: c, type: .withResponse)
             case otaDataUUID: otaData = c
+            case hitUUID, windowUUID, poseUUID:
+                supportsImpactMode = true
+                peripheral.setNotifyValue(true, for: c)
             default: break
             }
         }
+        sendStreamMode()
         let canUpdate = otaControl != nil && otaData != nil
         DispatchQueue.main.async { self.onFirmwareUpdateSupport?(canUpdate) }
         state = .connected
@@ -380,6 +433,13 @@ extension RacketBLE: CBCentralManagerDelegate, CBPeripheralDelegate {
         guard let data = characteristic.value else { return }
         if characteristic.uuid == imuUUID {
             handleIMU(data)
+        } else if characteristic.uuid == windowUUID, let chunk = RacketProtocol.decodeWindowChunk(data) {
+            handleWindowChunk(chunk)
+        } else if characteristic.uuid == hitUUID, let hit = RacketProtocol.decodeHit(data) {
+            handleHit(hit)
+        } else if characteristic.uuid == poseUUID, let pose = RacketProtocol.decodePose(data) {
+            gyroWide = pose.flags & RacketProtocol.flagGyro4000 != 0
+            onPose?(pose)
         } else if characteristic.uuid == shotUUID, let v = RacketProtocol.decodeShotVerdict(data) {
             DispatchQueue.main.async { self.onVerdict?(v) }
         } else if characteristic === otaControl {

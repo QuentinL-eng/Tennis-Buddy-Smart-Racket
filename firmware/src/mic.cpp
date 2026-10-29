@@ -23,12 +23,14 @@ static uint32_t startedAt = 0;
 static QueueHandle_t outQueue;
 static volatile bool collect = false;
 static volatile uint32_t impacts = 0;
+static volatile uint32_t lastTriggerUs = 0;
 static volatile float levelFloor = 0;   // running mean |x|, published by the mic task
 static volatile int levelPeak = 0;      // max |x| since the last micLevel() call
 
 void micSetCollect(bool on) { collect = on; }
 bool micCollecting() { return collect; }
 uint32_t micImpactCount() { return impacts; }
+uint32_t micLastTriggerUs() { return lastTriggerUs; }
 
 MicLevel micLevel() {
   MicLevel l;
@@ -99,6 +101,7 @@ static void micTask(void *) {
         capturing = SS_PRE_SAMPLES + 1;
         captureCollect = collect;
         triggerAt = micros();
+        lastTriggerUs = triggerAt ? triggerAt : 1;
         captureEnd = captureCollect ? SS_PRE_SAMPLES + 1 + TAIL_SAMPLES : SS_CLIP_SAMPLES;
       } else {
         floorAbs += 0.001f * (abs((int)s) - floorAbs);

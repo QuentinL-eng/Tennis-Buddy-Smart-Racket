@@ -81,7 +81,9 @@ final class AppModel {
     var recordings: [URL] = []
 
     // MARK: Calibration flow
-    var calibrationMode = false { didSet { engine.calibrationMode = calibrationMode } }
+    var calibrationMode = false { didSet { engine.calibrationMode = calibrationMode; updateStreamMode() } }
+    /// The calibration screen is open: its still poses and ball drops need every sample, not just hit windows.
+    var calibrating = false { didSet { updateStreamMode() } }
     var onCalibrationImpact: ((ShotMetrics) -> Void)?
     /// The racket's sweet-spot verdicts while calibrating, for the sweet-spot check.
     var onCalibrationVerdict: ((RacketProtocol.ShotVerdict) -> Void)?
@@ -173,6 +175,7 @@ final class AppModel {
         switch kind {
         case .racket:
             engine.attach(ble)
+            updateStreamMode()
             ble.start()
             connectionLabel = ble.state.label
             isConnected = ble.state == .connected
@@ -196,6 +199,13 @@ final class AppModel {
     }
 
     func recenter() { engine.recenter() }
+
+    /// Firmware 1.5+ finds hits on the racket and sends only the samples around each one, which keeps the link
+    /// light and shots quick. Calibration and a manual raw recording need the full stream instead.
+    private func updateStreamMode() {
+        guard sourceKind == .racket else { return }
+        ble.setRawStream(calibrating || calibrationMode || (isRecording && !autoRecording))
+    }
 
     /// The real racket is connected but neither motion sensor answered at boot (mic-only mode).
     var motionSensorsMissing: Bool {
@@ -357,6 +367,7 @@ final class AppModel {
             try? recorder.start(in: Self.recordingsDirectory, name: name)
             isRecording = recorder.isRecording
         }
+        updateStreamMode()
     }
 
     func refreshRecordings() {

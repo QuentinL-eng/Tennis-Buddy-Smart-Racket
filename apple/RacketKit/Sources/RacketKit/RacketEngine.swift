@@ -26,8 +26,9 @@ public struct LiveState: Sendable {
     }
 }
 
-/// Processes the sample stream: calibration → orientation → shot detection → analysis.
-/// All processing runs on a private serial queue; callbacks arrive on the main queue.
+/// Processes the sample stream: calibration → orientation → shot detection → analysis. From an `ImpactSource`
+/// (the racket in impact mode) it analyses the windows the racket sends instead, and shows the racket's own
+/// orientation live. All processing runs on a private serial queue; callbacks arrive on the main queue.
 public final class RacketEngine: @unchecked Sendable {
     public var calibration: Calibration = .default { didSet { queue.async { self._calibration = self.calibration } } }
     public var profile = RacketProfile() { didSet { queue.async { self.analyzer.profile = self.profile } } }
@@ -71,11 +72,19 @@ public final class RacketEngine: @unchecked Sendable {
             self.reset()
         }
         source.onSamples = { [weak self] batch in self?.ingest(batch) }
+        if let impacts = source as? ImpactSource {
+            impacts.onImpactWindow = { [weak self] window in self?.queue.async { self?.process(window) } }
+            impacts.onPose = { [weak self] pose in self?.queue.async { self?.process(pose) } }
+        }
     }
 
     public func detach() {
         source?.stop()
         source?.onSamples = nil
+        if let impacts = source as? ImpactSource {
+            impacts.onImpactWindow = nil
+            impacts.onPose = nil
+        }
         source = nil
     }
 
@@ -165,19 +174,64 @@ public final class RacketEngine: @unchecked Sendable {
         pendingImpactTime = nil
         lastShotTime = t
         guard let center = ring.lastIndex(where: { $0.0.time <= t }) else { return }
+        analyzeImpact(ring, near: center)
+    }
+
+    /// `frames` are racket-frame samples with the orientation after each; `center` is roughly the impact.
+    private func analyzeImpact(_ frames: [(IMUSample, simd_quatf)], near center: Int) {
+        guard frames.count > 3 else { return }
         // Refine: largest high-g jump within ±6 samples.
         var best = center, bestJump: Float = 0
-        for k in max(3, center - 6)...min(ring.count - 1, center + 6) {
-            let j = simd_length(ring[k].0.highG - ring[k - 3].0.highG)
+        for k in max(3, center - 6)...max(3, min(frames.count - 1, center + 6)) {
+            let j = simd_length(frames[k].0.highG - frames[k - 3].0.highG)
             if j > bestJump { bestJump = j; best = k }
         }
         // Impact = first sample of the jump.
         let i0 = max(best - 2, 0)
-        let lo = max(0, i0 - 700), hi = min(ring.count, i0 + 150)
-        let window = ring[lo..<hi].map(\.0)
-        let q = ring[max(i0 - 3, 0)].1
+        let lo = max(0, i0 - 700), hi = min(frames.count, i0 + 150)
+        let window = frames[lo..<hi].map(\.0)
+        let q = frames[max(i0 - 3, 0)].1
         let shot = analyzer.analyze(window: window, impact: i0 - lo, orientation: q, date: Date(),
                                     calibrationMode: _calibrationMode)
         DispatchQueue.main.async { self.onShot?(shot) }
+    }
+
+    // MARK: - Impact mode
+
+    /// The racket's orientation (sensor axes → world) turned into racket axes → world.
+    private func racketOrientation(_ sensorToWorld: simd_quatf, _ cal: Calibration) -> simd_quatf {
+        // mpuToRacket maps sensor vectors to racket vectors; its transpose takes racket vectors back to sensor ones.
+        simd_normalize(sensorToWorld * simd_quatf(cal.mpuToRacket.transpose))
+    }
+
+    private func process(_ window: ImpactWindow) {
+        onRaw?(window.samples)
+        let cal = sourceCalibration ?? _calibration
+        // Integrate from the racket's orientation at the window's start, so the shot sees the same geometry it
+        // would have from the full stream.
+        var f = MahonyFilter()
+        f.q = racketOrientation(window.startOrientation, cal)
+        f.initialized = true
+        var frames: [(IMUSample, simd_quatf)] = []
+        frames.reserveCapacity(window.samples.count)
+        var last: Double?
+        for raw in window.samples {
+            let s = cal.apply(raw)
+            let dt = Float(last.map { min(max(s.time - $0, 0.0002), 0.02) } ?? 0.001)
+            last = s.time
+            f.update(gyro: s.gyro, accel: s.accel, dt: dt)
+            frames.append((s, f.q))
+        }
+        lastShotTime = window.samples[min(window.impactIndex, window.samples.count - 1)].time
+        analyzeImpact(frames, near: window.impactIndex + 2)
+    }
+
+    private func process(_ pose: RacketProtocol.Pose) {
+        filter.q = racketOrientation(pose.orientation, sourceCalibration ?? _calibration)
+        filter.initialized = true
+        let state = LiveState(orientation: filter.displayOrientation, gyroDps: pose.gyroDps, highG: pose.highG,
+                              // The racket keeps sampling at 1 kHz; only the hits' windows come over the air.
+                              samplesPerSecond: pose.flags & RacketProtocol.flagMotionOK != 0 ? RacketProtocol.sampleRate : 0)
+        DispatchQueue.main.async { self.onLive?(state) }
     }
 }
