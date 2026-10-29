@@ -333,6 +333,25 @@ final class AppModel {
         return true
     }
 
+    /// Without a taught forehand, the analyzer can't tell which face hit the ball, and serves (forehand face, racket
+    /// over the top) look like backhands. Learn the face from shots that clearly turn the forehand way about the
+    /// vertical, the same test that tells forehands from backhands, once a few agree.
+    @ObservationIgnored private var learnedSpins: [Float] = []
+    private let learnShotsNeeded = 5
+
+    private func learnForehandFace(from shot: ShotMetrics) {
+        guard let index = players.firstIndex(where: { $0.id == activePlayerID }), players[index].forehandBodySign == nil,
+              shot.type == .forehand, let vertical = shot.features.verticalSpin, vertical > 0.6,
+              let spin = shot.features.spinAxisY, abs(spin) > 5 else { return }
+        learnedSpins.append(spin)
+        guard learnedSpins.count >= learnShotsNeeded else { return }
+        let positive = learnedSpins.filter { $0 > 0 }.count
+        if positive == learnedSpins.count || positive == 0 {
+            players[index].forehandBodySign = positive == 0 ? -1 : 1
+        }
+        learnedSpins = []
+    }
+
     func startSession(id: UUID = UUID(), startDate: Date = Date()) {
         guard activeSession == nil else { return }
         let session = SessionRecord(startDate: startDate)
@@ -480,6 +499,7 @@ final class AppModel {
             return
         }
         if consumeTeachingShot(shot) { return }
+        learnForehandFace(from: shot)
         if var drill = activeDrill, !drill.isDone, drill.matches(shot) {
             drill.completed += 1
             activeDrill = drill
