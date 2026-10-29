@@ -116,3 +116,12 @@ connects to the racket over BLE itself, so the camera frames and racket IMU pack
    `python tools/test_phone_session.py` checks the aligner on synthetic data.
 
 Hit gently into the blanket: a soft ball may not reach the 10 g impact threshold (use `--threshold 4`).
+
+## In-app sweet-spot check (no PC needed)
+
+Racket tab → **Calibrate racket…** ends with an optional sweet-spot check: tape a 3×3 grid on the strings (5 cm
+across, 6 cm along), tap a square in the app, drop a ball on it. The center square is the sweet spot. The app pairs
+each drop with the racket's on-device verdict and its own motion-sensor estimate, shows how often the model was right
+(sweet and off-center separately), and saves `Calibration/sweetspot-check-<time>.csv` (Files app on iPhone, or the
+share button). `dist_cm` matches `labels.csv`. It holds no audio, so it measures the deployed model on hardware but
+cannot train it; use the webcam flow above for training clips.
