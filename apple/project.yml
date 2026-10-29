@@ -18,6 +18,9 @@ settings:
     ENABLE_PREVIEWS: YES
 
 packages:
+  Supabase:
+    url: https://github.com/supabase/supabase-swift.git
+    exactVersion: 2.55.5
   RacketKit:
     path: RacketKit
 
@@ -27,9 +30,15 @@ targets:
     platform: iOS
     sources:
       - path: Shared
+        excludes:
+          - "**/*.sync-conflict-*"
+          # Legacy tap UI is not wired to the current AppModel.
+          - Views/ScoreView.swift
+          - Views/TapCalibrationView.swift
       - path: iOS
     dependencies:
       - package: RacketKit
+      - package: Supabase
       - target: TennisBuddyWatch
     settings:
       base:
@@ -42,9 +51,12 @@ targets:
       path: iOS/Info.plist
       properties:
         CFBundleDisplayName: Tennis Buddee
+        CFBundleURLTypes:
+          - CFBundleURLSchemes: [tennisbuddee]
+            CFBundleURLName: com.quentinlynch.tennisbuddy.auth
         UILaunchScreen: {}
         ITSAppUsesNonExemptEncryption: false
-        UIBackgroundModes: [bluetooth-central, remote-notification]
+        UIBackgroundModes: [bluetooth-central, audio, remote-notification]
         NSBluetoothAlwaysUsageDescription: Tennis Buddy connects to your racket's sensor over Bluetooth.
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         UISupportedInterfaceOrientations~ipad: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
@@ -53,6 +65,7 @@ targets:
     entitlements:
       path: iOS/TennisBuddy.entitlements
       properties:
+        com.apple.developer.applesignin: [Default]
         com.apple.developer.icloud-container-identifiers: [iCloud.com.quentinlynch.tennisbuddy]
         com.apple.developer.icloud-services: [CloudKit]
         aps-environment: development
@@ -62,8 +75,14 @@ targets:
     platform: macOS
     sources:
       - path: Shared
+        excludes:
+          - "**/*.sync-conflict-*"
+          # Legacy tap UI is not wired to the current AppModel.
+          - Views/ScoreView.swift
+          - Views/TapCalibrationView.swift
     dependencies:
       - package: RacketKit
+      - package: Supabase
     settings:
       base:
         PRODUCT_NAME: Tennis Buddee
@@ -75,6 +94,9 @@ targets:
       path: macOS/Info.plist
       properties:
         CFBundleDisplayName: Tennis Buddee
+        CFBundleURLTypes:
+          - CFBundleURLSchemes: [tennisbuddee]
+            CFBundleURLName: com.quentinlynch.tennisbuddy.auth
         LSApplicationCategoryType: public.app-category.sports
         ITSAppUsesNonExemptEncryption: false
         NSBluetoothAlwaysUsageDescription: Tennis Buddy connects to your racket's sensor over Bluetooth.
@@ -85,6 +107,7 @@ targets:
         com.apple.security.device.bluetooth: true
         com.apple.security.network.client: true
         com.apple.security.files.user-selected.read-write: true
+        com.apple.developer.applesignin: [Default]
         com.apple.developer.icloud-container-identifiers: [iCloud.com.quentinlynch.tennisbuddy]
         com.apple.developer.icloud-services: [CloudKit]
         com.apple.developer.aps-environment: development
@@ -123,7 +146,10 @@ targets:
     sources:
       - path: Tests
       - path: Shared/Coach
+      - path: Shared/Social/AppleSignInChallenge.swift
+      - path: Shared/Social/SocialModels.swift
       - path: Shared/Model/Records.swift
+      - path: Shared/Model/InsightsModel.swift
       - path: Shared/Model/AppModel.swift
     dependencies:
       - package: RacketKit

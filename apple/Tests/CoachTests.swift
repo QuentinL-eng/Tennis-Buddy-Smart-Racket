@@ -141,7 +141,8 @@ final class CoachFallbackTests: XCTestCase {
         let original = UserDefaults.standard.object(forKey: "coach.museEnabled")
         defer { UserDefaults.standard.set(original, forKey: "coach.museEnabled") }
         let fake = MuseLoopTests.Fake(); fake.fail = true
-        let model = CoachModel(keyProvider: { "test-key" }, clientFactory: { _ in fake })
+        let model = CoachModel(transportProvider: { fake })
+        model.setSignedIn(true)
         model.museEnabled = true
         let text = await model.summarize(SessionRecord())
         XCTAssertEqual(text, "No shots recorded yet. Start a session and hit a few balls.")
@@ -153,7 +154,8 @@ final class CoachFallbackTests: XCTestCase {
         let original = UserDefaults.standard.object(forKey: "coach.museEnabled")
         defer { UserDefaults.standard.set(original, forKey: "coach.museEnabled") }
         let fake = MuseLoopTests.Fake()
-        let model = CoachModel(keyProvider: { "test-key" }, clientFactory: { _ in fake })
+        let model = CoachModel(transportProvider: { fake })
+        model.setSignedIn(true)
         model.museEnabled = true
         let text = await model.summarize(SessionRecord())
         XCTAssertEqual(text, "A coaching answer.")
@@ -188,15 +190,16 @@ final class MuseClientTests: XCTestCase {
         MuseURLProtocol.payload = Data(payload.utf8)
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MuseURLProtocol.self]
-        return MuseClient(apiKey: "test-key", session: URLSession(configuration: config))
+        return MuseClient(endpoint: URL(string: "https://example.supabase.co/functions/v1/muse")!, publishableKey: "pub", accessToken: "user-jwt", session: URLSession(configuration: config))
     }
     func testTextAndToolResponseDecoding() async throws {
         let c = client(payload: #"{"choices":[{"finish_reason":"stop","message":{"role":"assistant","content":"Good contact."}}]}"#)
         let reply = try await c.complete(messages: [["role": "user", "content": "Hello"]], tools: CoachTools.schemas)
         XCTAssertEqual(reply["content"] as? String, "Good contact.")
         let request = MuseURLProtocol.capturedRequest!
-        XCTAssertEqual(request.url, MuseClient.endpoint)
-        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer test-key")
+        XCTAssertEqual(request.url, c.endpoint)
+        XCTAssertEqual(request.value(forHTTPHeaderField: "Authorization"), "Bearer user-jwt")
+        XCTAssertEqual(request.value(forHTTPHeaderField: "apikey"), "pub")
         let toolClient = client(payload: #"{"choices":[{"finish_reason":"tool_calls","message":{"role":"assistant","content":null,"tool_calls":[{"id":"1","type":"function","function":{"name":"get_live_state","arguments":"{}"}}]}}]}"#)
         let toolReply = try await toolClient.complete(messages: [], tools: CoachTools.schemas)
         XCTAssertEqual((toolReply["tool_calls"] as? [[String: Any]])?.count, 1)

@@ -6,6 +6,8 @@ import SwiftUI
 struct TennisBuddyApp: App {
     @State private var model = AppModel()
     @State private var coach = CoachModel()
+    @State private var account = AccountModel()
+    @Environment(\.scenePhase) private var scenePhase
     let container: ModelContainer = SyncedStore.makeContainer()
     #if os(iOS)
     @State private var watchBridge = WatchBridge()
@@ -16,12 +18,26 @@ struct TennisBuddyApp: App {
             RootView()
                 .environment(model)
                 .environment(coach)
+                .environment(account)
+                .task { await account.observeAuthentication() }
+                .onChange(of: account.displayName) { _, value in model.signedInPlayerName = value }
+                .onChange(of: account.isSignedIn) { _, value in coach.setSignedIn(value) }
+                .task(id: scenePhase) {
+                    guard scenePhase == .active else { return }
+                    while !Task.isCancelled {
+                        await account.syncPendingStats(in: container.mainContext)
+                        do { try await Task.sleep(for: .seconds(5)) } catch { return }
+                    }
+                }
                 .tint(.accentColor)
                 .onAppear {
                     model.modelContext = container.mainContext
+                    model.signedInPlayerName = account.displayName
                     coach.connect(to: model)
+                    coach.useTransport { await account.museTransport() }
+                    coach.setSignedIn(account.isSignedIn)
                     #if os(iOS)
-                    watchBridge.connect(to: model)
+                    watchBridge.connect(to: model, account: account)
                     #endif
                 }
         }
@@ -43,6 +59,7 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $tab) {
             Tab("Live", systemImage: "figure.tennis", value: "live") { NavigationStack { LiveView() } }
+            Tab("Together", systemImage: "person.2", value: "together") { NavigationStack { SharedSessionView() } }
             Tab("History", systemImage: "clock.arrow.circlepath", value: "history") { HistoryView() }
             Tab("Insights", systemImage: "sparkles", value: "insights") { NavigationStack { InsightsView() } }
             Tab("Racket", systemImage: "sensor.tag.radiowaves.forward", value: "racket") { NavigationStack { RacketView() } }

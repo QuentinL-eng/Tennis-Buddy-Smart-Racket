@@ -52,6 +52,7 @@ final class AppModel {
     var shotFlashID = UUID()
 
     // MARK: Session
+    var signedInPlayerName: String?
     var activeSession: SessionRecord?
     private var lastEndedSession: SessionRecord?
     var sessionShots: [ShotMetrics] = []
@@ -70,7 +71,10 @@ final class AppModel {
     var players: [PlayerProfile] { didSet { save(players, key: "players"); applyActivePlayer() } }
     var activePlayerID: UUID { didSet { UserDefaults.standard.set(activePlayerID.uuidString, forKey: "activePlayerID"); applyActivePlayer() } }
     var activePlayer: PlayerProfile? { players.first { $0.id == activePlayerID } }
-    var impactModel: ImpactModel { didSet { save(impactModel, key: "impactModel"); engine.impactModel = impactModel } }
+    /// v2: gains fitted by the old ball-drop calibration came from a racket held still (no swing impulse), which
+    /// mis-scales hit location on real swings, so those saves are dropped for the defaults.
+    static let impactModelKey = "impactModel.v2"
+    var impactModel: ImpactModel { didSet { save(impactModel, key: Self.impactModelKey); engine.impactModel = impactModel } }
 
     // MARK: Recorder
     var isRecording = false
@@ -79,6 +83,8 @@ final class AppModel {
     // MARK: Calibration flow
     var calibrationMode = false { didSet { engine.calibrationMode = calibrationMode } }
     var onCalibrationImpact: ((ShotMetrics) -> Void)?
+    /// The racket's sweet-spot verdicts while calibrating, for the sweet-spot check.
+    var onCalibrationVerdict: ((RacketProtocol.ShotVerdict) -> Void)?
 
     let engine = RacketEngine()
     let recorder = Recorder()
@@ -104,6 +110,10 @@ final class AppModel {
             guard let self else { return }
             self.lastVerdict = v
             self.lastVerdictDate = Date()
+            if self.calibrationMode {
+                self.onCalibrationVerdict?(v)
+                return
+            }
             // Motion sensors offline: the mic verdict is the only record of the hit, so log it as a shot.
             if self.motionSensorsMissing {
                 self.handle(.fromMic(sweet: v.isSweet, offCenterPercent: v.offCenterPercent))
@@ -124,7 +134,11 @@ final class AppModel {
     }()
 
     init() {
-        calibration = Self.load(key: Self.calibrationKey) ?? .default
+        var storedCalibration: Calibration = Self.load(key: Self.calibrationKey) ?? .default
+        // Earlier builds fitted the high-g axes separately from coarse high-g gravity; on the LSM6DSV320X they
+        // are the low-g axes (see Calibration.from).
+        if storedCalibration.isCalibrated { storedCalibration.h3lisToRacket = storedCalibration.mpuToRacket }
+        calibration = storedCalibration
         profile = Self.load(key: "profile") ?? RacketProfile()
         // Before player profiles, the handedness and height lived on the racket under "profile". Carry them over once.
         let legacy: LegacyPlayerFields? = Self.load(key: "profile")
@@ -133,7 +147,7 @@ final class AppModel {
                                                              heightM: legacy?.heightM)]
         players = initialPlayers
         activePlayerID = UserDefaults.standard.string(forKey: "activePlayerID").flatMap(UUID.init) ?? initialPlayers[0].id
-        impactModel = Self.load(key: "impactModel") ?? ImpactModel()
+        impactModel = Self.load(key: Self.impactModelKey) ?? ImpactModel()
         profile.rightHanded = players.first { $0.id == activePlayerID }?.rightHanded ?? true
         engine.calibration = calibration
         engine.profile = profile
@@ -210,26 +224,35 @@ final class AppModel {
         profile.rightHanded = rightHanded
     }
 
-    func startSession() {
+    func startSession(id: UUID = UUID(), startDate: Date = Date()) {
         guard activeSession == nil else { return }
-        let session = SessionRecord()
-        session.playerName = activePlayer?.name ?? ""
+        let session = SessionRecord(startDate: startDate)
+        session.id = id
+        session.playerName = signedInPlayerName ?? activePlayer?.name ?? ""
         modelContext?.insert(session)
         activeSession = session
         sessionShots = []
         lastShot = nil
+        beginAutoRecording(session: session)
         onSessionChangeForWatch?(true)
+    }
+
+    func startSharedRecording(matchID: UUID, playerID: UUID) {
+        guard !isSessionActive else { return }
+        startSession()
+        activeSession?.sharedMatchID = matchID.uuidString
+        activeSession?.sharedPlayerID = playerID.uuidString
     }
 
     func stopSession() {
         guard let session = activeSession else { return }
         session.endDate = Date()
-        if session.shotRecords?.isEmpty ?? true {
-            modelContext?.delete(session)
-        }
+        let title = session.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        session.title = title.isEmpty ? session.startDate.formatted(.dateTime.weekday(.wide).hour().minute()) : String(title.prefix(120))
         try? modelContext?.save()
         lastEndedSession = session
         activeSession = nil
+        endAutoRecording()
         onSessionChangeForWatch?(false)
     }
 
@@ -239,10 +262,16 @@ final class AppModel {
     }
 
     /// Heart rate and calories from the Watch workout, which may arrive just after the session ends.
-    func recordHealth(averageHeartRate: Double, calories: Double) {
-        guard let session = activeSession ?? lastEndedSession, averageHeartRate > 0 else { return }
-        session.averageHeartRate = averageHeartRate
-        session.activeCalories = calories
+    func recordHealth(averageHeartRate: Double, calories: Double, sessionID: UUID? = nil) {
+        let record: SessionRecord?
+        if let sessionID {
+            if activeSession?.id == sessionID { record = activeSession }
+            else if lastEndedSession?.id == sessionID { record = lastEndedSession }
+            else { record = try? modelContext?.fetch(FetchDescriptor<SessionRecord>(predicate: #Predicate { $0.id == sessionID })).first }
+        } else { record = activeSession ?? lastEndedSession }
+        guard let session = record else { return }
+        if averageHeartRate.isFinite && averageHeartRate > 0 { session.averageHeartRate = averageHeartRate }
+        if calories.isFinite && calories >= 0 { session.activeCalories = max(session.activeCalories, calories) }
         try? modelContext?.save()
     }
 
@@ -273,13 +302,49 @@ final class AppModel {
         if let session = activeSession {
             let record = ShotRecord(metrics: shot)
             record.session = session
+            record.dataSourceRaw = sourceKind.rawValue
+            if sourceKind == .racket && !session.sharedMatchID.isEmpty { session.sharedStatsPending = true }
             modelContext?.insert(record)
             sessionShots.append(shot)
         }
+        logShotSidecar(shot)
         onShotForWatch?(shot)
     }
 
     // MARK: - Recorder
+
+    /// Every session also writes its raw IMU stream plus a shot log to Documents/Recordings (visible in Files / Finder),
+    /// so test data is captured without touching the Recorder toggle.
+    @ObservationIgnored private var autoRecording = false
+    @ObservationIgnored private var shotLog: FileHandle?
+
+    private func beginAutoRecording(session: SessionRecord) {
+        let name = "session-" + session.startDate.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
+            .replacingOccurrences(of: ":", with: "") + "-" + sourceKind.rawValue
+        let dir = Self.recordingsDirectory
+        if !recorder.isRecording {
+            if (try? recorder.start(in: dir, name: name)) != nil { autoRecording = true; isRecording = true }
+        }
+        let url = dir.appendingPathComponent(name).appendingPathExtension("shots.jsonl")
+        FileManager.default.createFile(atPath: url.path, contents: nil)
+        shotLog = try? FileHandle(forWritingTo: url)
+    }
+
+    private func endAutoRecording() {
+        if autoRecording { recorder.stop(); isRecording = false; autoRecording = false }
+        try? shotLog?.close()
+        shotLog = nil
+        refreshRecordings()
+    }
+
+    private func logShotSidecar(_ shot: ShotMetrics) {
+        guard let shotLog else { return }
+        let enc = JSONEncoder()
+        enc.dateEncodingStrategy = .iso8601
+        guard var data = try? enc.encode(shot) else { return }
+        data.append(0x0A)
+        try? shotLog.write(contentsOf: data)
+    }
 
     func toggleRecording() {
         if recorder.isRecording {

@@ -6,7 +6,7 @@ import simd
 public struct Calibration: Codable, Sendable, Equatable {
     /// Rows are the racket x, y, z axes expressed in MPU6050 sensor coordinates.
     public var mpuToRacket: simd_float3x3
-    /// Same for the H3LIS331 (snapped to a signed axis permutation; its gravity reading is coarse).
+    /// Same for the high-g accelerometer (the H3LIS331 on the original board; the LSM6DSV320X's high-g channel now).
     public var h3lisToRacket: simd_float3x3
     public var gyroBias: SIMD3<Float>
     public var h3lisBias: SIMD3<Float>
@@ -47,9 +47,12 @@ public struct Calibration: Codable, Sendable, Equatable {
     }
 
     /// Builds a calibration from two still poses: tip pointing straight up, then lying flat face-up.
+    /// The LSM6DSV320X's high-g accelerometer shares the low-g one's axes (same die), so both use the rotation
+    /// fitted from the precise low-g reading. Gravity is only about 10 high-g counts at the 200 g range, so fitting
+    /// from it could pick the wrong axis or sign and corrupt every impact feature.
     public static func from(tipUp: PoseReading, faceUp: PoseReading) -> Calibration {
         let mpu = rotation(up1: tipUp.accel, up2: faceUp.accel)
-        let h3 = snapToAxes(rotation(up1: tipUp.highG, up2: faceUp.highG))
+        let h3 = mpu
         // H3LIS zero-g offset: average reading minus the gravity it should see (+1 g on racket z when face up).
         let expectedFaceUp = h3.transpose * SIMD3<Float>(0, 0, 1)
         let restMagnitude = (simd_length(tipUp.accel) + simd_length(faceUp.accel)) / 2
@@ -68,21 +71,6 @@ public struct Calibration: Codable, Sendable, Equatable {
         z = simd_length(z) > 1e-4 ? simd_normalize(z) : SIMD3(0, 0, 1)
         let y = simd_cross(z, x)
         return simd_float3x3(rows: [x, y, z])
-    }
-
-    static func snapToAxes(_ m: simd_float3x3) -> simd_float3x3 {
-        var used = Set<Int>()
-        var rows: [SIMD3<Float>] = []
-        for r in 0..<3 {
-            let row = SIMD3(m[0][r], m[1][r], m[2][r])
-            let order = (0..<3).sorted { abs(row[$0]) > abs(row[$1]) }
-            let axis = order.first { !used.contains($0) } ?? order[0]
-            used.insert(axis)
-            var v = SIMD3<Float>(repeating: 0)
-            v[axis] = row[axis] >= 0 ? 1 : -1
-            rows.append(v)
-        }
-        return simd_float3x3(rows: rows)
     }
 }
 

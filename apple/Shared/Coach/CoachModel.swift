@@ -172,41 +172,26 @@ struct TemplateCoach: CoachEngine {
 @Observable
 final class CoachModel {
     var isWorking = false
-    private(set) var hasMuseKey: Bool
     private(set) var lastEngineName: String?
     private(set) var lastFallbackReason: String?
-    var engineName: String { lastEngineName ?? (museEnabled && hasMuseKey ? "Muse Spark · online" : fallback.name) }
+    /// Online coaching is available while signed in (the server holds the Muse key).
+    private(set) var museAvailable = false
+    var engineName: String { lastEngineName ?? (museEnabled && museAvailable ? "Muse Spark · online" : fallback.name) }
     var museEnabled: Bool {
         didSet { UserDefaults.standard.set(museEnabled, forKey: "coach.museEnabled"); lastEngineName = nil }
     }
     @ObservationIgnored private weak var app: AppModel?
     private let fallback = TemplateCoach()
-    @ObservationIgnored private let keyProvider: @MainActor () -> String?
-    @ObservationIgnored private let clientFactory: @MainActor (String) -> MuseTransport
+    @ObservationIgnored private var transportProvider: @MainActor () async -> MuseTransport?
 
-    init(keyProvider: @escaping @MainActor () -> String? = { MuseKeychain.read() },
-         clientFactory: @escaping @MainActor (String) -> MuseTransport = { MuseClient(apiKey: $0) }) {
-        self.keyProvider = keyProvider
-        self.clientFactory = clientFactory
-        hasMuseKey = keyProvider()?.isEmpty == false
-        museEnabled = UserDefaults.standard.bool(forKey: "coach.museEnabled")
+    init(transportProvider: @escaping @MainActor () async -> MuseTransport? = { nil }) {
+        self.transportProvider = transportProvider
+        museEnabled = UserDefaults.standard.object(forKey: "coach.museEnabled") as? Bool ?? true
     }
 
     func connect(to app: AppModel) { self.app = app }
-
-    func saveMuseKey(_ raw: String) throws {
-        let key = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty else { throw MuseError.noKey }
-        try MuseKeychain.save(key)
-        hasMuseKey = true
-        museEnabled = true
-    }
-
-    func removeMuseKey() throws {
-        try MuseKeychain.delete()
-        hasMuseKey = false
-        museEnabled = false
-    }
+    func useTransport(_ provider: @escaping @MainActor () async -> MuseTransport?) { transportProvider = provider }
+    func setSignedIn(_ signedIn: Bool) { museAvailable = signedIn }
 
     func summarize(_ session: SessionRecord) async -> String {
         let digest = SessionDigest(session: session)
@@ -228,13 +213,13 @@ final class CoachModel {
         isWorking = true
         lastFallbackReason = nil
         defer { isWorking = false }
-        if museEnabled, let key = keyProvider(), !key.isEmpty {
+        if museEnabled, museAvailable, let transport = await transportProvider() {
             let app = self.app
             let tools = CoachTools(current: session, app: app) {
                 guard let context = app?.modelContext else { return [session] }
                 return try context.fetch(FetchDescriptor<SessionRecord>(sortBy: [SortDescriptor(\.startDate)]))
             }
-            let muse = MuseCoach(client: clientFactory(key), tools: tools)
+            let muse = MuseCoach(client: transport, tools: tools)
             do {
                 let text = try await body(muse)
                 lastEngineName = muse.name

@@ -21,14 +21,16 @@ screen works without hardware. Switch to the real racket from the connection men
 
 ## Muse coach
 
-In Insights → **Muse coach**, paste your Meta Model API key and choose **Save key and enable Muse**.
-The key stays in this device's Keychain; it is never bundled or synced. Save it separately on each demo device.
-Muse sends questions and requested shot/session statistics to Meta, so use Wi-Fi for the demo.
-Health data and session notes are excluded. Disable **Use Muse online** or remove the key to use the deterministic built-in coach.
-Any Muse error also falls back to that coach, and the UI shows the engine that actually answered.
+Muse runs through the `muse` Supabase edge function (`backend/supabase/functions/muse`), which holds the Meta API key
+as a server secret; the app never contains or asks for a key. Online coaching needs a signed-in account
+(Racket → Account) and can be turned off with **Use Muse online** in Insights → Coach.
+Muse sends questions and requested shot/session statistics to Meta. Health data and session notes are excluded.
+Any Muse error, or being signed out, uses the deterministic built-in coach, and the UI shows the engine that answered.
+Deploy once: `supabase secrets set META_API_KEY=... --project-ref birutnqxduzwldvymeun` then
+`supabase functions deploy muse --project-ref birutnqxduzwldvymeun`.
 No local language model is downloaded or loaded.
 
-Muse uses `POST https://api.meta.ai/v1/chat/completions`, Bearer authentication and `muse-spark-1.3` (Standard mode).
+The function calls `POST https://api.meta.ai/v1/chat/completions`, Bearer authentication and `muse-spark-1.3` (Standard mode).
 Native function calling is confirmed in [Meta's tool calling docs](https://dev.meta.ai/docs/tool-calling).
 [Published limits](https://dev.meta.ai/docs/pricing-rate-limits) are 3,000 RPM / 4,000,000 TPM for this model as of October 27, 2026;
 HTTP 429 immediately falls back, without automatic retries. Each request times out after 45 seconds.
@@ -65,3 +67,28 @@ The coach tests mock HTTP and model responses; an end-to-end API check requires 
 | `Shared/Coach` | Muse HTTP client, Keychain key storage, tool dispatcher, bounded agent loop, prompts and template fallback |
 | `iOS/WatchBridge.swift` | iPhone ↔ Watch messages |
 | `Watch/` | Watch app: last shot + haptics, point logging, session start/stop with a Tennis workout (heart rate → Health) |
+
+## Consumer features
+
+- **Racket → Racket skins:** main and secondary colour pickers, four presets, original textured racket,
+  persistent colours, and a preview that updates the Live 3D racket too. Strings retain their own material.
+- **Session names:** edit during a recording on Live, or use Rename session in a History session.
+  Empty recordings are retained so tennis workouts and score-only sessions are not discarded.
+- **Watch workouts:** tennis HealthKit sessions collect heart rate and active energy, request workout/energy
+  sharing permissions, serialize start/stop transitions, reset metrics between workouts, and surface errors.
+  Final calories are queued back to the iPhone against the specific session UUID. Actual ring credit needs
+  a physical Watch and Health permissions; it is determined by HealthKit, not a fixed calorie formula.
+  See [Apple's workout guidance](https://developer.apple.com/documentation/healthkit/running-workout-sessions).
+- **Accounts, friends, shared scores and racket summaries:** integration prepared for Supabase; see
+  [setup and validation](../backend/supabase/README.md). Together supports direct friend invitations after
+  a one-time accepted friend request, plus optional session codes. Google login, native Apple login, and the hosted database are configured. Native Apple sign-in uses
+  the system sheet; the signed iPhone/Watch build and Apple provisioning entitlement were verified.
+  A real device login still needs testing. See the setup guide for the Mac signing limitation. Watch shared scoring uses the paired iPhone.
+- **Insights:** existing UI retained pending the user's Claude design direction.
+- **Muse Spark:** already integrated; no local Llama model is loaded. Existing mock HTTP/fallback tests remain.
+
+The project generator excludes synchronizer conflict copies and the legacy Score/TapCalibration screens
+that were not connected to the current AppModel. RacketKit also excludes backup copies. The current BLE
+implementation now retains both tap/wide-gyro support and the firmware-update implementation used by
+AppModel; legacy OTA control and notify-only tap characteristics sharing UUID 0006 are distinguished by
+characteristic write properties. These physical hardware paths still need a racket smoke test.

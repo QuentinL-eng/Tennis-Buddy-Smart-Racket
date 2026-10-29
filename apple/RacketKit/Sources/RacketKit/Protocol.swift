@@ -13,6 +13,12 @@ public enum RacketProtocol {
     /// Handle-tap gesture (single/double/triple), one notification per gesture. Firmware 1.2+.
     public static let tapUUID = "7E5B0006-6B1D-4D8E-9C1A-7E5B7E5B0001"
 
+    // Legacy OTA firmware used 0006 for a writable control characteristic; tap firmware uses
+    // that UUID for a notify-only gesture. RacketBLE distinguishes them by characteristic properties.
+    public static let otaControlUUID = "7E5B0006-6B1D-4D8E-9C1A-7E5B7E5B0001"
+    public static let otaDataUUID = "7E5B0007-6B1D-4D8E-9C1A-7E5B7E5B0001"
+    public static let otaWindow = 4096
+
     public static let samplesPerPacket = 8
     public static let packetSize = 152
     public static let sampleRate: Double = 1000
@@ -30,6 +36,31 @@ public enum RacketProtocol {
 
     /// Packet flag: this packet's gyro is at ±4000 dps, 8.2 LSB/dps.
     public static let flagGyro4000: UInt8 = 1 << 3
+
+    public enum OTACommand: UInt8 {
+        case begin = 0x01   // then UInt32 size, UInt32 CRC-32 (little-endian)
+        case end = 0x02
+        case abort = 0x03
+    }
+
+    public enum OTAReply: UInt8 {
+        case ready = 0x00
+        case progress = 0x01   // then UInt32 bytes written
+        case done = 0x02
+        case error = 0x7F      // then UInt8 error code
+    }
+
+    public static func otaErrorMessage(_ code: UInt8) -> String {
+        switch code {
+        case 1: "The racket couldn't start the update (image too large?)"
+        case 2: "The racket couldn't write to its flash"
+        case 3: "The image size didn't match what was sent"
+        case 4: "The image was corrupted in transit"
+        case 5: "That file isn't valid racket firmware"
+        case 6: "The racket wasn't expecting that step"
+        default: "The racket reported update error \(code)"
+        }
+    }
 
     /// mg per 12-bit count for each H3LIS range code.
     public static func h3lisGPerCount(range: UInt8) -> Float {

@@ -23,12 +23,15 @@ struct ContentView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: 14) {
-                    captureControls
-                    sessionPanel
-                    detectorControls
-                    snapshotPanel
-                    Spacer(minLength: 0)
+                // Taller than a landscape screen once the session panel is in, so it scrolls instead of
+                // being centred and clipped at the top.
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 14) {
+                        captureControls
+                        sessionPanel
+                        detectorControls
+                        snapshotPanel
+                    }
                 }
                 .frame(width: 300, alignment: .leading)
             }
@@ -201,6 +204,7 @@ struct ContentView: View {
             row("racket", racket.state)
             row("imu", String(format: "%.0f pkt/s  %d lost%@", racket.packetsPerSecond, racket.lostPackets,
                               racket.gyro4000 ? "  ±4000dps" : ""))
+            row("racket tx", "\(racket.racketDropped) dropped in firmware")
             if racket.batteryMV > 0 {
                 row("battery", "\(racket.batteryMV) mV")
             }

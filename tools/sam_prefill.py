@@ -22,8 +22,8 @@ import sys
 
 import cv2
 import numpy as np
+from session_timing import impact_time
 
-LAG_S = 0.08
 BOX = re.compile(r"<\|box;x1=(-?\d+);y1=(-?\d+);x2=(-?\d+);y2=(-?\d+);w=(\d+);h=(\d+)(?:;c=([\d.]+))?\|>")
 
 
@@ -100,7 +100,7 @@ def main():
     cache = json.load(open(cache_p)) if os.path.exists(cache_p) else {}
 
     def frames_for(c):
-        g = int(np.searchsorted(ft, float(c["t_s"]) - LAG_S))
+        g = int(np.searchsorted(ft, impact_time(c)))
         return [f for f in range(g - a.window, g + a.window + 1, a.step) if 0 <= f < n_frames]
 
     todo = [(c, f) for c in clips for f in frames_for(c) if str(f) not in cache.get(c["file"], {})]

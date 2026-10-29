@@ -10,6 +10,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include <NimBLEDevice.h>
+#include "nimble/porting/nimble/include/os/os_mbuf.h"
 #include "protocol.h"
 #include "mic.h"
 #include "tap.h"
@@ -61,6 +62,11 @@ static volatile uint8_t h3Range = 1;     // 0 = 100 g, 1 = 200 g, 3 = 400 g
 static volatile bool gyro4000Wanted = false;   // requested by the app (TB_CMD_GYRO_RANGE)
 static volatile bool gyro4000 = false;         // what the IMU is set to; changed by the sampler between packets
 static volatile uint32_t imuResets = 0;        // times the watchdog found the IMU had lost its settings
+
+// NimBLE buffers (of the 32 set in platformio.ini) kept free for the stack's own replies. Notifying until
+// the pool is empty makes notify() fail silently and leaves nothing to answer the phone's requests.
+static const int BLE_BUFFER_RESERVE = 6;
+static uint32_t sentPackets = 0;
 
 static volatile uint16_t droppedPackets = 0;
 static volatile uint32_t samplesRead = 0, i2cErrors = 0;
@@ -239,6 +245,9 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     Serial.println("BLE: connected");
     // 15-30 ms interval: the fastest iOS accepts; several packets go out per interval.
     s->updateConnParams(desc->conn_handle, 12, 24, 0, 400);
+    // A 152-byte packet should travel in one link-layer PDU, at 2 Mbit/s when the phone allows it.
+    ble_gap_set_data_len(desc->conn_handle, 251, 2120);
+    ble_gap_set_prefered_le_phy(desc->conn_handle, BLE_GAP_LE_PHY_2M_MASK, BLE_GAP_LE_PHY_2M_MASK, 0);
     // Keep advertising so a second device (Mac + iPhone) can join; otherwise whoever reconnects first
     // after a reboot locks everyone else out.
     if (s->getConnectedCount() < 3) NimBLEDevice::startAdvertising();
@@ -285,7 +294,12 @@ static TBStatus makeStatus() {
 }
 
 static void setupBLE() {
-  NimBLEDevice::init(TB_DEVICE_NAME);
+  // Two rackets in one room must be tellable apart: suffix the name with the last MAC bytes.
+  uint8_t mac[6] = {0};
+  esp_read_mac(mac, ESP_MAC_BT);
+  char bleName[24];
+  snprintf(bleName, sizeof(bleName), TB_DEVICE_NAME " %02X%02X", mac[4], mac[5]);
+  NimBLEDevice::init(bleName);
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
   NimBLEDevice::setMTU(185);
 
@@ -308,7 +322,7 @@ static void setupBLE() {
   adv->addServiceUUID(TB_SERVICE_UUID);
   adv->setScanResponse(true);
   adv->start();
-  Serial.println("BLE: advertising as \"" TB_DEVICE_NAME "\"");
+  Serial.printf("BLE: advertising as \"%s\"\n", bleName);
 }
 
 void setup() {
@@ -367,13 +381,20 @@ void loop() {
   }
 
   // Send queued packets as notifications.
+  // Send queued packets while NimBLE has buffers to spare. When the link can't keep up, packets wait in
+  // the queue and the sampler counts any that overflow it as dropped.
   TBPacket pkt;
-  while (xQueueReceive(packetQueue, &pkt, pdMS_TO_TICKS(2)) == pdTRUE) {
-    imuChar->setValue((uint8_t *)&pkt, sizeof(pkt));
-    imuChar->notify();
+  if (os_msys_num_free() <= BLE_BUFFER_RESERVE) {
+    vTaskDelay(1);
+  } else {
+    while (os_msys_num_free() > BLE_BUFFER_RESERVE && xQueueReceive(packetQueue, &pkt, pdMS_TO_TICKS(2)) == pdTRUE) {
+      imuChar->setValue((uint8_t *)&pkt, sizeof(pkt));
+      imuChar->notify();
+      sentPackets++;
+    }
   }
 
-  static uint32_t lastStatus = 0, lastSamples = 0, lastRetry = 0;
+  static uint32_t lastStatus = 0, lastSamples = 0, lastSent = 0, lastRetry = 0;
   uint32_t now = millis();
   if (!imuOk && now - lastRetry > 2000) {
     lastRetry = now;
@@ -386,6 +407,8 @@ void loop() {
 
     uint32_t rate = samplesRead - lastSamples;
     lastSamples = samplesRead;
+    uint32_t sentRate = sentPackets - lastSent;
+    lastSent = sentPackets;
     lastStatus = now;
     TBSample s = lastSample;
     float gs = gyro4000 ? WIRE_G_LSB_PER_DPS / 2 : WIRE_G_LSB_PER_DPS;
@@ -394,13 +417,13 @@ void loop() {
     Serial.printf(
         "rate %4lu Hz | a[g] %6.2f %6.2f %6.2f  g[dps] %7.1f %7.1f %7.1f | high-g a[g] %6.1f %6.1f %6.1f | "
         "mic floor %4d peak %5d trig %5d hits %lu | taps %lu (rejected %lu) jolt %4ld/%ld mg | BLE %s, "
-        "dropped %u, i2c err %lu, gyro ±%d dps, imu resets %lu | "
+        "sent %lu pkt/s, dropped %u, bufs free %d, itvl %.1f ms, i2c err %lu, gyro ±%d dps, imu resets %lu | "
         "bat %u mV\n",
         (unsigned long)rate, s.ax / 2048.0f, s.ay / 2048.0f, s.az / 2048.0f, s.gx / gs, s.gy / gs,
         s.gz / gs, (s.hx >> 4) * h3Scale, (s.hy >> 4) * h3Scale, (s.hz >> 4) * h3Scale, mic.floor, mic.peak,
         mic.trigger, (unsigned long)micImpactCount(), (unsigned long)tapGestures, (unsigned long)tapsRejected,
         (long)tapPeakDeviation(), (long)TAP_TRIG_MG,
-        server->getConnectedCount() ? (server->getConnectedCount() > 1 ? "connected x2+" : "connected") : "advertising", droppedPackets, (unsigned long)i2cErrors, gyro4000 ? 4000 : 2000, (unsigned long)imuResets,
+        server->getConnectedCount() ? (server->getConnectedCount() > 1 ? "connected x2+" : "connected") : "advertising", (unsigned long)sentRate, droppedPackets, os_msys_num_free(), server->getConnectedCount() ? server->getPeerInfo(0).getConnInterval() * 1.25f : 0.0f, (unsigned long)i2cErrors, gyro4000 ? 4000 : 2000, (unsigned long)imuResets,
         st.battery_mv);
   }
 }

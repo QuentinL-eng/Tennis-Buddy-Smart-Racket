@@ -1,0 +1,10 @@
+node_modules/
+out/
+# Copied in by scripts/sync-assets.mjs
+public/models/
+public/img/
+# Contains Epson's C8 vendor model; don't publish it in the public repo
+cad/robot-arm.step
+# Raw footage is large; keep it out of git (share via Drive instead)
+public/footage/*
+!public/footage/README.md

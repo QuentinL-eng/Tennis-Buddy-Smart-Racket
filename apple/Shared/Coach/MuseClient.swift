@@ -7,29 +7,32 @@ protocol MuseTransport {
 }
 
 enum MuseError: LocalizedError {
-    case invalidResponse, http(Int), roundLimit, noKey
+    case invalidResponse, http(Int), roundLimit, signInRequired
     var errorDescription: String? {
         switch self {
         case .invalidResponse: "Muse returned an incomplete response."
         case .http(let code): "Muse request failed (HTTP \(code))."
         case .roundLimit: "Muse reached the coaching tool limit."
-        case .noKey: "Add your Meta Model API key to enable Muse."
+        case .signInRequired: "Sign in to use the online coach."
         }
     }
 }
 
 @MainActor
 struct MuseClient: MuseTransport {
-    static let endpoint = URL(string: "https://api.meta.ai/v1/chat/completions")!
-    let apiKey: String
+    /// The app's own `muse` edge function. The Meta API key lives only in the server's secrets.
+    let endpoint: URL
+    let publishableKey: String
+    let accessToken: String
     var model = "muse-spark-1.3"
     var session: URLSession = .shared
 
     func complete(messages: [[String: Any]], tools: [[String: Any]]) async throws -> [String: Any] {
-        guard !apiKey.isEmpty else { throw MuseError.noKey }
-        var request = URLRequest(url: Self.endpoint, timeoutInterval: 45)
+        guard !accessToken.isEmpty else { throw MuseError.signInRequired }
+        var request = URLRequest(url: endpoint, timeoutInterval: 45)
         request.httpMethod = "POST"
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+        request.setValue(publishableKey, forHTTPHeaderField: "apikey")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         var body: [String: Any] = ["model": model, "messages": messages,
                                    "max_completion_tokens": 2048, "reasoning_effort": "low"]

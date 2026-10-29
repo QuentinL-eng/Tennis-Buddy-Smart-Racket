@@ -9,6 +9,11 @@ struct RacketView: View {
     var body: some View {
         @Bindable var model = model
         Form {
+            Section("Your racket") {
+                NavigationLink { RacketSkinView() } label: { Label("Racket skins", systemImage: "paintpalette") }
+                NavigationLink { AccountView() } label: { Label("Account", systemImage: "person.crop.circle") }
+            }
+
             Section("Connection") {
                 Picker("Data source", selection: Binding(get: { model.sourceKind == .replay ? .simulator : model.sourceKind },
                                                          set: { model.select($0) })) {
@@ -17,6 +22,9 @@ struct RacketView: View {
                 }
                 .pickerStyle(.segmented)
                 LabeledContent("Status", value: model.connectionLabel)
+                if model.sourceKind == .racket {
+                    Button("Forget this racket", systemImage: "link.badge.minus", role: .destructive) { model.ble.forgetRacket() }
+                }
                 LabeledContent("Sample rate", value: "\(Int(model.live.samplesPerSecond)) Hz")
                 if let s = model.racketStatus {
                     LabeledContent("Battery", value: s.batteryMillivolts > 2500 ? String(format: "%.2f V", Double(s.batteryMillivolts) / 1000) : "Not wired")
@@ -42,7 +50,7 @@ struct RacketView: View {
             } header: {
                 Text("Calibration")
             } footer: {
-                Text("Takes about 2 minutes: hold still, tip up, lay flat, then optional ball drops on a taped grid.")
+                Text("Takes about 2 minutes: hold still, tip up, lay flat. Then optionally drop balls on a taped grid to score the racket's sweet-spot AI.")
             }
 
             Section {

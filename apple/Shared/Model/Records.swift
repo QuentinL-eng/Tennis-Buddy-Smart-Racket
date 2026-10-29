@@ -11,6 +11,9 @@ final class SessionRecord {
     var title: String = ""
     /// Name of the player who was active when the session started.
     var playerName: String = ""
+    var sharedMatchID: String = ""
+    var sharedPlayerID: String = ""
+    var sharedStatsPending: Bool = false
     var notes: String = ""
     var coachSummary: String = ""
     var pointsWon: Int = 0
@@ -38,6 +41,7 @@ final class ShotRecord {
     var typeRaw: String = ShotType.forehand.rawValue
     var metricsData: Data = Data()
     var bookmarked: Bool = false
+    var dataSourceRaw: String = ""
     var session: SessionRecord?
 
     init(metrics: ShotMetrics) {

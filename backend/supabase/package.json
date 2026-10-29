@@ -1,0 +1,7 @@
+{
+  "name": "tennis-buddee-social-tests",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test tests/social.test.mjs" },
+  "devDependencies": { "@electric-sql/pglite": "0.3.14" }
+}

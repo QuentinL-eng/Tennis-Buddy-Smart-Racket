@@ -13,6 +13,11 @@ static const int TRIG_MIN = 1500;          // never trigger below this absolute 
 static const float TRIG_RATIO = 8.0f;      // ... or below this many times the running noise floor
 static const uint32_t REFRACTORY_MS = 250; // ignore ringing / double detections
 static const uint32_t STARTUP_MS = 1500;   // ignore the mic's power-up transient
+// Collection only: retain 128 ms after the last near-full-scale sample,
+// bounded to 1 s after the trigger. Keep the deployed model's 512-sample input.
+static const int CLIP_LEVEL = 30000;
+static const int TAIL_SAMPLES = SS_SAMPLE_RATE * 128 / 1000;
+static const int MAX_COLLECT_SAMPLES = SS_PRE_SAMPLES + SS_SAMPLE_RATE;
 static uint32_t startedAt = 0;
 
 static QueueHandle_t outQueue;
@@ -34,19 +39,24 @@ MicLevel micLevel() {
   return l;
 }
 
-static void printClip(const int16_t *clip) {
+static void printClip(const int16_t *clip, int count, uint32_t triggerAt) {
+  Serial.printf("CLIP_META,samples=%d,trigger_age_us=%lu\n", count,
+                (unsigned long)(micros() - triggerAt));
   Serial.print("CLIP,");
-  for (int i = 0; i < SS_CLIP_SAMPLES; i++) Serial.printf("%04x", (uint16_t)clip[i]);
+  for (int i = 0; i < count; i++) Serial.printf("%04x", (uint16_t)clip[i]);
   Serial.println();
 }
 
 static void micTask(void *) {
-  static int16_t clip[SS_CLIP_SAMPLES];
+  static int16_t clip[MAX_COLLECT_SAMPLES];
   static int16_t pre[SS_PRE_SAMPLES];       // ring buffer of the most recent samples
   int32_t raw[64];
   int preHead = 0;
   float floorAbs = 200;                     // running mean |x| (noise floor)
   int capturing = -1;                       // -1 idle, else number of clip samples filled
+  int captureEnd = SS_CLIP_SAMPLES;
+  bool captureCollect = false;
+  uint32_t triggerAt = 0;
   uint32_t lastImpact = 0;
   uint16_t seq = 0;
 
@@ -59,7 +69,10 @@ static void micTask(void *) {
       if (abs((int)s) > levelPeak) levelPeak = abs((int)s);
       if (capturing >= 0) {
         clip[capturing++] = s;
-        if (capturing == SS_CLIP_SAMPLES) {
+        if (captureCollect && abs((int)s) >= CLIP_LEVEL)
+          captureEnd = min(MAX_COLLECT_SAMPLES, capturing + TAIL_SAMPLES);
+        if (capturing >= captureEnd) {
+          const int captured = capturing;
           capturing = -1;
           lastImpact = millis();
           uint32_t t0 = micros();
@@ -72,7 +85,7 @@ static void micTask(void *) {
           xQueueSend(outQueue, &shot, 0);
           Serial.printf("SHOT %s off=%u%% conf=%u%% p=%.2f peak=%d inference=%luus\n", r.sweet ? "SWEET" : "off-centre",
                         r.off_pct, r.confidence, r.p_sweet, peak, (unsigned long)dt);
-          if (collect) printClip(clip);
+          if (captureCollect) printClip(clip, captured, triggerAt);
         }
         continue;
       }
@@ -84,6 +97,9 @@ static void micTask(void *) {
         for (int i = 0; i < SS_PRE_SAMPLES; i++) clip[i] = pre[(preHead + i) % SS_PRE_SAMPLES];
         clip[SS_PRE_SAMPLES] = s;
         capturing = SS_PRE_SAMPLES + 1;
+        captureCollect = collect;
+        triggerAt = micros();
+        captureEnd = captureCollect ? SS_PRE_SAMPLES + 1 + TAIL_SAMPLES : SS_CLIP_SAMPLES;
       } else {
         floorAbs += 0.001f * (abs((int)s) - floorAbs);
         levelFloor = floorAbs;

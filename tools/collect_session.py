@@ -27,9 +27,14 @@ ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 
 
 def serial_reader(ser, q, stop):
+    pending = b""
     while not stop.is_set():
-        line = ser.readline().decode(errors="ignore").strip()
-        if line.startswith("SHOT") or line.startswith("CLIP,"):
+        pending += ser.readline()
+        if not pending.endswith(b"\n"):
+            continue  # a long audio line can span several serial timeouts
+        line = pending.decode(errors="ignore").strip()
+        pending = b""
+        if line.startswith(("SHOT", "CLIP,", "CLIP_META,")):
             q.put((time.perf_counter(), line))
 
 
@@ -71,9 +76,10 @@ def main():
     frames_f = open(os.path.join(out, "frames.csv"), "w")
     frames_f.write("frame,t_s\n")
     clips_f = open(os.path.join(out, "clips.csv"), "w")
-    clips_f.write("n,file,t_s,verdict,clipped\n")
+    clips_f.write("n,file,t_s,verdict,clipped,impact_t_s,samples\n")
     t0 = time.perf_counter()
     n_frame, n_clip, n_sat, verdict, flash_until = 0, 0, 0, "", 0.0
+    impact_t = None
     print("Recording. Throw balls. Press q in the video window to stop.")
     while True:
         ok, frame = cap.read()
@@ -87,6 +93,11 @@ def main():
             tr, line = q.get()
             if line.startswith("SHOT"):
                 verdict = line
+                impact_t = None
+                continue
+            if line.startswith("CLIP_META,"):
+                meta = dict(part.split("=", 1) for part in line.split(",")[1:])
+                impact_t = tr - t0 - int(meta["trigger_age_us"]) / 1e6
                 continue
             n_clip += 1
             name = f"clips/clip-{n_clip:04d}.i16"
@@ -94,9 +105,10 @@ def main():
             clip.tofile(os.path.join(out, name))
             sat = int((np.abs(clip.astype(int)) >= 30000).sum())      # samples near the mic's full scale
             n_sat += sat >= 10
-            clips_f.write(f"{n_clip},{name},{tr - t0:.4f},{verdict.replace(',', ';')},{sat}\n")
+            onset = f"{impact_t:.4f}" if impact_t is not None else ""
+            clips_f.write(f"{n_clip},{name},{tr - t0:.4f},{verdict.replace(',', ';')},{sat},{onset},{clip.size}\n")
             clips_f.flush()
-            print(f"#{n_clip:3d}  t={tr - t0:6.1f}s  {verdict}" + (f"   ** CLIPPED ({sat} samples near full scale)" if sat >= 10 else ""))
+            print(f"#{n_clip:3d}  t={tr - t0:6.1f}s  {clip.size / 16:.1f} ms  {verdict}" + (f"   ** CLIPPED ({sat} samples near full scale)" if sat >= 10 else ""))
             flash_until = time.perf_counter() + 0.3
         if n_frame % 5 == 0:
             frames_f.flush()

@@ -12,6 +12,8 @@ final class RacketLink: NSObject, @unchecked Sendable {
         var packetsPerSecond = 0.0
         var gyro4000 = false
         var batteryMV = 0
+        /// Packets the racket itself dropped because its BLE queue was full (status packet, since boot).
+        var racketDropped = 0
     }
 
     private static let serviceUUID = CBUUID(string: "7E5B0001-6B1D-4D8E-9C1A-7E5B7E5B0001")
@@ -92,6 +94,15 @@ final class RacketLink: NSObject, @unchecked Sendable {
         peripheral = p
         p.delegate = self
         setState("connecting")
+        // A fresh link starts a fresh count; otherwise earlier runs' losses pile onto this one.
+        lock.lock()
+        snap.imuPackets = 0
+        snap.lostPackets = 0
+        snap.packetsPerSecond = 0
+        lastSeq = nil
+        windowStartNs = 0
+        windowCount = 0
+        lock.unlock()
         central?.connect(p)
     }
 
@@ -190,6 +201,7 @@ extension RacketLink: CBCentralManagerDelegate, CBPeripheralDelegate {
             lock.lock()
             lastStatus = data
             if data.count >= 2 { snap.batteryMV = Int(data[data.startIndex]) | Int(data[data.startIndex + 1]) << 8 }
+            if data.count >= 8 { snap.racketDropped = Int(data[data.startIndex + 6]) | Int(data[data.startIndex + 7]) << 8 }
             lock.unlock()
         case Self.shotUUID: kind = .shot
         case Self.tapUUID: kind = .tap

@@ -53,6 +53,10 @@ struct SessionDetailView: View {
     @Environment(CoachModel.self) private var coach
     @State private var strokeFilter: ShotType?
     @State private var heatMap = true
+    @Environment(\.modelContext) private var context
+    @State private var renaming = false
+    @State private var draftTitle = ""
+    @State private var saveError: String?
 
     var body: some View {
         let all = session.shots.filter { $0.type != .calibration }
@@ -69,6 +73,8 @@ struct SessionDetailView: View {
                     StatTile(label: "Avg spin", value: "\(Int(summary.avgSpinRPM))", unit: "rpm", symbol: "arrow.clockwise")
                     if session.averageHeartRate > 0 {
                         StatTile(label: "Avg heart rate", value: "\(Int(session.averageHeartRate))", unit: "bpm", symbol: "heart")
+                    }
+                    if session.activeCalories > 0 {
                         StatTile(label: "Calories", value: "\(Int(session.activeCalories))", unit: "kcal", symbol: "flame")
                     }
                     if session.pointsWon + session.pointsLost > 0 {
@@ -142,6 +148,26 @@ struct SessionDetailView: View {
             .padding()
         }
         .navigationTitle(session.title)
+        .toolbar {
+            ToolbarItem {
+                Button("Rename session", systemImage: "pencil") { draftTitle = session.title; renaming = true }
+            }
+        }
+        .alert("Name this session", isPresented: $renaming) {
+            TextField("Session name", text: $draftTitle)
+            Button("Save") {
+                let title = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !title.isEmpty else { return }
+                let previous = session.title
+                session.title = String(title.prefix(120))
+                do { try context.save() } catch { session.title = previous; saveError = error.localizedDescription }
+            }
+            .disabled(draftTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Button("Cancel", role: .cancel) {}
+        }
+        .alert("Could not save session name", isPresented: Binding(get: { saveError != nil }, set: { if !$0 { saveError = nil } })) {
+            Button("OK") { saveError = nil }
+        } message: { Text(saveError ?? "") }
     }
 }
 

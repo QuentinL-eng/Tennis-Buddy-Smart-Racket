@@ -22,6 +22,13 @@ struct TennisBuddyWatchApp: App {
 @Observable
 final class WatchModel: NSObject, WCSessionDelegate {
     var sessionActive = false
+    var sessionID: UUID?
+    var sharedScore: ScoreTracker?
+    var sharedScoreActive = false
+    var sharedMatchID: UUID?
+    var sharedRevision = 0
+    var commandInFlight = false
+    var commandError: String?
     var lastShot: ShotMetrics?
     var summary: ShotSummary?
     var pointsWon = 0
@@ -35,6 +42,9 @@ final class WatchModel: NSObject, WCSessionDelegate {
 
     override init() {
         super.init()
+        workout.onFinished = { [weak self] id, average, calories in
+            self?.sendHealth(id: id, average: average, calories: calories)
+        }
         if WCSession.isSupported() {
             WCSession.default.delegate = self
             WCSession.default.activate()
@@ -42,15 +52,19 @@ final class WatchModel: NSObject, WCSessionDelegate {
     }
 
     func toggleSession() {
-        if sessionActive { sendHealth() }
-        send(["cmd": sessionActive ? "stop" : "start"])
-        setSessionActive(!sessionActive)
+        let wasActive = sessionActive
+        if !wasActive { sessionID = UUID() }
+        send(["cmd": wasActive ? "stop" : "start", "sessionID": sessionID?.uuidString ?? ""])
+        setSessionActive(!wasActive)
         WKInterfaceDevice.current().play(sessionActive ? .start : .stop)
     }
 
     /// Keeps the Tennis workout (heart rate, calories, Apple Health) in step with the racket session.
     func setSessionActive(_ active: Bool) {
-        guard active != sessionActive || active != workout.isRunning else { return }
+        guard active != sessionActive else {
+            if active { workout.setActive(true, recordID: sessionID) }
+            return
+        }
         if active && !sessionActive {
             pointsWon = 0; pointsLost = 0; lastShot = nil; summary = nil
             sessionStart = Date()
@@ -58,11 +72,15 @@ final class WatchModel: NSObject, WCSessionDelegate {
         if !active { sessionStart = nil }
         if !active && sessionActive && workout.isRunning { sendHealth() }
         sessionActive = active
-        Task { active ? await workout.start() : await workout.stop() }
+        workout.setActive(active, recordID: sessionID)
     }
 
-    private func sendHealth() {
-        send(["cmd": "health", "avgHR": workout.averageHeartRate, "kcal": workout.activeCalories])
+    private func sendHealth(id: UUID? = nil, average: Double? = nil, calories: Double? = nil) {
+        guard let recordID = id ?? sessionID else { return }
+        let message: [String: Any] = ["cmd": "health", "sessionID": recordID.uuidString,
+            "avgHR": average ?? workout.averageHeartRate, "kcal": calories ?? workout.activeCalories]
+        // Queued delivery survives a temporarily unreachable iPhone; the record ID prevents misattribution.
+        if WCSession.default.activationState == .activated { WCSession.default.transferUserInfo(message) }
     }
 
     /// New drill or progress from the iPhone: tap per counted shot, a celebration when it's done.
@@ -85,17 +103,37 @@ final class WatchModel: NSObject, WCSessionDelegate {
     }
 
     func logPoint(won: Bool) {
-        if won { pointsWon += 1 } else { pointsLost += 1 }
-        send(["cmd": "point", "won": won])
+        guard !commandInFlight else { return }
+        if sharedScore != nil && !sharedScoreActive { return }
+        if !sharedScoreActive {
+            if won { pointsWon += 1 } else { pointsLost += 1 }
+        }
+        send(["cmd": sharedScoreActive ? "sharedPoint" : "point", "won": won,
+              "matchID": sharedMatchID?.uuidString ?? "", "revision": sharedRevision])
         WKInterfaceDevice.current().play(.click)
     }
 
     private func send(_ message: [String: Any]) {
-        guard WCSession.default.activationState == .activated, WCSession.default.isReachable else { return }
+        guard WCSession.default.activationState == .activated, WCSession.default.isReachable else {
+            commandError = "Open Tennis Buddee on your iPhone to sync."
+            return
+        }
+        commandInFlight = true; commandError = nil
         WCSession.default.sendMessage(message, replyHandler: { reply in
-            if let active = reply["sessionActive"] as? Bool {
-                Task { @MainActor in self.setSessionActive(active) }
+            let error = reply["error"] as? String
+            Task { @MainActor in
+                self.commandInFlight = false
+                self.commandError = error?.isEmpty == false ? error : nil
             }
+            if let active = reply["sessionActive"] as? Bool {
+                let id = (reply["sessionID"] as? String).flatMap(UUID.init(uuidString:))
+                Task { @MainActor in
+                    if let id { self.sessionID = id }
+                    self.setSessionActive(active)
+                }
+            }
+        }, errorHandler: { error in
+            Task { @MainActor in self.commandInFlight = false; self.commandError = error.localizedDescription }
         })
     }
 
@@ -108,7 +146,13 @@ final class WatchModel: NSObject, WCSessionDelegate {
             // Crisp tap for a sweet-spot hit, a "retry" buzz for a mishit.
             WKInterfaceDevice.current().play(shot.isSweetSpot ? .success : .retry)
         } else if message["type"] as? String == "session", let active = message["active"] as? Bool {
+            if let id = (message["sessionID"] as? String).flatMap(UUID.init(uuidString:)) { sessionID = id }
             setSessionActive(active)
+        } else if message["type"] as? String == "sharedScore", let data = message["score"] as? Data {
+            sharedScore = try? JSONDecoder().decode(ScoreTracker.self, from: data)
+            sharedScoreActive = message["active"] as? Bool ?? false
+            sharedMatchID = (message["matchID"] as? String).flatMap(UUID.init(uuidString:))
+            sharedRevision = message["revision"] as? Int ?? 0
         } else if message["type"] as? String == "drill", let data = message["drill"] as? Data {
             updateDrill(data)
         }
@@ -122,7 +166,15 @@ final class WatchModel: NSObject, WCSessionDelegate {
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext ctx: [String: Any]) {
         let active = ctx["sessionActive"] as? Bool
         let drill = ctx["drill"] as? Data
+        let recordID = (ctx["sessionID"] as? String).flatMap(UUID.init(uuidString:))
+        let score = (ctx["sharedScore"] as? Data).flatMap { try? JSONDecoder().decode(ScoreTracker.self, from: $0) }
+        let scoreActive = ctx["sharedScoreActive"] as? Bool ?? false
+        let matchID = (ctx["sharedMatchID"] as? String).flatMap(UUID.init(uuidString:))
+        let revision = ctx["sharedRevision"] as? Int ?? 0
         Task { @MainActor in
+            if let recordID { self.sessionID = recordID }
+            self.sharedScore = score; self.sharedScoreActive = scoreActive
+            self.sharedMatchID = matchID; self.sharedRevision = revision
             if let active { self.setSessionActive(active) }
             if let drill { self.updateDrill(drill) }
         }
@@ -254,15 +306,17 @@ struct PointsPage: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("\(model.pointsWon) – \(model.pointsLost)")
+            Text(model.sharedScore?.score.pointText ?? "\(model.pointsWon) – \(model.pointsLost)")
                 .font(.system(size: 38, weight: .bold, design: .rounded)).monospacedDigit()
             HStack(spacing: 8) {
                 PointButton(title: "Won", symbol: "checkmark", color: WatchPalette.green) { model.logPoint(won: true) }
                 PointButton(title: "Lost", symbol: "xmark", color: WatchPalette.red) { model.logPoint(won: false) }
             }
-            .disabled(!model.sessionActive)
-            .opacity(model.sessionActive ? 1 : 0.4)
-            Text("Log each point").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
+            .disabled(!(model.sessionActive || model.sharedScoreActive) || (model.sharedScoreActive && !model.phoneReachable) || model.commandInFlight || model.sharedScore?.score.winner != nil || (model.sharedScore != nil && !model.sharedScoreActive))
+            .opacity(model.sessionActive || model.sharedScoreActive ? 1 : 0.4)
+            if let error = model.commandError { Text(error).font(.caption2).foregroundStyle(.red) }
+            if let score = model.sharedScore { Text(score.setsText).font(.caption.monospacedDigit()) }
+            Text(model.sharedScore != nil ? "Shared score · open Together on iPhone" : "Log each point").font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary)
         }
     }
 }
@@ -328,6 +382,10 @@ struct SessionPage: View {
                     .foregroundStyle(WatchPalette.orange)
                 }
                 .font(.system(size: 12.5, weight: .medium))
+            }
+            if model.workout.isTransitioning { ProgressView() }
+            if let status = model.workout.statusMessage {
+                Text(status).font(.caption2).multilineTextAlignment(.center)
             }
             Text(model.phoneReachable ? "iPhone connected" : "Open Tennis Buddee on your iPhone")
                 .font(.system(size: 10.5)).foregroundStyle(WatchPalette.secondary).multilineTextAlignment(.center)

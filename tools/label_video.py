@@ -24,9 +24,7 @@ import sys
 
 import cv2
 import numpy as np
-
-LAG_S = 0.08          # first guess: serial clip arrives this long after the contact
-
+from session_timing import impact_time
 
 class State:
     cal = None
@@ -138,7 +136,7 @@ def main():
     cv2.namedWindow(win)
     cv2.setMouseCallback(win, on_mouse, st)
     if st.cal is None:
-        first = int(np.searchsorted(ft, float(clips[0]["t_s"]) - LAG_S)) if clips else 0   # racket is in view near an impact
+        first = int(np.searchsorted(ft, impact_time(clips[0]))) if clips else 0
         calibrate(win, cap, first, n_frames, st, cal_p)
         if st.cal is None:
             sys.exit("calibration cancelled")
@@ -154,7 +152,7 @@ def main():
         if (f in labels or f in dis) and "--redo" not in sys.argv:
             i += 1
             continue
-        guess = int(np.searchsorted(ft, float(c["t_s"]) - LAG_S))
+        guess = int(np.searchsorted(ft, impact_time(c)))
         cur = int(np.clip(guess + (int(np.median(shifts[-5:])) if shifts else 0), 0, n_frames - 1))
         st.clicks = []
         sug = suggest(sam.get(f, {}))
