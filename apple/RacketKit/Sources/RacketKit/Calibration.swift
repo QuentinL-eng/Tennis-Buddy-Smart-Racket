@@ -95,11 +95,15 @@ public struct PlayerProfile: Codable, Sendable, Equatable, Identifiable {
     public var rightHanded: Bool = true
     /// Height in meters. Optional so it can stay blank.
     public var heightM: Float?
+    /// Sign of the racket-frame rotation about the across-face axis on this player's forehand, learned from their
+    /// first swings (`AppModel.beginTeachingForehand`). nil until taught; see `RacketProfile.forehandBodySign`.
+    public var forehandBodySign: Float?
 
-    public init(name: String, rightHanded: Bool = true, heightM: Float? = nil) {
+    public init(name: String, rightHanded: Bool = true, heightM: Float? = nil, forehandBodySign: Float? = nil) {
         self.name = name
         self.rightHanded = rightHanded
         self.heightM = heightM
+        self.forehandBodySign = forehandBodySign
     }
 }
 
@@ -117,6 +121,18 @@ public struct RacketProfile: Codable, Sendable, Equatable {
     public var effectiveRadiusM: Float = 1.15
     /// Handedness of the active player. The app copies it from `PlayerProfile` when the player changes.
     public var rightHanded: Bool = true
+    /// Sign of the racket-frame rotation about the across-face axis (y) on this player's forehand: +1 or -1.
+    /// The world-frame spin direction needs the orientation estimate, which is unreliable at contact on fast swings
+    /// (the filter only corrects tilt when the racket is nearly still). The racket-frame sign needs no orientation:
+    /// with a fixed grip the same face leads on every forehand and the other face on every backhand.
+    /// 0 keeps the world-frame rule.
+    public var forehandBodySign: Float = 0
+
+    /// The sign is per player and copied in at runtime, so it is not part of the saved racket profile (and old
+    /// saves, which lack it, still decode).
+    private enum CodingKeys: String, CodingKey {
+        case name, massKg, lengthM, balancePointM, stringCenterM, imuFromButtM, effectiveRadiusM, rightHanded
+    }
 
     public init() {}
 }

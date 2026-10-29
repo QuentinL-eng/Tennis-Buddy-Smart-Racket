@@ -230,8 +230,89 @@ final class AppModel {
 
     /// Copies the active player's handedness into the racket profile, which the shot classifier reads.
     private func applyActivePlayer() {
-        guard let rightHanded = activePlayer?.rightHanded, profile.rightHanded != rightHanded else { return }
+        let rightHanded = activePlayer?.rightHanded ?? true
+        let sign = activePlayer?.forehandBodySign ?? 0
+        guard profile.rightHanded != rightHanded || profile.forehandBodySign != sign else { return }
         profile.rightHanded = rightHanded
+        profile.forehandBodySign = sign
+    }
+
+    // MARK: Teach forehand
+
+    /// Shots the active player still has to hit while teaching, and what the last attempt said.
+    var teachingForehand = false
+    var teachCount = 0
+    var teachMessage = ""
+    private var teachSpins: [Float] = []
+    private let teachShotsNeeded = 3
+
+    /// Learns which way the racket spins on this player's forehand from their next few swings, so forehand and
+    /// backhand no longer depend on the orientation estimate. The swings are not recorded as shots.
+    func beginTeachingForehand() {
+        guard !isSessionActive else { return }
+        teachSpins = []
+        teachCount = 0
+        teachMessage = "Hit \(teachShotsNeeded) forehands."
+        teachingForehand = true
+    }
+
+    func cancelTeachingForehand() {
+        teachingForehand = false
+        teachMessage = ""
+    }
+
+    func clearTaughtForehand() {
+        guard let index = players.firstIndex(where: { $0.id == activePlayerID }) else { return }
+        players[index].forehandBodySign = nil
+        teachMessage = ""
+    }
+
+    /// Returns true when the shot was consumed as a teaching swing.
+    private func consumeTeachingShot(_ shot: ShotMetrics) -> Bool {
+        guard teachingForehand else { return false }
+        guard shot.hasMotion, let spin = shot.features.spinAxisY, abs(spin) > 8 else {
+            teachMessage = "That swing was too gentle to learn from. Hit a normal forehand."
+            return true
+        }
+        teachSpins.append(spin)
+        teachCount = teachSpins.count
+        guard teachSpins.count >= teachShotsNeeded else {
+            teachMessage = "\(teachCount) of \(teachShotsNeeded). Keep going."
+            return true
+        }
+        let positive = teachSpins.filter { $0 > 0 }.count
+        if positive == teachSpins.count || positive == 0 {
+            if let index = players.firstIndex(where: { $0.id == activePlayerID }) {
+                players[index].forehandBodySign = positive == 0 ? -1 : 1
+            }
+            teachMessage = "Learned. Forehands and backhands are now told apart by swing direction."
+            teachingForehand = false
+        } else {
+            // Mixed directions: not a consistent forehand, so start again rather than learn a wrong sign.
+            teachSpins = []
+            teachCount = 0
+            teachMessage = "Those swings went different ways. Hit \(teachShotsNeeded) forehands the same way."
+        }
+        return true
+    }
+
+    /// Without a taught forehand, the analyzer can't tell which face hit the ball, and serves (forehand face, racket
+    /// over the top) look like backhands. Learn the face from shots that clearly turn the forehand way about the
+    /// vertical, the same test that tells forehands from backhands, once a few agree.
+    @ObservationIgnored private var learnedSpins: [Float] = []
+    private let learnShotsNeeded = 5
+
+    private func learnForehandFace(from shot: ShotMetrics) {
+        guard let index = players.firstIndex(where: { $0.id == activePlayerID }), players[index].forehandBodySign == nil,
+              shot.type == .forehand, let vertical = shot.features.verticalSpin, vertical > 0.6,
+              let spin = shot.features.spinAxisY, abs(spin) > 5 else { return }
+        learnedSpins.append(spin)
+        guard learnedSpins.count >= learnShotsNeeded else { return }
+        let positive = learnedSpins.filter { $0 > 0 }.count
+        if positive == learnedSpins.count || positive == 0 {
+            players[index].forehandBodySign = positive == 0 ? -1 : 1
+        }
+        learnedSpins = []
     }
 
     func startSession(id: UUID = UUID(), startDate: Date = Date()) {
@@ -302,6 +383,8 @@ final class AppModel {
             onCalibrationImpact?(shot)
             return
         }
+        if consumeTeachingShot(shot) { return }
+        learnForehandFace(from: shot)
         if var drill = activeDrill, !drill.isDone, drill.matches(shot) {
             drill.completed += 1
             activeDrill = drill
