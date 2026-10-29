@@ -26,10 +26,10 @@ struct ShotConfig {
   bool rightHanded;
 };
 
-// Payload of TB_CMD_SHOT_CONFIG after the command byte: gen, 37 little-endian floats in the order above
+// Payload of TB_CMD_SHOT_CONFIG after the command byte: gen, 36 little-endian floats in the order above
 // (mpu, h3, gyroBias, h3Bias, accelScale, calQ, effectiveRadiusM, forehandBodySign, the five model constants),
 // then rightHanded.
-#define TB_SHOT_CONFIG_PAYLOAD (1 + 37 * 4 + 1)
+#define TB_SHOT_CONFIG_PAYLOAD (1 + 36 * 4 + 1)
 bool shotConfigDecode(const uint8_t *p, size_t len, ShotConfig *out);
 
 // Computes the shot for one window. gyro4000: the IMU was at ±4000 dps (sets the saturation limit); hgPerCount: g

@@ -106,7 +106,7 @@ bool shotConfigDecode(const uint8_t *p, size_t len, ShotConfig *out) {
   if (len < TB_SHOT_CONFIG_PAYLOAD || p[0] == 0) return false;
   ShotConfig c;
   c.gen = p[0];
-  float f[37];
+  float f[36];
   memcpy(f, p + 1, sizeof(f));   // little-endian on both ends
   int i = 0;
   for (int k = 0; k < 9; k++) c.mpu[k] = f[i++];
@@ -122,8 +122,8 @@ bool shotConfigDecode(const uint8_t *p, size_t len, ShotConfig *out) {
   c.joltDeadband = f[i++];
   c.acorCenter = f[i++];
   c.spinGain = f[i++];
-  c.rightHanded = p[1 + 37 * 4] != 0;
-  for (int k = 0; k < 37; k++)
+  c.rightHanded = p[1 + 36 * 4] != 0;
+  for (int k = 0; k < 36; k++)
     if (!isfinite(f[k])) return false;
   *out = c;
   return true;
@@ -177,11 +177,26 @@ bool shotAnalyze(const ShotConfig &cfg, const ImpactWindow &win, bool gyro4000, 
   V3 wPre = meanGyro(i0 - 10, i0 - 2);
   V3 wPost = meanGyro(i0 + 12, i0 + 30);
   V3 dW = sub(wPost, wPre);
-  float peakGyro = 0;
-  for (int k = i0 - 300 > 0 ? i0 - 300 : 0; k < i0; k++) peakGyro = fmaxf(peakGyro, len(ctx.at(k).gyro));
+  // ShotAnalyzer.swingAngleDeg: degrees turned in the 350 ms before contact (volleys are short swings).
+  float swingDeg = 0;
+  if (i0 > 0 && i0 < n) {
+    const double start = ctx.at(i0).time - 0.35;
+    float angle = 0;
+    int k = i0 - 1;
+    while (k > 0) {
+      Sample a = ctx.at(k), b = ctx.at(k - 1);
+      if (!(b.time > start)) break;
+      double gap = a.time - b.time;
+      float dt = (float)(gap < 0.06 ? gap : 0.06);
+      angle += (len(a.gyro) + len(b.gyro)) / 2 * dt;
+      k -= 1;
+    }
+    swingDeg = angle * 180 / (float)M_PI;
+  }
 
+  // Rotation about the shaft only spins the head in place: the sweet spot moves with the rotation across it.
   float omega = len(wPre);
-  float vRacket = omega * m.effectiveRadiusM;
+  float vRacket = sqrtf(wPre.y * wPre.y + wPre.z * wPre.z) * m.effectiveRadiusM;
 
   const V3 up = {0, 0, 1};
   V3 tipW = act(q, {1, 0, 0});
@@ -194,16 +209,19 @@ bool shotAnalyze(const ShotConfig &cfg, const ImpactWindow &win, bool gyro4000, 
   float faceAngle = asinf(clampf(dot(hitNormal, up), -1, 1)) * 180 / (float)M_PI;
   float pathAngle = asinf(clampf(dot(vDir, up), -1, 1)) * 180 / (float)M_PI;
 
+  // Shot type (thresholds from ShotAnalyzer: volleyMaxSwingDeg, serveMaxVertical).
+  bool forehandTurn = (omegaW.z > 0) == m.rightHanded;
+  float forehandVertical = (omega > 1e-3f ? omegaW.z / omega : 0) * (m.rightHanded ? 1 : -1);
   uint8_t type;
-  if (dot(tipW, up) > 0.5f && omega > 8) {
-    type = TB_SHOT_SERVE;
-  } else if (peakGyro < 9) {
+  if (swingDeg < 93) {
     type = TB_SHOT_VOLLEY;
   } else if (m.forehandBodySign != 0) {
-    type = wPre.y * m.forehandBodySign > 0 ? TB_SHOT_FOREHAND : TB_SHOT_BACKHAND;
+    bool forehandFace = wPre.y * m.forehandBodySign > 0;
+    type = !forehandFace ? TB_SHOT_BACKHAND : (forehandVertical < -0.1f ? TB_SHOT_SERVE : TB_SHOT_FOREHAND);
+  } else if (dot(tipW, up) > 0.5f && omega > 8) {
+    type = TB_SHOT_SERVE;
   } else {
-    bool ccw = omegaW.z > 0;
-    type = ccw == m.rightHanded ? TB_SHOT_FOREHAND : TB_SHOT_BACKHAND;
+    type = forehandTurn ? TB_SHOT_FOREHAND : TB_SHOT_BACKHAND;
   }
 
   // Impact location.
@@ -253,10 +271,10 @@ bool shotAnalyze(const ShotConfig &cfg, const ImpactWindow &win, bool gyro4000, 
   }
   float distance = sqrtf(impactX * impactX + impactY * impactY);
 
-  // Ball speed.
+  // Ball speed, for a still ball (ShotAnalyzer.incomingBallMs = 0: the incoming pace isn't measured).
   float e = m.acorCenter * fmaxf(0.55f, 1 - 0.035f * distance);
-  float vIn = type == TB_SHOT_SERVE ? 0 : (type == TB_SHOT_VOLLEY ? 15 : 12);
-  float vBall = e * vIn + (1 + e) * vRacket;
+  const float incomingBallMs = 0;
+  float vBall = e * incomingBallMs + (1 + e) * vRacket;
 
   // Spin: brushing speed along the strings.
   V3 along = sub(vDir, mul(hitNormal, dot(vDir, hitNormal)));
@@ -290,5 +308,7 @@ bool shotAnalyze(const ShotConfig &cfg, const ImpactWindow &win, bool gyro4000, 
   out->jolt = jolt;
   out->impulse = impulse;
   out->spin_axis_y = wPre.y;
+  out->vertical_spin = forehandVertical;
+  out->swing_deg = swingDeg;
   return true;
 }

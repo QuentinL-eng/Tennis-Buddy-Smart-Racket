@@ -16,6 +16,10 @@
 #include "mic.h"
 #include "tap.h"
 #include "impact.h"
+#include "shot.h"
+#include "backlog.h"
+#include <Preferences.h>
+#include <esp_partition.h>
 
 // ---- Pins (XIAO ESP32C3) ----
 // As built (see docs/WIRING.md): IMU on D4/D5, mic on D1-D3.
@@ -84,15 +88,29 @@ static QueueHandle_t packetQueue;
 static NimBLEServer *server;
 static NimBLECharacteristic *imuChar, *statusChar, *shotChar, *tapChar;
 static QueueHandle_t shotQueue, tapQueue;
-static NimBLECharacteristic *hitChar, *windowChar, *poseChar;
+static NimBLECharacteristic *hitChar, *windowChar, *poseChar, *summaryChar;
 
-// Impact mode: hits go out at once through hitQueue; the sampler fills `window` when one completes and the loop
-// sends it chunk by chunk. A window completed while the previous one is still going out is dropped.
+// Impact mode: hits go out at once through hitQueue. The sampler captures each hit's window into a backlog slot
+// (backlog.cpp), the shot task computes its summary (shot.cpp), and the loop sends the summary, then the window.
 static QueueHandle_t hitQueue;
-static ImpactWindow window;
-static volatile bool windowBusy = false;
-static int windowNext = 0;
-static volatile uint32_t impactStepMaxUs = 0;
+static volatile uint32_t impactStepMaxUs = 0, shotMaxUs = 0;
+static TaskHandle_t shotTaskHandle;
+// TB_STREAM_IMPACTS_ACKED: the app's calibration and profile, and its acks and resend requests (queued to the loop,
+// which owns the backlog).
+static portMUX_TYPE cfgMux = portMUX_INITIALIZER_UNLOCKED;
+static ShotConfig shotConfig = {};
+struct BacklogCmd {
+  uint8_t cmd;
+  uint16_t boot, seq;
+  uint8_t n;
+  uint8_t chunks[24];
+};
+static QueueHandle_t backlogCmdQueue;
+static uint16_t bootId = 0;
+// Once an app has used TB_STREAM_IMPACTS_ACKED, windows are captured even with no phone connected (kept in NVS).
+static volatile bool backlogEnabled = false, backlogEnablePending = false;
+static volatile int64_t unixAtBootMs = 0;      // from TB_CMD_SET_TIME; 0 = unknown
+static volatile uint32_t lastActiveMs = 0;     // last swing or hit, for "idle" (flash erases wait for it)
 static const uint32_t POSE_INTERVAL_MS = 33;
 static volatile uint32_t tapGestures = 0, tapsRejected = 0;
 static bool micOk = false;
@@ -266,17 +284,34 @@ static void samplerTask(void *) {
         in.accel[k] = le(6 + 2 * k) / 2048.0f;
         in.highG[k] = le(hg + 2 * k) * LSM_HG_MG_PER_LSB / 1000.0f;
       }
-      bool wanted = streamMode == TB_STREAM_IMPACTS && server->getConnectedCount() > 0;
+      const bool connected = server->getConnectedCount() > 0;
+      const bool impactMode = streamMode != TB_STREAM_RAW && connected;
+      static int fillSlot = -1;
+      // Raw mode with a phone connected (calibration, raw recordings) doesn't capture: those aren't play.
+      const bool capture = impactMode || (backlogEnabled && !connected);
+      if (capture && fillSlot < 0) fillSlot = backlogReserve();
+      if (!capture && fillSlot >= 0) {
+        backlogRelease(fillSlot);
+        fillSlot = -1;
+      }
       TBHit hit;
       uint32_t s0 = micros();
-      int r = impactStep(in, micLastTriggerUs(), &hit, windowBusy ? nullptr : &window);
+      int r = impactStep(in, micLastTriggerUs(), &hit, fillSlot >= 0 ? &backlogSlot(fillSlot).win : nullptr);
       uint32_t took = micros() - s0;
       if (took > impactStepMaxUs) impactStepMaxUs = took;
-      if (r & IMPACT_HIT) xQueueSend(hitQueue, &hit, 0);
-      if ((r & IMPACT_WINDOW) && wanted) {
-        windowNext = 0;
-        windowBusy = true;
+      if (r & IMPACT_HIT) {
+        xQueueSend(hitQueue, &hit, 0);
+        lastActiveMs = millis();
       }
+      if (r & IMPACT_WINDOW) {
+        int64_t unix0 = unixAtBootMs;
+        uint32_t nowMs = millis();
+        backlogCaptured(fillSlot, nowMs, unix0 ? (uint64_t)(unix0 + nowMs) : 0,
+                        !(streamMode == TB_STREAM_IMPACTS_ACKED && connected));
+        fillSlot = -1;
+        xTaskNotifyGive(shotTaskHandle);
+      }
+      if (in.gyro[0] * in.gyro[0] + in.gyro[1] * in.gyro[1] + in.gyro[2] * in.gyro[2] > 1.0f) lastActiveMs = millis();
     } else if (imuOk) {
       i2cErrors++;
     }
@@ -319,8 +354,7 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     if (NimBLEDevice::getServer()->getConnectedCount() == 0) {
       xQueueReset(packetQueue);
       gyro4000Wanted = true;    // back to the default, whatever the last app chose
-      streamMode = TB_STREAM_RAW;   // the next app may not know about impact mode
-      windowBusy = false;
+      streamMode = TB_STREAM_RAW;   // the next app may not know about impact mode (captured windows stay queued)
     }
   }
 };
@@ -336,9 +370,40 @@ class ControlCallbacks : public NimBLECharacteristicCallbacks {
         if (v.size() >= 2 && (v[1] == 0 || v[1] == 1)) gyro4000Wanted = v[1] == 1;
         break;
       case TB_CMD_STREAM_MODE:
-        if (v.size() >= 2 && (v[1] == TB_STREAM_RAW || v[1] == TB_STREAM_IMPACTS)) {
+        if (v.size() >= 2 && v[1] <= TB_STREAM_IMPACTS_ACKED) {
           streamMode = v[1];
-          if (streamMode == TB_STREAM_RAW) windowBusy = false;
+          if (streamMode == TB_STREAM_IMPACTS_ACKED && !backlogEnabled) backlogEnablePending = true;
+        }
+        break;
+      case TB_CMD_SHOT_CONFIG: {
+        ShotConfig c;
+        if (shotConfigDecode((const uint8_t *)v.data() + 1, v.size() - 1, &c)) {
+          portENTER_CRITICAL(&cfgMux);
+          shotConfig = c;
+          portEXIT_CRITICAL(&cfgMux);
+        }
+        break;
+      }
+      case TB_CMD_WINDOW_ACK:
+      case TB_CMD_WINDOW_RESEND:
+        if (v.size() >= 5) {
+          BacklogCmd b = {};
+          b.cmd = (uint8_t)v[0];
+          b.boot = (uint8_t)v[1] | (uint8_t)v[2] << 8;
+          b.seq = (uint8_t)v[3] | (uint8_t)v[4] << 8;
+          if (b.cmd == TB_CMD_WINDOW_RESEND && v.size() >= 6) {
+            b.n = (uint8_t)v[5];
+            if (b.n > sizeof(b.chunks) || v.size() < 6u + b.n) b.n = 0;   // malformed: resend it all
+            memcpy(b.chunks, v.data() + 6, b.n);
+          }
+          xQueueSend(backlogCmdQueue, &b, 0);
+        }
+        break;
+      case TB_CMD_SET_TIME:
+        if (v.size() >= 9) {
+          uint64_t ms = 0;
+          memcpy(&ms, v.data() + 1, 8);
+          unixAtBootMs = (int64_t)ms - (int64_t)millis();
         }
         break;
     }
@@ -376,6 +441,7 @@ static void setupBLE() {
   tapChar = svc->createCharacteristic(TB_TAP_UUID, NIMBLE_PROPERTY::NOTIFY);
   hitChar = svc->createCharacteristic(TB_HIT_UUID, NIMBLE_PROPERTY::NOTIFY);
   windowChar = svc->createCharacteristic(TB_WINDOW_UUID, NIMBLE_PROPERTY::NOTIFY);
+  summaryChar = svc->createCharacteristic(TB_SUMMARY_UUID, NIMBLE_PROPERTY::NOTIFY);
   poseChar = svc->createCharacteristic(TB_POSE_UUID, NIMBLE_PROPERTY::NOTIFY);
   NimBLECharacteristic *control =
       svc->createCharacteristic(TB_CONTROL_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
@@ -390,6 +456,100 @@ static void setupBLE() {
   adv->setScanResponse(true);
   adv->start();
   Serial.printf("BLE: advertising as \"%s\"\n", bleName);
+}
+
+// ---- Backlog: boot number and flags in NVS, windows in the spare data partition ----
+static const esp_partition_t *backlogPart = nullptr;
+static bool partRead(uint32_t off, void *dst, uint32_t len) { return esp_partition_read(backlogPart, off, dst, len) == ESP_OK; }
+static bool partWrite(uint32_t off, const void *src, uint32_t len) {
+  return esp_partition_write(backlogPart, off, src, len) == ESP_OK;
+}
+static bool partErase(uint32_t off, uint32_t len) { return esp_partition_erase_range(backlogPart, off, len) == ESP_OK; }
+static BacklogFlash backlogFlash = {0, partRead, partWrite, partErase};
+
+static void setupBacklog() {
+  Preferences prefs;
+  prefs.begin("tb", false);
+  bootId = prefs.getUShort("boot", 0) + 1;
+  prefs.putUShort("boot", bootId);
+  backlogEnabled = prefs.getBool("backlog", false);
+  prefs.end();
+  // The default partition table's "spiffs" partition (1.375 MB), which nothing else uses.
+  backlogPart = esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_SPIFFS, nullptr);
+  backlogFlash.size = backlogPart ? backlogPart->size : 0;
+  backlogInit(bootId, &backlogFlash);
+  BacklogStats st = backlogStats();
+  Serial.printf("Backlog: boot %u, %s, flash %lu KB (%lu windows waiting)\n", bootId,
+                backlogEnabled ? "capturing" : "off until an app asks", (unsigned long)(backlogFlash.size / 1024),
+                (unsigned long)st.flashPending);
+}
+
+// Computes each captured window's shot (shot.cpp) off the 1 kHz sampler.
+static void shotTask(void *) {
+  for (;;) {
+    ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(100));
+    int s;
+    while ((s = backlogNextCaptured()) >= 0) {
+      ShotConfig cfg;
+      portENTER_CRITICAL(&cfgMux);
+      cfg = shotConfig;
+      portEXIT_CRITICAL(&cfgMux);
+      BacklogSlot &b = backlogSlot(s);
+      uint32_t t0 = micros();
+      bool ok = shotAnalyze(cfg, b.win, gyro4000, 0.195f, &b.summary);
+      uint32_t took = micros() - t0;
+      if (took > shotMaxUs) shotMaxUs = took;
+      backlogAnalyzed(s, ok);
+    }
+  }
+}
+
+// Sends the backlog's next message; false when there is nothing to send.
+static bool sendBacklog(bool acked) {
+  uint32_t now = millis();
+  BacklogMsg m = backlogNext(acked, now);
+  if (m.kind == BacklogMsg::NONE) return false;
+  BacklogSlot &b = backlogSlot(m.slot);
+  const uint8_t base = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | TB_FLAG_GYRO_4000 | (b.backlog ? TB_FLAG_BACKLOG : 0);
+  if (m.kind == BacklogMsg::SUMMARY) {
+    TBShotSummary s = b.summary;
+    s.seq = b.win.seq;
+    s.boot = b.boot;
+    s.age_ms = b.boot == bootId ? now - b.hitMs : 0xFFFFFFFFu;
+    s.unix_ms = b.unixMs;
+    if (b.backlog) s.flags |= TB_SUMMARY_BACKLOG;
+    summaryChar->setValue((uint8_t *)&s, sizeof(s));
+    summaryChar->notify();
+  } else if (acked) {
+    TBWindowChunkAcked c;
+    c.seq = b.win.seq;
+    c.index = (uint8_t)m.chunk;
+    c.total = TB_WINDOW_CHUNKS;
+    c.impact = b.win.impact;
+    memcpy(c.q0, b.win.q0, sizeof(c.q0));
+    c.t0_us = b.win.chunkT0[m.chunk];
+    c.count = TB_SAMPLES_PER_PACKET;
+    c.flags = base;
+    c.boot = b.boot;
+    memcpy(c.s, &b.win.s[m.chunk * TB_SAMPLES_PER_PACKET], sizeof(c.s));
+    windowChar->setValue((uint8_t *)&c, sizeof(c));
+    windowChar->notify();
+  } else {
+    TBWindowChunk c;
+    c.seq = b.win.seq;
+    c.index = (uint8_t)m.chunk;
+    c.total = TB_WINDOW_CHUNKS;
+    c.impact = b.win.impact;
+    memcpy(c.q0, b.win.q0, sizeof(c.q0));
+    c.t0_us = b.win.chunkT0[m.chunk];
+    c.count = TB_SAMPLES_PER_PACKET;
+    c.flags = base & ~TB_FLAG_BACKLOG;
+    memcpy(c.s, &b.win.s[m.chunk * TB_SAMPLES_PER_PACKET], sizeof(c.s));
+    windowChar->setValue((uint8_t *)&c, sizeof(c));
+    windowChar->notify();
+  }
+  backlogSent(m, acked, now);
+  return true;
 }
 
 void setup() {
@@ -414,7 +574,10 @@ void setup() {
   Serial.printf("INMP441 mic + ridge distance model (156 features): %s\n", micOk ? "OK" : "FAILED to start I2S");
   tapQueue = xQueueCreate(8, sizeof(TapEvent));
   hitQueue = xQueueCreate(8, sizeof(TBHit));
+  backlogCmdQueue = xQueueCreate(16, sizeof(BacklogCmd));
   impactReset();
+  setupBacklog();
+  xTaskCreate(shotTask, "shot", 4096, nullptr, 1, &shotTaskHandle);
   tapInit();
   tapConfigure(TAP_TRIG_MG, TAP_MAX_LEN, TAP_REFRACTORY_MS);
   Serial.printf("Handle taps: trigger %ld mg, gestures up to %d taps %lu ms apart\n", (long)TAP_TRIG_MG,
@@ -432,7 +595,21 @@ void loop() {
       Serial.printf("collect mode %s\n", micCollecting() ? "ON" : "OFF");
     }
   }
-  const bool impactMode = streamMode == TB_STREAM_IMPACTS && server->getConnectedCount() > 0;
+  const bool impactMode = streamMode != TB_STREAM_RAW && server->getConnectedCount() > 0;
+  const bool acked = streamMode == TB_STREAM_IMPACTS_ACKED && server->getConnectedCount() > 0;
+  if (backlogEnablePending) {
+    backlogEnablePending = false;
+    backlogEnabled = true;
+    Preferences prefs;
+    prefs.begin("tb", false);
+    prefs.putBool("backlog", true);
+    prefs.end();
+  }
+  BacklogCmd cmd;
+  while (xQueueReceive(backlogCmdQueue, &cmd, 0) == pdTRUE) {
+    if (cmd.cmd == TB_CMD_WINDOW_ACK) backlogAck(cmd.boot, cmd.seq);
+    else backlogResend(cmd.boot, cmd.seq, cmd.chunks, cmd.n);
+  }
   // Hits go out first: they are what makes the phone react.
   TBHit hit;
   while (xQueueReceive(hitQueue, &hit, 0) == pdTRUE) {
@@ -480,21 +657,12 @@ void loop() {
     poseChar->setValue((uint8_t *)&pose, sizeof(pose));
     poseChar->notify();
   }
-  while (windowBusy && os_msys_num_free() > BLE_BUFFER_RESERVE) {
-    TBWindowChunk chunk;
-    chunk.seq = window.seq;
-    chunk.index = (uint8_t)windowNext;
-    chunk.total = TB_WINDOW_CHUNKS;
-    chunk.impact = window.impact;
-    for (int k = 0; k < 4; k++) chunk.q0[k] = window.q0[k];
-    chunk.t0_us = window.chunkT0[windowNext];
-    chunk.count = TB_SAMPLES_PER_PACKET;
-    chunk.flags = (imuOk ? TB_FLAG_MPU_OK | TB_FLAG_H3LIS_OK : 0) | TB_FLAG_GYRO_4000;
-    memcpy(chunk.s, &window.s[windowNext * TB_SAMPLES_PER_PACKET], sizeof(chunk.s));
-    windowChar->setValue((uint8_t *)&chunk, sizeof(chunk));
-    windowChar->notify();
-    if (++windowNext >= TB_WINDOW_CHUNKS) windowBusy = false;
+  // Summaries, then windows, while NimBLE has buffers to spare.
+  while (impactMode && os_msys_num_free() > BLE_BUFFER_RESERVE && sendBacklog(acked)) {
   }
+  // Flash housekeeping, one small step; it stalls the CPU, so let the sampler catch up after it.
+  const bool idle = millis() - lastActiveMs > 3000;
+  if (backlogStep(acked, idle, millis())) vTaskDelay(1);
 
   // Send queued packets as notifications.
   // Send queued packets while NimBLE has buffers to spare. When the link can't keep up, packets wait in
@@ -530,18 +698,23 @@ void loop() {
     float gs = gyro4000 ? WIRE_G_LSB_PER_DPS / 2 : WIRE_G_LSB_PER_DPS;
     float h3Scale = (h3Range == 0) ? 0.049f : (h3Range == 1) ? 0.098f : 0.195f;
     MicLevel mic = micLevel();
+    BacklogStats bs = backlogStats();
     Serial.printf(
         "rate %4lu Hz | a[g] %6.2f %6.2f %6.2f  g[dps] %7.1f %7.1f %7.1f | high-g a[g] %6.1f %6.1f %6.1f | "
         "mic floor %4d peak %5d trig %5d hits %lu | taps %lu (rejected %lu) jolt %4ld/%ld mg | BLE %s, "
         "sent %lu pkt/s, dropped %u, bufs free %d, itvl %.1f ms, i2c err %lu, gyro ±%d dps, imu resets %lu | "
-        "%s mode, hits %lu, windows dropped %lu, detect max %lu us | bat %u mV\n",
+        "%s mode, hits %lu, windows dropped %lu, detect max %lu us, shot max %lu us | backlog acked %lu resent %lu "
+        "flash %lu waiting, %lu spilled, %lu lost | heap %lu | bat %u mV\n",
         (unsigned long)rate, s.ax / 2048.0f, s.ay / 2048.0f, s.az / 2048.0f, s.gx / gs, s.gy / gs,
         s.gz / gs, (s.hx >> 4) * h3Scale, (s.hy >> 4) * h3Scale, (s.hz >> 4) * h3Scale, mic.floor, mic.peak,
         mic.trigger, (unsigned long)micImpactCount(), (unsigned long)tapGestures, (unsigned long)tapsRejected,
         (long)tapPeakDeviation(), (long)TAP_TRIG_MG,
         server->getConnectedCount() ? (server->getConnectedCount() > 1 ? "connected x2+" : "connected") : "advertising", (unsigned long)sentRate, droppedPackets, os_msys_num_free(), server->getConnectedCount() ? server->getPeerInfo(0).getConnInterval() * 1.25f : 0.0f, (unsigned long)i2cErrors, gyro4000 ? 4000 : 2000, (unsigned long)imuResets,
-        streamMode == TB_STREAM_IMPACTS ? "impact" : "raw", (unsigned long)impactHits(),
-        (unsigned long)impactWindowsDropped(), (unsigned long)impactStepMaxUs, st.battery_mv);
+        streamMode == TB_STREAM_IMPACTS_ACKED ? "acked impact" : streamMode == TB_STREAM_IMPACTS ? "impact" : "raw",
+        (unsigned long)impactHits(), (unsigned long)impactWindowsDropped(), (unsigned long)impactStepMaxUs,
+        (unsigned long)shotMaxUs, (unsigned long)bs.acked, (unsigned long)bs.resent, (unsigned long)bs.flashPending,
+        (unsigned long)bs.spilled, (unsigned long)bs.flashLost, (unsigned long)ESP.getFreeHeap(), st.battery_mv);
     impactStepMaxUs = 0;
+    shotMaxUs = 0;
   }
 }

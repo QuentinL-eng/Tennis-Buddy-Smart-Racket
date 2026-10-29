@@ -173,7 +173,7 @@ struct TBShotSummary {
   uint32_t age_ms;      // ms between the hit and sending this; 0xFFFFFFFF if hit before the last reboot
   uint64_t unix_ms;     // when it was hit, if the app had set the time (TB_CMD_SET_TIME); else 0
   float swing_kmh, ball_kmh, spin_rpm, face_deg, path_deg, impact_x_cm, impact_y_cm, peak_g;
-  float roll_ratio, ring_norm, jolt, impulse, spin_axis_y;   // ImpactFeatures
+  float roll_ratio, ring_norm, jolt, impulse, spin_axis_y, vertical_spin, swing_deg;   // ImpactFeatures
 };
 // Live orientation while in impact mode, ~30 Hz.
 struct TBPose {
@@ -193,5 +193,5 @@ static_assert(sizeof(TBHit) == 18, "hit size");
 static_assert(sizeof(TBWindowChunk) == 164, "window chunk must fit one 185-byte iOS MTU");
 static_assert(sizeof(TBPose) == 12, "pose size");
 static_assert(sizeof(TBWindowChunkAcked) == 166, "acked window chunk must fit one 185-byte iOS MTU");
-static_assert(sizeof(TBShotSummary) == 72, "shot summary size");
+static_assert(sizeof(TBShotSummary) == 80, "shot summary size");
 static_assert(TB_WINDOW_SAMPLES % TB_SAMPLES_PER_PACKET == 0, "window must be whole chunks");
