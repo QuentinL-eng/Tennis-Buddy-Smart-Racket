@@ -17,7 +17,7 @@
 #define TB_POSE_UUID     "7E5B000A-6B1D-4D8E-9C1A-7E5B7E5B0001"  // TBPose, notify, ~30 Hz orientation for live views
 
 #define TB_FW_MAJOR 1
-#define TB_FW_MINOR 5
+#define TB_FW_MINOR 6
 
 #define TB_SAMPLES_PER_PACKET 8
 
@@ -33,8 +33,8 @@ enum : uint8_t {
   TB_CMD_STOP_STREAM  = 0x02,
   TB_CMD_H3LIS_RANGE  = 0x10,  // second byte: 0 = 100 g, 1 = 200 g, 3 = 400 g
   TB_CMD_GYRO_RANGE   = 0x11,  // second byte: 0 = ±2000 dps (16.4 LSB/dps), 1 = ±4000 dps (8.2 LSB/dps).
-                               // Firmware 1.3+. Back to ±2000 dps when the last client disconnects, so an
-                               // app that never sends this keeps the original units.
+                               // Firmware 1.3+. Since 1.6 the racket starts at ±4000 dps and returns to it when
+                               // the last client disconnects; every packet's TB_FLAG_GYRO_4000 says which.
   TB_CMD_STREAM_MODE  = 0x12,  // second byte: 0 = raw (every sample on the IMU characteristic), 1 = impacts
                                // (hit, window and pose characteristics only). Firmware 1.5+. Back to raw when
                                // the last client disconnects, so an app that never sends this still streams.

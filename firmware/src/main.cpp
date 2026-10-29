@@ -39,6 +39,7 @@ static const float WIRE_G_LSB_PER_DPS = 16.4f;
 // native -> wire is the same factor in both ranges.
 static const float LSM_TO_WIRE_GYRO = LSM_G_DPS_PER_LSB * WIRE_G_LSB_PER_DPS;
 static const uint8_t CTRL1_ACCEL = 0x0A;               // accel high-performance, 1.92 kHz
+static const uint8_t CTRL2_GYRO = 0x0A;                // gyro high-performance, 1.92 kHz
 static const uint8_t CTRL6_GYRO_2000 = 0x04, CTRL6_GYRO_4000 = 0x05;
 
 // ---- Handle taps (tap.cpp detects single jolts; the sampler groups them into gestures) ----
@@ -61,8 +62,10 @@ struct TapEvent {
 static bool imuOk = false;
 static volatile bool streaming = true;   // stream whenever a client subscribes
 static volatile uint8_t h3Range = 1;     // 0 = 100 g, 1 = 200 g, 3 = 400 g
-static volatile bool gyro4000Wanted = false;   // requested by the app (TB_CMD_GYRO_RANGE)
-static volatile bool gyro4000 = false;         // what the IMU is set to; changed by the sampler between packets
+// ±4000 dps by default: fast swings pass 2000 dps, and every packet flags its units. TB_CMD_GYRO_RANGE can still
+// select ±2000.
+static volatile bool gyro4000Wanted = true;    // requested by the app (TB_CMD_GYRO_RANGE)
+static volatile bool gyro4000 = true;          // what the IMU is set to; changed by the sampler between packets
 static volatile uint32_t imuResets = 0;        // times the watchdog found the IMU had lost its settings
 static volatile uint8_t streamMode = TB_STREAM_RAW;
 
@@ -126,9 +129,19 @@ static bool setupIMU(bool wideGyro) {
   ok &= writeReg(LSM_ADDR, LSM_CTRL6, wideGyro ? CTRL6_GYRO_4000 : CTRL6_GYRO_2000);
   ok &= writeReg(LSM_ADDR, LSM_CTRL8, 0x03);            // accel ±16 g
   ok &= writeReg(LSM_ADDR, LSM_CTRL1, CTRL1_ACCEL);
-  ok &= writeReg(LSM_ADDR, LSM_CTRL2, 0x0A);            // gyro high-performance, 1.92 kHz
+  ok &= writeReg(LSM_ADDR, LSM_CTRL2, CTRL2_GYRO);
   ok &= writeReg(LSM_ADDR, LSM_CTRL1_XL_HG, 0xAC);      // high-g: output regs on, 1.92 kHz, ±320 g
   return ok;
+}
+
+// Changes the gyro full scale. ST's driver (lsm6dsv320x_gy_full_scale_set) powers the gyro down first: the
+// full scale must only be changed in power-down. True once CTRL6 reads back the new range.
+static bool setGyroRange(bool wide) {
+  const uint8_t want = wide ? CTRL6_GYRO_4000 : CTRL6_GYRO_2000;
+  bool ok = writeReg(LSM_ADDR, LSM_CTRL2, 0x00);
+  ok &= writeReg(LSM_ADDR, LSM_CTRL6, want);
+  ok &= writeReg(LSM_ADDR, LSM_CTRL2, CTRL2_GYRO);
+  return ok && readReg(LSM_ADDR, LSM_CTRL6) == want;
 }
 
 static int16_t clamp16(float v) { return (int16_t)constrain(lroundf(v), -32768L, 32767L); }
@@ -195,9 +208,16 @@ static void samplerTask(void *) {
     vTaskDelayUntil(&last, pdMS_TO_TICKS(1));
 
     // Gyro range changes only between packets, so every packet's samples share one scale.
-    if (imuOk && n == 0 && gyro4000Wanted != gyro4000 &&
-        writeReg(LSM_ADDR, LSM_CTRL6, gyro4000Wanted ? CTRL6_GYRO_4000 : CTRL6_GYRO_2000)) {
-      gyro4000 = gyro4000Wanted;
+    if (imuOk && n == 0 && gyro4000Wanted != gyro4000) {
+      bool wide = gyro4000Wanted;
+      if (setGyroRange(wide)) {
+        gyro4000 = wide;
+        Serial.printf("Gyro range now ±%d dps\n", wide ? 4000 : 2000);
+      } else {
+        // Don't retry every packet (each try stops the gyro); the watchdog below restores the old range.
+        gyro4000Wanted = gyro4000;
+        Serial.printf("Gyro range change to ±%d dps FAILED\n", wide ? 4000 : 2000);
+      }
     }
     // Watchdog: a brownout (e.g. a loose supply wire during a fast spin) resets the IMU to power-down,
     // after which it reads all zeros. Check the settings once a second and restore them.
@@ -296,8 +316,8 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     NimBLEDevice::startAdvertising();
     if (NimBLEDevice::getServer()->getConnectedCount() == 0) {
       xQueueReset(packetQueue);
-      gyro4000Wanted = false;   // the next app may not know about the ±4000 dps units
-      streamMode = TB_STREAM_RAW;   // ... or about impact mode
+      gyro4000Wanted = true;    // back to the default, whatever the last app chose
+      streamMode = TB_STREAM_RAW;   // the next app may not know about impact mode
       windowBusy = false;
     }
   }
