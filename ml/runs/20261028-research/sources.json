@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Hear the Sweet Spot: Tennis Impact Localization via Single-Channel Audio",
+    "url": "https://doi.org/10.3390/app16147340",
+    "evidence": "Publisher abstract: single-channel audio, multi-expert multi-scale CNN, joint radial classification and position regression, noise augmentation. Full publisher page returned HTTP 429; detailed architecture/dataset claims were not verified here."
+  },
+  {
+    "title": "SmartDampener: An Open Source Platform for Sport Analytics in Tennis",
+    "url": "https://www.cse.psu.edu/~mkg31/papers/smartdamp.pdf",
+    "evidence": "Authors PDF, sections 5.3 and 6: separate coordinate SVR models. Uses IMU/string-mounted sensing; its errors are not directly comparable to handle-microphone radial MAE."
+  },
+  {
+    "title": "The sweet spots of a tennis racquet \u2014 Rod Cross",
+    "url": "https://www.physics.usyd.edu.au/~cross/sweetspots.pdf",
+    "evidence": "Hand/grip affects racket response; geometric centre, vibration node and centre of percussion are distinct concepts."
+  },
+  {
+    "title": "Tennis Racket Vibrations and Shock Transmission to the Wrist during Forehand Drive",
+    "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4503399/",
+    "evidence": "Vibration modes, damping, velocity effects and relative low-frequency energy measurements."
+  },
+  {
+    "title": "Nested versus non-nested cross-validation",
+    "url": "https://scikit-learn.org/stable/auto_examples/model_selection/plot_nested_cross_validation_iris.html",
+    "evidence": "Keep parameter selection inside the training folds to reduce selection bias."
+  },
+  {
+    "title": "Kymatio scattering-transform user guide",
+    "url": "https://www.kymat.io/userguide.html",
+    "evidence": "Fixed wavelet filters and modulus operations reduce irrelevant variation; potential small-data representation. Full scattering was not tested in this pass."
+  },
+  {
+    "title": "MFCC documentation \u2014 librosa",
+    "url": "https://librosa.org/doc/main/api/generated/librosa.feature.mfcc.html",
+    "evidence": "Mel-spectral features and DCT representation; our HTK-mel implementation is explicit and not claimed identical to librosa default parameters."
+  },
+  {
+    "title": "Wavelet packet decomposition \u2014 MathWorks",
+    "url": "https://www.mathworks.com/help/wavelet/ug/wavelet-packets-decomposing-the-details.html",
+    "evidence": "Relative sub-band energies can form classification features."
+  },
+  {
+    "title": "PLSRegression documentation",
+    "url": "https://scikit-learn.org/stable/modules/generated/sklearn.cross_decomposition.PLSRegression.html",
+    "evidence": "Supervised dimensional reduction and regression."
+  },
+  {
+    "title": "HuberRegressor documentation",
+    "url": "https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.HuberRegressor.html",
+    "evidence": "L2-regularized regression with reduced influence from large residuals; our fixed-delta IRLS variant is not claimed identical to sklearn."
+  },
+  {
+    "title": "SVR documentation",
+    "url": "https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html",
+    "evidence": "Epsilon-insensitive support-vector regression. The local research solver uses the dual QP, not libsvm."
+  },
+  {
+    "title": "SciPy SLSQP documentation",
+    "url": "https://docs.scipy.org/doc/scipy/reference/optimize.minimize-slsqp.html",
+    "evidence": "Constrained optimization for the local epsilon-SVR dual."
+  }
+]

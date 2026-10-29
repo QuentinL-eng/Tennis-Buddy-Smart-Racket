@@ -1,0 +1,116 @@
+{
+  "combined": {
+    "nested_mae_selector": {
+      "mae_cm": 1.9275757334440848,
+      "n": 274,
+      "accuracy": 0.6715328467153284,
+      "balanced_accuracy": 0.6334783578759482,
+      "sweet_recall": 0.4537037037037037,
+      "off_centre_recall": 0.8132530120481928,
+      "tp": 49,
+      "tn": 135,
+      "fp": 31,
+      "fn": 59
+    },
+    "nested_balanced_selector": {
+      "mae_cm": 1.9512460923187467,
+      "n": 274,
+      "accuracy": 0.6751824817518248,
+      "balanced_accuracy": 0.6364904060687193,
+      "sweet_recall": 0.4537037037037037,
+      "off_centre_recall": 0.8192771084337349,
+      "tp": 49,
+      "tn": 136,
+      "fp": 30,
+      "fn": 59
+    },
+    "fixed_current_ridge": {
+      "mae_cm": 1.83157907961167,
+      "n": 274,
+      "accuracy": 0.6715328467153284,
+      "balanced_accuracy": 0.6334783578759482,
+      "sweet_recall": 0.4537037037037037,
+      "off_centre_recall": 0.8132530120481928,
+      "tp": 49,
+      "tn": 135,
+      "fp": 31,
+      "fn": 59
+    },
+    "training_median": {
+      "mae_cm": 2.4054744525547447,
+      "n": 274,
+      "accuracy": 0.6058394160583942,
+      "balanced_accuracy": 0.5,
+      "sweet_recall": 0.0,
+      "off_centre_recall": 1.0,
+      "tp": 0,
+      "tn": 166,
+      "fp": 0,
+      "fn": 108
+    }
+  },
+  "tail": {
+    "nested_mae_selector": {
+      "mae_cm": 1.8721715475612224,
+      "n": 177,
+      "accuracy": 0.5875706214689266,
+      "balanced_accuracy": 0.5867007672634271,
+      "sweet_recall": 0.6086956521739131,
+      "off_centre_recall": 0.5647058823529412,
+      "tp": 56,
+      "tn": 48,
+      "fp": 37,
+      "fn": 36
+    },
+    "nested_balanced_selector": {
+      "mae_cm": 1.864637625765922,
+      "n": 177,
+      "accuracy": 0.6101694915254238,
+      "balanced_accuracy": 0.6093350383631714,
+      "sweet_recall": 0.6304347826086957,
+      "off_centre_recall": 0.5882352941176471,
+      "tp": 58,
+      "tn": 50,
+      "fp": 35,
+      "fn": 34
+    },
+    "fixed_current_ridge": {
+      "mae_cm": 1.792175292327685,
+      "n": 177,
+      "accuracy": 0.615819209039548,
+      "balanced_accuracy": 0.6161125319693095,
+      "sweet_recall": 0.6086956521739131,
+      "off_centre_recall": 0.6235294117647059,
+      "tp": 56,
+      "tn": 53,
+      "fp": 32,
+      "fn": 36
+    },
+    "training_median": {
+      "mae_cm": 1.9555084745762712,
+      "n": 177,
+      "accuracy": 0.519774011299435,
+      "balanced_accuracy": 0.5,
+      "sweet_recall": 1.0,
+      "off_centre_recall": 0.0,
+      "tp": 92,
+      "tn": 0,
+      "fp": 85,
+      "fn": 0
+    }
+  },
+  "coordinate_label_max_difference_cm": 0.010516813119884283,
+  "notes": [
+    "Groups contain eight consecutive trigger numbers within each session; every outer fold holds out whole groups.",
+    "All normalization and supervised dimension reduction are fit inside training folds.",
+    "All model/feature selection is nested inside the outer evaluation; no label changes or firmware updates.",
+    "This is a development-data reanalysis, not an independent tennis-club test.",
+    "The tail fixed-current-ridge result is the same feature recipe applied to 128 ms, not the deployed 32 ms model."
+  ],
+  "label_boundary_diagnostic": {
+    "within_1cm_of_boundary": 70,
+    "total": 274,
+    "accuracy_within_band": 0.5,
+    "accuracy_outside_band": 0.7303921568627451
+  }
+}

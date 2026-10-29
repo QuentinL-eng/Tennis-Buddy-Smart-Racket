@@ -1,0 +1,57 @@
+[
+  {
+    "method": "fixed_ridge",
+    "mae_cm": 1.83157907961167,
+    "n": 274,
+    "accuracy": 0.6715328467153284,
+    "balanced_accuracy": 0.6334783578759482,
+    "sweet_recall": 0.4537037037037037,
+    "off_centre_recall": 0.8132530120481928,
+    "tp": 49,
+    "tn": 135,
+    "fp": 31,
+    "fn": 59
+  },
+  {
+    "method": "remove_absolute_level_and_clipping",
+    "mae_cm": 1.8719504923488854,
+    "n": 274,
+    "accuracy": 0.656934306569343,
+    "balanced_accuracy": 0.6149598393574297,
+    "sweet_recall": 0.4166666666666667,
+    "off_centre_recall": 0.8132530120481928,
+    "tp": 45,
+    "tn": 135,
+    "fp": 31,
+    "fn": 63
+  },
+  {
+    "method": "jitter_noise_augmentation",
+    "mae_cm": 1.9806737940706756,
+    "n": 274,
+    "accuracy": 0.6715328467153284,
+    "balanced_accuracy": 0.6367135207496653,
+    "sweet_recall": 0.4722222222222222,
+    "off_centre_recall": 0.8012048192771084,
+    "tp": 51,
+    "tn": 133,
+    "fp": 33,
+    "fn": 57
+  },
+  {
+    "method": "fixed_ridge_with_1cm_uncertainty_margin",
+    "coverage": 0.5620437956204379,
+    "count_reported": 154,
+    "count_uncertain": 120,
+    "mae_cm": 1.9004182204769628,
+    "n": 154,
+    "accuracy": 0.7922077922077922,
+    "balanced_accuracy": 0.6785714285714286,
+    "sweet_recall": 0.42857142857142855,
+    "off_centre_recall": 0.9285714285714286,
+    "tp": 18,
+    "tn": 104,
+    "fp": 8,
+    "fn": 24
+  }
+]

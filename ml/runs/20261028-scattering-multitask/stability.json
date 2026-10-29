@@ -1,0 +1,48 @@
+{
+  "method": "paired chronological-group bootstrap, descriptive only; not an independent or calibrated field confidence interval",
+  "resamples": 5000,
+  "accuracy_delta": 0.021897810218978186,
+  "accuracy_delta_percentile_2_5_97_5": [
+    -0.037882388524023584,
+    0.07942238267148005
+  ],
+  "mae_delta_cm": -0.008321347191747819,
+  "mae_delta_percentile_2_5_97_5_cm": [
+    -0.10889521021558898,
+    0.09591780539612735
+  ],
+  "gained_correct": 27,
+  "lost_correct": 21,
+  "folds": [
+    {
+      "fold": 0,
+      "n": 54,
+      "accuracy_delta": 0.09259259259259256,
+      "mae_delta_cm": 0.06847234380737
+    },
+    {
+      "fold": 1,
+      "n": 58,
+      "accuracy_delta": 0.017241379310344862,
+      "mae_delta_cm": -0.06469811303151252
+    },
+    {
+      "fold": 2,
+      "n": 55,
+      "accuracy_delta": -0.036363636363636376,
+      "mae_delta_cm": 0.023102486247093434
+    },
+    {
+      "fold": 3,
+      "n": 53,
+      "accuracy_delta": 0.018867924528301883,
+      "mae_delta_cm": -0.014418346930565207
+    },
+    {
+      "fold": 4,
+      "n": 54,
+      "accuracy_delta": 0.01851851851851849,
+      "mae_delta_cm": -0.050583879566282075
+    }
+  ]
+}
