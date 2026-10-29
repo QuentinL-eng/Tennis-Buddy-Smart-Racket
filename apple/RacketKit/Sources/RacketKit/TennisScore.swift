@@ -201,8 +201,9 @@ public struct ScoreTracker: Codable, Sendable, Equatable {
         return log.popLast()
     }
 
-    /// Finished sets plus the set in progress, e.g. "6–4 3–2".
+    /// Finished sets plus the set in progress, e.g. "6–4 3–2". Empty for a simple point count, which has no sets.
     public var setsText: String {
+        if score.rules.simpleCount { return "" }
         var parts = score.sets.map { "\($0.me)–\($0.opponent)" }
         if score.winner == nil { parts.append("\(score.games.me)–\(score.games.opponent)") }
         return parts.joined(separator: "  ")

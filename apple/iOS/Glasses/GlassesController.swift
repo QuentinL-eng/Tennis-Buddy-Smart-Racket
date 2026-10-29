@@ -362,7 +362,7 @@ final class GlassesController {
         }
         if let state = account?.sharedMatch, let me = account?.userID, !state.ended, state.guest != nil {
             let t = state.tracker(for: me)
-            s.score = "\(t.setsText) · \(t.score.pointText)"
+            s.score = t.setsText.isEmpty ? t.score.pointText : "\(t.setsText) · \(t.score.pointText)"
         }
         if let drill = model.activeDrill, !drill.isDone {
             s.drill = "\(drill.title) \(drill.completed)/\(drill.target)"
