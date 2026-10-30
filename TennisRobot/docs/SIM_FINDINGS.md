@@ -4,7 +4,7 @@ Updated: 2026-10-26. Work is incomplete; no real robot was connected.
 
 ## Project and build
 
-The active native copy is D:\EpsonRC70\Projects\RacketSim_20261025. The baseline is sim-work/baseline/SimulationTest, with SHA256.json. Original Main.prg, Test1.prg, racket_moves.prg and robot point files were checked against the baseline and remained unchanged. Only the copied project's racket_moves.prg was edited. The repo version matches that copy.
+The active native copy is the RacketSim project in Epson RC+ 7.0. The baseline is sim-work/baseline/SimulationTest, with SHA256.json. Original Main.prg, Test1.prg, racket_moves.prg and robot point files were checked against the baseline and remained unchanged. Only the copied project's racket_moves.prg was edited. The repo version matches that copy.
 
 The final source compiled without errors on RC+ 7.5.4A R1. Function names are unique in the copied project. main remains empty. No automatic Motor On was added. All motion tests used Power Low and Speed 20. Virtual motors were enabled manually and turned off after testing. No system/controller configuration, license, password, communication profile or joint limit was changed.
 
