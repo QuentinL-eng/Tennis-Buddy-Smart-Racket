@@ -1,0 +1,11 @@
+{
+  "_": "The real-serve clip. r is seconds on the phone's screen recording. MVI_0927 is 120 fps playing at 30, so real time is its file time / 4, and r = file time / 4 + offset. The offset came from correlating the camera's motion with the app's 3D racket in five separate windows of the session (0.50 to 0.70 s).",
+  "factor": 4,
+  "offset": 0.6,
+  "segments": [
+    { "r": [85.95, 87.95], "speed": 1, "chip": "REAL TIME", "title": "A real serve.", "contact": 86.8, "camX": 130 },
+    { "r": [86.2, 87.4], "speed": 0.5, "chip": "1/2 SPEED", "title": "Same serve, slowed down.", "contact": 86.8, "camX": 130 },
+    { "r": [47.25, 48.45], "speed": 0.5, "chip": "1/2 SPEED", "title": "A forehand.", "contact": 47.7, "camX": 560 },
+    { "r": [13.1, 15.1], "speed": 1, "chip": "REAL TIME", "title": "The app's racket moves with it.", "contact": 14.18, "camX": 150 }
+  ]
+}

@@ -27,8 +27,8 @@ export type SceneEntry = {
   seconds: number;
   skip?: number;
   overlays?: Overlay[];
-  /** The scene plays its own song: the cut's music goes silent under it. */
-  ownMusic?: boolean;
+  /** The cut's music at this volume under the scene, for a beat with no voice. */
+  musicVolume?: number;
 };
 export type FootageEntry = {
   footage: string;
@@ -81,38 +81,37 @@ const songBar = (n: number) => 0.386 + ((n - 1) * 4 * 60) / 95;
 const demoMusic: Music = { ...music, jump: { at: songBar(49), to: songBar(9) } };
 export const demo: Entry[] = [
   // Real footage comes from E:/Tennis selects through scripts/cut-selects.py and scripts/cut-emulator.py.
-  { footage: 'cold-open', seconds: 8, clips: [['sl-serve', 5.2, 0.65], ['sl-forehand', 3]],
+  { footage: 'cold-open', seconds: 8, clips: [['sl-serve', 5.2], ['sl-forehand', 3]], // 120 fps selects: they play at 1/4 speed as they are
     overlays: [{ type: 'headline', text: 'hook', at: 0.4, seconds: 4.2 }],
     shot: 'Cut from the serve and forehand selects.' },
-  { scene: 'racketReveal', seconds: 5.25 },
+  { scene: 'racketReveal', seconds: 4.75 },
   { footage: 'talk-intro', seconds: 12, muted: false,
     overlays: [{ type: 'lowerThird', text: 'talkName', at: 0.4, seconds: 3.6 }],
     shot: 'TalkingToCamera.MP4, trimmed to the words.' },
   { scene: 'insideHandle', seconds: 8 },
-  { footage: 'build-montage', seconds: 6, clips: [['bt-smoke', 1.2], ['bt-solder', 1], ['bt-pcb', 1], ['bt-pod', 0.7], ['bt-code', 1.1], ['bt-wired', 0.6], ['bt-cad', 0.4]],
+  { footage: 'build-montage', seconds: 6.13, clips: [['bt-smoke', 1.2], ['bt-solder', 1], ['bt-pcb', 1], ['bt-pod', 0.7], ['bt-code', 1.1], ['bt-wired', 0.6], ['bt-cad', 0.53]],
     shot: 'Already cut from the build footage. Replace only if you have something better.' },
-  // The first 24 beats of the X clip, on its own song. It stops before the claims the Demo doesn't make.
-  { scene: 'robotShort', seconds: 11.25, ownMusic: true },
-  { scene: 'twoModels', seconds: 8.75 },
+  // 20 beats on the Demo's song, with no voiceover. It starts on a downbeat, and these lengths keep it there: hype/RobotTwin.tsx.
+  { scene: 'robotTwin', seconds: 12.89, musicVolume: 0.62 },
+  { scene: 'twoModels', seconds: 8.25 },
   { scene: 'evidence', seconds: 8 },
-  // The camera and the phone recording at their real offset, phone cropped to the 3D view.
-  { footage: 'live-twin', seconds: 8.5, caption: 'A real serve. The app\'s racket follows it live.',
-    shot: 'scripts/cut-selects.py: MVI_0927 beside the iPhone screen recording.' },
-  { scene: 'devices', seconds: 8.75, overlays: [{ type: 'badge', text: 'deviceBadge', at: 1.6, seconds: 4.2, x: 1560, y: 300 }] },
+  // The real serve beside the app, at their measured offset: config/liveTwin.json. Length: the sum of its segments.
+  { scene: 'liveTwin', seconds: 8.8, musicVolume: 0.5 },
+  { scene: 'devices', seconds: 7.75, overlays: [{ type: 'badge', text: 'deviceBadge', at: 1.6, seconds: 4.2, x: 1560, y: 300 }] },
   // The real court view, with the HUD's fields drawn on it and labelled as simulated.
   { footage: 'glasses-pov', seconds: 6, fallback: 'glassesPov',
     shot: 'Optional: through the lens of the real Ray-Ban Display. Until then, the labelled HUD plays over the court footage.' },
   { footage: 'score-tap', file: 'sl-score.mp4', seconds: 5.5, caption: 'Tap the handle to score.',
     shot: 'scripts/cut-selects.py: select 08.' },
   { scene: 'museAgent', seconds: 10.75 },
-  { scene: 'whatIf', seconds: 8.75 },
+  { scene: 'whatIf', seconds: 8.5 },
   // Recorded from the live site, with real calls to Muse Spark Open: scripts/capture-emulator.mjs, scripts/cut-emulator.py.
   { footage: 'muse-screen-recording', seconds: 20, layout: 'phone', phoneWidth: 536,
     overlays: [{ type: 'callouts', text: 'museCallouts', at: 0.5, every: 3.9 }, { type: 'badge', text: 'emuBadge', at: 0.5, seconds: 19, x: 1400, y: 90 }],
     shot: 'scripts/capture-emulator.mjs records it.' },
   { footage: 'drill-on-watch', seconds: 6, clips: [['sl-watch', 3], ['sl-side', 3.2]],
     shot: 'Optional: close on the Watch as the to-go count drops. Until then, the Watch and serve selects.' },
-  { scene: 'samTrack', seconds: 8.5 },
+  { scene: 'samTrack', seconds: 8.75 },
   { scene: 'swingFilm', seconds: 6, overlays: [{ type: 'badge', text: 'filmBadge', at: 0.3, seconds: 5.5, x: 960, y: 40 }] },
   // scripts/cut-selects.py keeps each person's own lines and drops the questions.
   { footage: 'testimonial-1', file: 'testimonial-1-cut.mp4', seconds: 9.9, muted: false, overlays: [{ type: 'lowerThird', text: 'testimonial1', at: 0.4, seconds: 4 }],

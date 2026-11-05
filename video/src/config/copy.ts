@@ -73,6 +73,23 @@ export const copy = {
     ],
   },
 
+  // The Demo's robot beat. The real arm struck no ball, so none is drawn. The gyro: apple/RacketKit/Tests/RacketKitTests/LabeledSessionTests.swift.
+  robotTwin: {
+    shots: [
+      { clip: 'rt-arm', word: 'REAL ARM.', accent: false },
+      { clip: 'rt-racket', word: 'REAL RACKET.', accent: false },
+      { clip: 'rt-handle', word: 'REAL SENSORS.', accent: true },
+    ],
+    realLabel: '●  REAL  ·  EPSON C8',
+    cgiLabel: '◆  CGI  ·  BUILT FROM OUR CAD',
+    twin: 'DIGITAL TWIN.',
+    tags: ['EPSON C8', '6 AXES', 'SMART HANDLE'],
+    proof: ['KNOWN MOTION.', 'REAL DATA.'],
+    trace: "GYRO  ·  THE RACKET'S OWN RECORDING",
+    truth: 'GROUND TRUTH.',
+    truthLine: 'It helped catch a gyro reading 2× too high.',
+  },
+
   // docs/CLUB_2026-10-28.md, firmware/include/protocol.h, firmware/src/backlog.h
   clubFinding: {
     kicker: 'Real court',

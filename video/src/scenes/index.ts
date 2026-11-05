@@ -12,7 +12,8 @@ import { InsideHandle } from './InsideHandle';
 import { MuseAgent } from './MuseAgent';
 import { RacketReveal } from './RacketReveal';
 import { RobotLab } from './RobotLab';
-import { RobotShort } from './RobotShort';
+import { LiveTwin } from './LiveTwin';
+import { RobotTwinScene } from './RobotTwinScene';
 import { SamTrack } from './SamTrack';
 import { Score } from './Score';
 import { SwingFilmScene } from './SwingFilmScene';
@@ -21,7 +22,8 @@ import { TwoModels } from './TwoModels';
 import { WhatIf } from './WhatIf';
 
 export const scenes = {
-  robotShort: RobotShort,
+  robotTwin: RobotTwinScene,
+  liveTwin: LiveTwin,
   twoModels: TwoModels,
   hook: Hook,
   racketReveal: RacketReveal,

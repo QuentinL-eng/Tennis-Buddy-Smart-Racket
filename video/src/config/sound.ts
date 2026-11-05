@@ -66,6 +66,7 @@ export const cues: Record<SceneId, Cue[]> = {
   glassesPov: [{ sfx: 'impact', at: 45, volume: 0.7 }, { sfx: 'ping', at: 52, volume: 0.5 }, { sfx: 'impact', at: 135, volume: 0.7 }, { sfx: 'ping', at: 142, volume: 0.5 }],
   builtProof: [{ sfx: 'blip', at: 30, volume: 0.4 }, { sfx: 'chime', at: 120, volume: 0.4 }],
   swingFilm: [],
-  robotShort: [], // RobotHypeIntro plays its own song and effects
+  robotTwin: [], // hype/RobotTwin.tsx places its effects on the song's beat grid
+  liveTwin: [], // scenes/LiveTwin.tsx places the ball on each contact
   twoModels: [{ sfx: 'blip', at: 16, volume: 0.4 }, { sfx: 'swipe', at: 135, volume: 0.5 }],
 };

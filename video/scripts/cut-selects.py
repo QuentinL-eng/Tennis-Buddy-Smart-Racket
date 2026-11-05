@@ -4,13 +4,18 @@
     FFMPEG=path/to/ffmpeg DEEP_FILTER=path/to/deep-filter.exe python scripts/cut-selects.py
 
 SELECTS points at the folder of selects (default E:/Tennis selects). In-points were picked from contact sheets, and
-speech cuts from Whisper word times. ONLY=vo redoes just the voiceover. Footage is never re-labelled: the live-twin clip keeps the camera and the phone
-recording at their real offset, and crops the phone to the 3D view, which also keeps private notifications out.
+speech cuts from Whisper word times. ONLY=vo redoes just the voiceover. Footage is never re-labelled: the real-serve clip keeps
+the camera and the phone recording at their measured offset, and crops the phone below any notification banner.
 """
+import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import voice
 
 FFMPEG = os.environ.get('FFMPEG', 'ffmpeg')
 DEEP_FILTER = os.environ.get('DEEP_FILTER', 'deep-filter')
@@ -31,55 +36,63 @@ def clip(out, source, start, length, vf=FIT):
     print(out)
 
 
-def clean_voice(source, out, filters=''):
-    """Isolates the voice, then evens the level. Returns nothing: writes a 48 kHz mono wav."""
-    with tempfile.TemporaryDirectory() as tmp:
-        raw = Path(tmp) / 'in.wav'
-        run('-i', source, '-vn', '-ac', '1', '-ar', 48000, raw)
-        subprocess.run([DEEP_FILTER, '-o', tmp + '/out', str(raw)], check=True, capture_output=True)
-        chain = 'highpass=f=70,' + filters + 'loudnorm=I=-16:TP=-1.5:LRA=7'
-        run('-i', Path(tmp) / 'out' / 'in.wav', '-af', chain, '-ar', 48000, '-ac', 1, out)
-
-
 # ---- Voiceover: the take to use for each line, trimmed to the words ----
 TAKES = {'open': 'Open2', 'reveal': 'Reveal2', 'hardware': 'Hardware1', 'models': 'Models1', 'everywhere': 'Everywhere2',
-         'whatif': 'Whatif1', 'drill': 'Drill1', 'sam': 'Sam1', 'end': 'End1'}
+         'whatif': 'Whatif1', 'drill': 'Drill1', 'sam': 'Sam2', 'end': 'End1'}
 VO.mkdir(parents=True, exist_ok=True)
-# Only the lead-in comes off. Trimming the tail by level clipped soft last words.
-TRIM = 'silenceremove=start_periods=1:start_silence=0.03:start_threshold=-42dB,'
+ENDS = {'everywhere': 7.45}  # that take has handling noise after the last word
 for line, take in TAKES.items():
-    clean_voice(SELECTS / 'Voiceovers' / f'{take}.m4a', VO / f'{line}.wav', TRIM)
+    voice.pro_voice(SELECTS / 'Voiceovers' / f'{take}.m4a', VO / f'{line}.wav', end=ENDS.get(line))
     print(line, take)
 
 if os.environ.get('ONLY') == 'vo':
     raise SystemExit
 
 # ---- On court ----
-clip('sl-serve', '02 Serve - full body.mp4', 1.8, 4)
+# Most selects are 120 fps playing at 30, so they are 1/4 speed as they stand.
+clip('sl-serve', '02 Serve - full body.mp4', 1.8, 5.4)
 clip('sl-forehand', '12 Red player - forehand rally - bounce and return.mp4', 1.2, 3)
 clip('sl-watch', '10 Watch and tennis ball close-up.mp4', 5, 3.2)
 clip('sl-side', '03 Serve - side angle.mp4', 0.8, 3.2)
 clip('sl-pov', 'video-5587_singular_display.MOV', 33.5, 7, 'crop=864:486:0:230,scale=1920:1080:flags=lanczos')
-# Phone in one hand, a tap on the handle with the other: the score goes to 15.
-clip('sl-score', '08 Phone score and racket close-up.mp4', 7.8, 6, 'crop=1500:844:0:236,scale=1920:1080:flags=lanczos')
+# Phone in one hand, a tap on the handle with the other: the score goes to 15. Doubled, so the tap doesn't crawl.
+clip('sl-score', '08 Phone score and racket close-up.mp4', 5, 11.2, 'setpts=PTS/2,crop=1500:844:0:236,scale=1920:1080:flags=lanczos')
 
-# ---- A real serve beside the app's 3D racket. Phone recording time = camera time - 6 s (Start Session lines them up). ----
-CAMERA_IN, LENGTH, OFFSET = 48.5, 8.5, 6.0
-run('-ss', CAMERA_IN, '-t', LENGTH, '-i', SELECTS / 'Full session - MVI_0927.MP4',
-    '-ss', CAMERA_IN - OFFSET, '-t', LENGTH, '-i', SELECTS / 'ScreenRecording_11-04-2026 13-16-33_1.MP4',
-    '-filter_complex',
-    'color=c=0x0b0c09:s=1920x1080:r=30[bg];'
-    '[0:v]crop=1120:1080:400:0[cam];'
-    '[1:v]fps=30,crop=1180:1270:0:180,scale=730:-2[app];'
-    '[bg][cam]overlay=0:0:shortest=1[a];[a][app]overlay=1155:120:shortest=1[v]',
-    '-map', '[v]', '-an', *VIDEO, FOOTAGE / 'live-twin.mp4')
-print('live-twin')
+# ---- A real serve beside the app: config/liveTwin.json has the sync, and how it was measured ----
+TWIN = json.loads((ROOT / 'src/config/liveTwin.json').read_text(encoding='utf8'))
+CAMERA, PHONE = SELECTS / 'Full session - MVI_0927.MP4', SELECTS / 'ScreenRecording_11-04-2026 13-16-33_1.MP4'
+with tempfile.TemporaryDirectory() as tmp:
+    parts = {'cam': [], 'app': []}
+    for i, seg in enumerate(TWIN['segments']):
+        r0, r1 = seg['r']
+        count = round((r1 - r0) / seg['speed'] * 30)
+        cam, app = Path(tmp) / f'cam{i}.mp4', Path(tmp) / f'app{i}.mp4'
+        # The camera's frames are 1/4 speed: file time = (r - offset) * factor. Dropping frames, never blending them.
+        run('-ss', (r0 - TWIN['offset']) * TWIN['factor'], '-i', CAMERA, '-an', '-frames:v', count,
+            '-vf', f"setpts=PTS/({TWIN['factor']}*{seg['speed']}),fps=30,crop=1130:1008:{seg['camX']}:36", *VIDEO, cam)
+        # Below the status bar and any notification banner: the Live title and the 3D racket, nothing else.
+        run('-ss', r0, '-i', PHONE, '-an', '-frames:v', count, '-vf', f"setpts=PTS/{seg['speed']},fps=30,crop=1180:1088:0:372,scale=688:630:flags=lanczos", *VIDEO, app)
+        parts['cam'].append(cam)
+        parts['app'].append(app)
+    for name, files in parts.items():
+        lst = Path(tmp) / f'{name}.txt'
+        lst.write_text(''.join(f"file '{f.as_posix()}'\n" for f in files))
+        run('-f', 'concat', '-safe', 0, '-i', lst, '-c', 'copy', FOOTAGE / f'twin-{name}.mp4')
+print('twin')
+
+# ---- New robot shots, from the arm session's raw footage ----
+RAW = ROOT.parent / 'marketing/Videos'
+DESQUEEZE = 'scale=1920:1080:flags=lanczos,setsar=1'
+for name, source, start, length in [('rt-arm', 'MAH08230.MP4', 8.2, 1.5), ('rt-racket', 'IMG_4691.MOV', 1.3, 1.5), ('rt-handle', 'MAH08225.MP4', 1.0, 1.5),
+                                    ('rt-swing', 'MAH08231.MP4', 14.1, 1.5), ('rt-wide', 'MAH08225.MP4', 17.0, 2.0)]:
+    run('-ss', start, '-t', length, '-i', RAW / source, '-an', '-vf', DESQUEEZE, *VIDEO, FOOTAGE / f'{name}.mp4')
+    print(name)
 
 # ---- On camera ----
 with tempfile.TemporaryDirectory() as tmp:
-    voice = Path(tmp) / 'talk.wav'
-    clean_voice(SELECTS / 'TalkingToCamera.MP4', voice)
-    run('-ss', 3.95, '-t', 12.1, '-i', SELECTS / 'TalkingToCamera.MP4', '-ss', 3.95, '-t', 12.1, '-i', voice,
+    talk = Path(tmp) / 'talk.wav'
+    voice.pro_voice(SELECTS / 'TalkingToCamera.MP4', talk, natural=True)
+    run('-ss', 3.95, '-t', 12.1, '-i', SELECTS / 'TalkingToCamera.MP4', '-ss', 3.95, '-t', 12.1, '-i', talk,
         '-map', '0:v', '-map', '1:a', '-vf', FIT, *VIDEO, '-c:a', 'aac', '-b:a', '256k', FOOTAGE / 'talk-intro.mp4')
 print('talk-intro')
 

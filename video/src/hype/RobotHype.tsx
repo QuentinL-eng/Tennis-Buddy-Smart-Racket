@@ -23,7 +23,7 @@ const { f, pulse, Shot } = beatClock(R.song.bpm); // ~14.28 frames per beat
 export const robotHypeFrames = f(R.beats);
 
 // Swing range of the CGI arm about J1 (radians), as in RobotLab.
-const BACK = -0.6, THROUGH = 0.6;
+export const BACK = -0.6, THROUGH = 0.6;
 
 // ---------- 1. Hook: real cuts, one phrase per two beats ----------
 const HookShot: React.FC<{ shot: (typeof R.hook.shots)[number] }> = ({ shot }) => {
@@ -207,12 +207,12 @@ const Handle: React.FC = () => {
 };
 
 // ---------- 5. Ground truth: real arm | CGI twin, swinging on the racket's own gyro peaks ----------
-const PANEL_W = 608; // 1080 x 1920 portrait shown full height
-const TRACE_PEAKS = gyroTrace
+export const PANEL_W = 608; // 1080 x 1920 portrait shown full height
+export const TRACE_PEAKS = gyroTrace
   .map((v, i) => ({ v, i }))
   .filter(({ v, i }) => v > 12 && gyroTrace.slice(Math.max(0, i - 40), i + 40).every((u) => u <= v))
   .map(({ i }) => i);
-const Trace: React.FC<{ progress: number; width: number; height: number }> = ({ progress, width, height }) => {
+export const Trace: React.FC<{ progress: number; width: number; height: number }> = ({ progress, width, height }) => {
   const n = gyroTrace.length, max = Math.max(...gyroTrace);
   const shown = Math.max(2, Math.floor(progress * n));
   const pts = gyroTrace.slice(0, shown).map((v, i) => `${i ? 'L' : 'M'}${((i / (n - 1)) * width).toFixed(1)},${(height - (v / max) * (height - 12)).toFixed(1)}`).join(' ');
@@ -369,30 +369,6 @@ const Finale: React.FC = () => {
 };
 
 const duck = makeDuck(robotHypeCues, f);
-
-/** Hook, digital twin and what it measures, on the song, for the Demo. Stops before "the AI learns" and "zero guesswork". */
-const INTRO_BEATS = 24;
-export const RobotHypeIntro: React.FC = () => {
-  const s = R.song;
-  const end = f(INTRO_BEATS);
-  return (
-    <AbsoluteFill style={{ background: colors.bg, color: colors.text, fontFamily: fonts.sans, overflow: 'hidden' }}>
-      {R.hook.shots.map((shot, i) => (
-        <Shot key={i} at={[R.hook.at[0] + i * 2, R.hook.at[0] + i * 2 + 2]}><HookShot shot={shot} /></Shot>
-      ))}
-      <Shot at={R.twin.at}><Twin /></Shot>
-      <Measures />
-      <Vignette />
-      <Grain />
-      <Audio
-        src={staticFile(s.src)}
-        trimBefore={Math.round(s.start * FPS)}
-        volume={(fr) => 0.65 * s.volume * duck(fr) * interpolate(fr, [end - 14, end - 4], [1, 0], clamp)}
-      />
-      {robotHypeCues.filter((c) => c.beat < INTRO_BEATS - 1).map((c, i) => <Effect key={i} cue={{ ...c, at: 0 }} frame={f(c.beat)} />)}
-    </AbsoluteFill>
-  );
-};
 
 export const RobotHype: React.FC = () => {
   const s = R.song;

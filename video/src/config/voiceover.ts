@@ -15,21 +15,21 @@ export const WORDS_PER_SECOND = 2.6;
 export const voSeconds = (l: VoLine) => l.seconds ?? l.text.split(/\s+/).length / WORDS_PER_SECOND;
 
 export const voiceover: VoLine[] = [
-  { id: 'open', at: 'cold-open', lead: 0.6, seconds: 4.4, text: 'There are hundreds of hits per match, but which ones are good, and where can you improve?' },
-  { id: 'reveal', at: 'racketReveal', lead: 1.2, seconds: 2.8, text: 'This is Tennis Buddee, a smart racket that feels every shot.' },
+  { id: 'open', at: 'cold-open', lead: 0.6, seconds: 3.9, text: 'There are hundreds of hits per match, but which ones are good, and where can you improve?' },
+  { id: 'reveal', at: 'racketReveal', lead: 1.2, seconds: 2.7, text: 'This is Tennis Buddee, a smart racket that feels every shot.' },
   // On camera and in the interviews the sound is in the clip: these lines are captions only.
   { id: 'talk', at: 'talk-intro', lead: 0.2, seconds: 11.7, captionOnly: true, text: 'I\'m Quentin Lynch, and I built Tennis Buddee, the smartest racket that you will ever use. Tennis Buddee can hear and feel every shot you take, while Meta\'s AI works in the background to improve your game.' },
-  { id: 'hardware', at: 'insideHandle', seconds: 13.2, text: 'A sensor insert replaces the foam in the handle: a thousand samples a second, up to 320 g, and a microphone that hears where the ball hit the strings, not just when. It computes every single shot itself on the racket.' },
+  { id: 'hardware', at: 'insideHandle', seconds: 12.2, text: 'A sensor insert replaces the foam in the handle: a thousand samples a second, up to 320 g, and a microphone that hears where the ball hit the strings, not just when. It computes every single shot itself on the racket.' },
   // The on-racket model is ridge regression (firmware/src/sweetspot.cpp). Don't call it a neural net until one ships.
-  { id: 'models', at: 'twoModels', seconds: 8, text: 'On the racket, my own machine learning model runs on the ESP32. In the app, Meta\'s open Muse Spark is served by Baseten to the user.' },
+  { id: 'models', at: 'twoModels', seconds: 7.6, text: 'On the racket, my own machine learning model runs on the ESP32. In the app, Meta\'s open Muse Spark is served by Baseten to the user.' },
   { id: 'evidence', at: 'evidence', seconds: 7.4, text: 'The firmware matches Python on every clip, distance error stays under two centimeters, and Muse passes a strict test 88 percent of the time.' },
-  { id: 'everywhere', at: 'devices', seconds: 8.2, text: 'Every shot lands on your phone, your Apple Watch, and Meta Ray-Ban Display, through the Meta Wearables toolkit, in a UI that you can read at a glance.' },
+  { id: 'everywhere', at: 'devices', seconds: 7.1, text: 'Every shot lands on your phone, your Apple Watch, and Meta Ray-Ban Display, through the Meta Wearables toolkit, in a UI that you can read at a glance.' },
   { id: 'agent', at: 'museAgent', seconds: 10.2, text: 'Muse Spark isn\'t a chat box here. It\'s an agent with ten tools, over your shots and the live racket. Every number it reports has to come from a tool.' },
-  { id: 'whatif', at: 'whatIf', seconds: 8, text: 'Ask Muse what if, and it runs a physics simulation on your average stroke, and predicts what the change does to the speed and the spin.' },
-  { id: 'drill', at: 'muse-screen-recording', lead: 12.3, seconds: 3.4, text: 'Then it plans a drill, and your wearable device tracks it.' },
-  { id: 'sam', at: 'samTrack', seconds: 7.9, text: 'SAM 3.1 tracks a racket through the real video, frame by frame, to make sure that the machine learning models we deliver to you are as accurate as they can be.' },
+  { id: 'whatif', at: 'whatIf', seconds: 7.5, text: 'Ask Muse what if, and it runs a physics simulation on your average stroke, and predicts what the change does to the speed and the spin.' },
+  { id: 'drill', at: 'muse-screen-recording', lead: 12.3, seconds: 2.9, text: 'Then it plans a drill, and your wearable device tracks it.' },
+  { id: 'sam', at: 'samTrack', seconds: 7.9, text: 'SAM 3.1 tracks the racket through the real video, frame by frame, making sure that our machine learning models that we deliver to you are as accurate as possible.' },
   { id: 'film', at: 'swingFilm', seconds: 5.5, text: 'And Muse directs this swing film from the simulator\'s numbers, so it can\'t invent a swing.' },
   { id: 't1', at: 'testimonial-1', lead: 0.1, seconds: 9.4, captionOnly: true, text: 'The racket\'s super awesome. It helps my play a lot better. You know where my weaknesses are. It\'s super cheap. It costs about the same as one hour of lessons, but I can give you countless hours of feedback.' },
   { id: 't2', at: 'testimonial-2', lead: 0.1, seconds: 5, captionOnly: true, text: 'I love the Tennis Buddee. I take it with me everywhere. Tennis Buddee\'s got me ten times better.' },
-  { id: 'end', at: 'endcard', lead: 0.6, seconds: 3, text: 'Try our online simulator, and you can feel like a tennis pro.' },
+  { id: 'end', at: 'endcard', lead: 0.6, seconds: 2.9, text: 'Try our online simulator, and you can feel like a tennis pro.' },
 ];

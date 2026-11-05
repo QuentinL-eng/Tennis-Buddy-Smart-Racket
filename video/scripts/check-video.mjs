@@ -52,7 +52,7 @@ if (missing.length) blockers.push(`Voiceover not recorded (public/audio/vo/<id>.
 
 // Words the hackathon's anti-project list rules out, in anything that reaches the screen
 for (const f of ['src/config/copy.ts', 'src/config/voiceover.ts', 'src/config/generated/facts.json']) {
-  readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+  readFileSync(f, 'utf8').split(/\r?\n/).forEach((line, i) => {
     const text = line.replace(/\/\/.*$/, ''); // comments never reach the screen
     if (/^\s*testimonial\d:/.test(text)) return; // a person's job title, not a description of the product
     if (BANNED.test(text)) blockers.push(`${f}:${i + 1}: banned word: ${text.trim().slice(0, 70)}`);

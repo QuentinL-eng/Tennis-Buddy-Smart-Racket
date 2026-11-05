@@ -82,10 +82,10 @@ const Music: React.FC<{ cut: Cut }> = ({ cut }) => {
   const { durationInFrames } = useVideoConfig();
   const len = lengths(cut);
   const talk: [number, number][] = [];
-  const silent: [number, number][] = [];
+  const lifted: [number, number, number][] = [];
   cut.entries.reduce((at, e, i) => {
     if ('footage' in e && e.muted === false) talk.push([at, at + len[i]]);
-    if ('scene' in e && e.ownMusic) silent.push([at, at + len[i]]);
+    if ('scene' in e && e.musicVolume) lifted.push([at, at + len[i], e.musicVolume]);
     return at + len[i] - overlap(cut);
   }, 0);
   // Only recorded lines duck the music: a caption alone makes no sound to clear.
@@ -99,8 +99,8 @@ const Music: React.FC<{ cut: Cut }> = ({ cut }) => {
     const ducked = talk.some(([a, b]) => f >= a - 10 && f <= b + 10);
     const underVo = spoken.some(([a, b]) => f >= a - 10 && f <= b + 10);
     const fade = interpolate(f, [durationInFrames - sound.musicFadeOut * fps, durationInFrames], [1, 0], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' });
-    const out = silent.reduce((m, [a, b]) => Math.min(m, interpolate(f, [a - 8, a, b - 8, b], [1, 0, 0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })), 1);
-    return (ducked ? sound.musicUnderTalk : underVo ? sound.musicUnderVoiceover : base) * fade * out;
+    const lift = lifted.reduce((v, [a, b, to]) => Math.max(v, interpolate(f, [a, a + 8, b - 8, b], [base, to, to, base], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })), base);
+    return (ducked ? sound.musicUnderTalk : underVo ? sound.musicUnderVoiceover : lift) * fade;
   };
   const from = Math.round((cut.music.from ?? 0) * fps);
   const src = staticFile(cut.music.src);
