@@ -52,7 +52,7 @@ Quick automated checks: `meta-models/muse-spark-open-1026` in `apple/Shared/Coac
 
 ### Demo (25%)
 
-- 3-minute video (CGI from real CAD + real footage): source in [`video/`](video/),
+- [Watch the demo video](https://youtu.be/B_Mw23IpRUQ): source in [`video/`](video/),
   plan in [`video/SHOOT_PLAN.md`](video/SHOOT_PLAN.md), every on-screen number in
   [`video/src/config/copy.ts`](video/src/config/copy.ts).
 - Live backup plan: flash backlog + replay + built-in engine fallback

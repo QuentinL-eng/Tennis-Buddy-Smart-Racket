@@ -9,7 +9,8 @@
     "website": "https://tennisbuddy.net",
     "judging_guide": "JUDGING.md",
     "llm_index": "llms.txt",
-    "emulator": "https://tennisbuddy.net/emulator"
+    "emulator": "https://tennisbuddy.net/emulator",
+    "demo_video": "https://youtu.be/B_Mw23IpRUQ"
   },
   "meta_technology": [
     {

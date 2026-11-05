@@ -143,7 +143,7 @@ We report weak results too. The sweet-spot model only modestly beats the baselin
 
 ## Demo
 
-- **Demo video:** 3 minutes, real club footage plus CGI built in Remotion ([source](video/)); video link to follow.
+- **Demo video:** [Watch Tennis Buddee in action](https://youtu.be/B_Mw23IpRUQ) · [video source](video/).
 - **Try in your browser:** [Open the live emulator](https://tennisbuddy.net/emulator).
 - **Holds up live:**
   - The racket keeps every hit when Bluetooth drops: it acks, resends and keeps a flash backlog.

@@ -28,6 +28,7 @@ Key facts:
 - [Judging guide](JUDGING.md): rubric-to-evidence map, 5-minute verification checklist, full test matrix
 - [Machine-readable metadata](hackathon.json): Meta tech, stats, commands, repo map
 - [README](README.md): what it is, how Meta AI is used, architecture, evidence, how to run
+- [Watch the demo video](https://youtu.be/B_Mw23IpRUQ).
 - Try the [live browser emulator](https://tennisbuddy.net/emulator).
 - Website: [tennisbuddy.net](https://tennisbuddy.net)
 
