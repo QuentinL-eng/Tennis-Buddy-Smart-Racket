@@ -36,7 +36,7 @@ with tempfile.TemporaryDirectory() as tmp:
     for a, b in zip(frames, frames[1:] + [{'t': frames[-1]['t'] + 8000}]):
         rows.append(f"file '{(cap / 'frames' / (a['name'] + '.jpg')).as_posix()}'\nduration {(b['t'] - a['t']) / 1000:.4f}")
     lst.write_text('\n'.join(rows))
-    whole = Path(tmp) / 'whole.mp4'
+    whole = FOOTAGE / 'emu-whole.mp4'  # scripts/cut-viral.py cuts from it too
     run('-f', 'concat', '-safe', 0, '-i', lst, '-vf', 'fps=30,' + CROP, *VIDEO, whole)
 
     def spans(items, out):

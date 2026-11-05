@@ -13,6 +13,7 @@ import { RobotHype, robotHypeFrames } from './hype/RobotHype';
 import { BuildLog, buildLogFrames } from './hype/BuildLog';
 import { EverySwing, everySwingFrames } from './hype/EverySwing';
 import { Possessed, possessedFrames } from './hype/Possessed';
+import { Viral, viralFrames } from './hype/Viral';
 import { SwingFilm, type FilmScript } from './swingfilm/SwingFilm';
 import { FILM } from './swingfilm/look';
 import swingFilm from './config/swingFilm.json';
@@ -30,6 +31,7 @@ export const RemotionRoot: React.FC = () => (
       <Composition key={id} id={id} component={CutComp} defaultProps={{ cut }} durationInFrames={cutFrames(cut)} {...video} />
     ))}
     {/* 30 s X hype clip cut to "Keep It Movin'" (src/hype/Hype.tsx, copy in config/hype.ts) */}
+    <Composition id="Viral" component={Viral} durationInFrames={viralFrames} {...video} />
     <Composition id="Hype" component={Hype} durationInFrames={hypeFrames} {...video} />
     {/* ~27 s X clip: robot-arm session footage + CGI, cut to "Ten" (src/hype/RobotHype.tsx, copy in config/robotHype.ts) */}
     <Composition id="RobotHype" component={RobotHype} durationInFrames={robotHypeFrames} {...video} />

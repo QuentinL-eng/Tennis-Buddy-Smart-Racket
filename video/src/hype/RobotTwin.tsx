@@ -51,17 +51,16 @@ const Word: React.FC<{ clip: string; word: string; accent?: boolean; len: number
 
 // The racket CAD lies along scene Z at x ~ -2.4: seen from -X, handle to the left and head to the right, as in the real shot.
 const CAM = { from: [-5.6, 1.9, 0.4] as V3, to: [-4.9, 1.6, -0.2] as V3, target: [-2.0, 1.25, -0.2] as V3 };
-const Twin: React.FC = () => {
+/** The digital twin swinging through `contact`. All in frames from the start of the shot. */
+export const TwinShot: React.FC<{ contact: number; end: number; nameAt: number; scan: [number, number] }> = ({ contact, end, nameAt, scan: scanAt }) => {
   const frame = useCurrentFrame();
-  const b = (beat: number) => at(beat) - at(8);
-  const contact = b(12), end = b(14);
-  const scan = interpolate(frame, [b(8.25), b(9.75)], [0, 1], { ...clamp, easing: inOut });
+  const scan = interpolate(frame, scanAt, [0, 1], { ...clamp, easing: inOut });
   const angle = frame < contact - 6
     ? interpolate(frame, [0, contact - 6], [0, BACK], { ...clamp, easing: inOut })
     : BACK + (THROUGH - BACK) * (0.5 + 0.5 * Math.tanh((frame - contact + 1) / 2.2) / Math.tanh(3));
   const cam = mix(CAM.from, CAM.to, interpolate(frame, [0, end], [0, 1], clamp));
   const shake = frame >= contact && frame < contact + 8 ? Math.sin(frame * 7.3) * 12 * (1 - (frame - contact) / 8) : 0;
-  const name = useSlam(b(10));
+  const name = useSlam(nameAt);
   return (
     <AbsoluteFill style={{ ...whipIn(frame, 0), ...whipOut(frame, end), transform: `translate(${shake}px, ${-shake / 2}px)` }}>
       <Clip name="rt-wide" len={end} zoom={[1, 1.2]} origin="60% 45%" blur={20} />
@@ -77,11 +76,11 @@ const Twin: React.FC = () => {
       <AbsoluteFill style={{ justifyContent: 'flex-end', alignItems: 'flex-end', padding: '0 110px 90px 0', gap: 18 }}>
         <div style={{ display: 'flex', gap: 14 }}>
           {c.tags.map((tag, i) => {
-            const o = interpolate(frame, [b(10) + i * 4, b(10) + 6 + i * 4], [0, 1], clamp);
+            const o = interpolate(frame, [nameAt + i * 4, nameAt + 6 + i * 4], [0, 1], clamp);
             return <div key={tag} style={{ opacity: o, transform: `translateY(${(1 - o) * 20}px)`, fontFamily: fonts.mono, fontSize: 26, letterSpacing: 2, color: colors.accent, border: `1.5px solid ${colors.accent}`, padding: '6px 14px', borderRadius: 999, background: 'rgba(11,12,9,0.5)' }}>{tag}</div>;
           })}
         </div>
-        {frame >= b(10) - 3 && <Big size={150} color={colors.accent} style={{ ...name, transformOrigin: 'right center', textShadow: SHADOW }}>{c.twin}</Big>}
+        {frame >= nameAt - 3 && <Big size={150} color={colors.accent} style={{ ...name, transformOrigin: 'right center', textShadow: SHADOW }}>{c.twin}</Big>}
       </AbsoluteFill>
       <Flash at={contact} len={8} peak={0.55} />
     </AbsoluteFill>
@@ -156,7 +155,7 @@ export const RobotTwin: React.FC = () => {
           <div style={{ position: 'absolute', left: 110, top: 100, fontFamily: fonts.mono, fontSize: 26, letterSpacing: 3, color: colors.text }}>{c.realLabel}</div>
         </AbsoluteFill>
       </Sequence>
-      <Sequence from={at(8)} durationInFrames={at(14) - at(8)}><Twin /></Sequence>
+      <Sequence from={at(8)} durationInFrames={at(14) - at(8)}><TwinShot contact={at(12) - at(8)} end={at(14) - at(8)} nameAt={at(10) - at(8)} scan={[at(8.25) - at(8), at(9.75) - at(8)]} /></Sequence>
       <Sequence from={at(14)} durationInFrames={at(18) - at(14)}><Proof /></Sequence>
       <Sequence from={at(18)}><Truth len={at(20) - at(18) + OVERLAP} /></Sequence>
       <Vignette />

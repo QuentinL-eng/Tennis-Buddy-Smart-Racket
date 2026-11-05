@@ -9,6 +9,7 @@
     "still": "remotion still",
     "render:reveal": "npm run assets && remotion render Reveal out/reveal.mp4",
     "render:demo": "npm run assets && remotion render Demo out/demo.mp4",
+    "render:viral": "npm run assets && remotion render Viral out/viral.mp4",
     "frames": "node scripts/review-frames.mjs",
     "typecheck": "tsc --noEmit",
     "timeline": "node scripts/print-timeline.mjs",

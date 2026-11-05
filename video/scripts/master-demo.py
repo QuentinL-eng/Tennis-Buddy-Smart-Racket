@@ -12,7 +12,7 @@ import sys
 FFMPEG = os.environ.get('FFMPEG', 'ffmpeg')
 src = sys.argv[1] if len(sys.argv) > 1 else 'out/demo.mp4'
 out = sys.argv[2] if len(sys.argv) > 2 else 'out/tennis-buddee-demo.mp4'
-TARGET = 'I=-15:TP=-1.5:LRA=11'
+TARGET = f"I={os.environ.get('LOUDNESS', '-15')}:TP=-1.5:LRA=11"
 LIMIT = 'volume=6dB,alimiter=limit=0.8:attack=5:release=80:level=false'
 
 first = subprocess.run([FFMPEG, '-hide_banner', '-i', src, '-af', f'{LIMIT},loudnorm={TARGET}:print_format=json', '-f', 'null', '-'],

@@ -44,6 +44,12 @@ then `scripts/master-demo.py` for the upload file, `out/tennis-buddee-demo.mp4`.
 Words to keep true: the model on the ESP32 is ridge regression, so it is "our own ML model", not a neural net, until one ships. The
 87.7% was scored on open Muse Spark, the model the app uses, served by Baseten. The swing film's script came from `muse-spark-1.3`, and its badge says only "Muse Spark". A number measured on thrown balls says so on screen.
 
+## The X cut
+
+`Viral` is a 53 s version for X with no voiceover: `src/hype/Viral.tsx`, words in `src/config/viral.ts`. Type carries it, because X
+autoplays muted. The song starts at bar 7 so the serve's contact lands on the drop at bar 9, and every cut is on a bar or a beat.
+Build it with `scripts/cut-viral.py`, `npm run render:viral`, then `LOUDNESS=-14 python scripts/master-demo.py out/viral.mp4 out/tennis-buddee-x.mp4`.
+
 ## Voiceover
 
 All lines live in [`src/config/voiceover.ts`](src/config/voiceover.ts), with their captions. Record one line per file and save
